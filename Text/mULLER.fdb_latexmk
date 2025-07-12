@@ -1,20 +1,20 @@
 # Fdb version 4
-["bibtex mULLER"] 1752278839.24274 "mULLER.aux" "mULLER.bbl" "mULLER" 1752278841.50447 0
+["bibtex mULLER"] 1752279003.92667 "mULLER.aux" "mULLER.bbl" "mULLER" 1752279006.25942 0
   "./ZOTERO.bib" 1752269630.25792 237983 10e992a04dd0a0491a0a1f361c939d95 ""
   "./references-file.bib" 1750784975.03522 4410 ba5421d2d10a85a546605bccb8c9caaf ""
   "/usr/local/texlive/2025/texmf-dist/bibtex/bst/base/plain.bst" 1292289607 20613 bd3fbfa9f64872b81ac57a0dd2ed855f ""
-  "mULLER.aux" 1752278840.80914 13783 069d9b5f7c1bf7276f03e536ebf285e9 "xelatex"
+  "mULLER.aux" 1752279005.53692 13783 069d9b5f7c1bf7276f03e536ebf285e9 "xelatex"
   (generated)
   "mULLER.bbl"
   "mULLER.blg"
   (rewritten before read)
-["xdvipdfmx"] 1752278841.13731 "mULLER.xdv" "mULLER.pdf" "mULLER" 1752278841.50661 0
-  "mULLER.xdv" 1752278840.8105 642996 8f179c126b062d4d30e641ddb46c1c18 "xelatex"
+["xdvipdfmx"] 1752279005.87591 "mULLER.xdv" "mULLER.pdf" "mULLER" 1752279006.26154 0
+  "mULLER.xdv" 1752279005.5383 643284 79f709bcba5f42d5aef2bf79166e358a "xelatex"
   (generated)
   "mULLER.pdf"
   (rewritten before read)
-["xelatex"] 1752278839.35596 "/Users/cherryfunk/Applications/Repos/mULLER/Text/mULLER.tex" "mULLER.xdv" "mULLER" 1752278841.50456 0
-  "/Users/cherryfunk/Applications/Repos/mULLER/Text/mULLER.tex" 1752278837.19601 100803 1c525bed4dc3204c9e94b3f487dc105c ""
+["xelatex"] 1752279004.04294 "/Users/cherryfunk/Applications/Repos/mULLER/Text/mULLER.tex" "mULLER.xdv" "mULLER" 1752279006.25952 0
+  "/Users/cherryfunk/Applications/Repos/mULLER/Text/mULLER.tex" 1752279001.51874 100833 873054820cf6518405f69b0c0f4cd32c ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/zapfding/pzdr.tfm" 1136768653 1528 f853c4d1b4e0550255e02831fdc8496f ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy6.tfm" 1246382020 1124 14ccf5552bc7f77ca02a8a402bea8bfb ""
@@ -243,10 +243,10 @@
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
   "ed.sty" 1752272763.16453 4348 dfcaf075f731453237f4ca7121f8a1c4 ""
   "jmlr.cls" 1752272763.05526 32849 6b9f5f294a0735c5b925c27d182ecb2f ""
-  "mULLER.aux" 1752278840.80914 13783 069d9b5f7c1bf7276f03e536ebf285e9 "xelatex"
-  "mULLER.bbl" 1752278839.3529 2907 4f95e714968aa5061cceddde6038f63e "bibtex mULLER"
-  "mULLER.out" 1752278840.81025 5556 a69c8c65dbf06999d7a5cacc4bae11b2 "xelatex"
-  "mULLER.tex" 1752278837.19601 100803 1c525bed4dc3204c9e94b3f487dc105c ""
+  "mULLER.aux" 1752279005.53692 13783 069d9b5f7c1bf7276f03e536ebf285e9 "xelatex"
+  "mULLER.bbl" 1752279004.03964 2907 4f95e714968aa5061cceddde6038f63e "bibtex mULLER"
+  "mULLER.out" 1752279005.53805 5556 a69c8c65dbf06999d7a5cacc4bae11b2 "xelatex"
+  "mULLER.tex" 1752279001.51874 100833 873054820cf6518405f69b0c0f4cd32c ""
   "nesy2025.cls" 1752272763.08158 1025 c82587df1600053ff4a0d7038c1f89a9 ""
   (generated)
   "mULLER.aux"
