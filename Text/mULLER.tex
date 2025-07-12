@@ -345,7 +345,8 @@ A \emph{NeSy framework}  $(\mathcal T,\mathcal R)$ consists of  \ednote{ \textbf
 Ob C?"}
 \begin{enumerate*}
   \item a strong monad $\mathcal T$ with strength $\mathcal S$ on a cartesian closed category $\mathcal C$,\footnote{TODO: explain strength. Note that $\Set$ is a cartesian closed category, and every monad on $\Set$ is strong. We need cartesian closure for the semantics of quantification and computational function symbols.}\ednote{ \textbf{1Fh6}: "Define 'strong monad'"}
-  \item an aggregated 2CMon-Lat $\mathcal R$ internal to $\mathcal{C}$ on $\mathcal T\Omega $ for some $\Omega \in \ObC$ of truth values.
+  \item An object $\Omega \in \ObC$ acting as truth basis (similar to the basis of a vector space)
+  \item an aggregated 2CMon-Lat $\mathcal R$ internal to $\mathcal{C}$ on the truth space $\mathcal T\Omega $
 \end{enumerate*}
 
 \noindent
@@ -383,7 +384,7 @@ A \emph{NeSy system signature} $\Sigma$ consists of a set $S$ of {\em sorts}, tw
  $\F=(\F_{w,s})_{w\in\! S^{*}\! ,s\in\! S}$ and
 $\MF=(\MF_{w,s})_{w\in\! S^{*}\! ,s\in\! S}$ 
 of {\em function symbols} and {\em computational function symbols}, and
-two disjoint $S^{*}$-sorted families: $\P = (\P_{w})_{w \in S^{*}}$  and $\MP = (\MP_{w})_{w \in S^{*}}$ of {\em predicate symbols} and {\em computational predicate symbols}.
+two disjoint $S^{*}$-sorted families: $\P = (\P_{w})_{w \in S^{*}}$  and $\MP = (\MP_{w})_{w \in S^{*}}$ of {\em predicate symbols} and {\em computational predicate symbols}. \ednote{ \textbf{1Fh6}: "Definition 5: The families of function symbols (etc) are confusing. Is the point that there is a single function symbol for each combination of sorts? The subscript does not seem to be used afterwards."}
 \ednote{ \textbf{1Fh6}: "What does the notation $S^{*}$ mean? Are the families of function symbols confusing? Is there a single function symbol for each combination of sorts?"}
 
 Function symbols with no arguments are called constants ($\mathrm{Const}$), and (computational) predicate symbols with no arguments are called (computational) propositional symbols ($\mathrm{Prps}$ and $\mathrm{MPrps}$ respectively). Function symbols with one argument are called properties $(\mathrm{Prop})$.
