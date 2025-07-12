@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2025.6.12)  11 JUL 2025 17:11
+This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2025.6.12)  11 JUL 2025 18:07
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -741,173 +741,327 @@ Overfull \hbox (45.28867pt too wide) in paragraph at lines 172--172
  []
 
 EdNote!
-Overfull \hbox (45.28867pt too wide) in paragraph at lines 187--187
+Overfull \hbox (45.28867pt too wide) in paragraph at lines 172--172
 []\TU/lmr/m/n/10.95 EdNote(3) 
+ []
+
+EdNote!
+Overfull \hbox (45.28867pt too wide) in paragraph at lines 182--182
+[]\TU/lmr/m/n/10.95 EdNote(4) 
+ []
+
+EdNote!
+Overfull \hbox (45.28867pt too wide) in paragraph at lines 190--190
+[]\TU/lmr/m/n/10.95 EdNote(5) 
+ []
+
+EdNote!
+Overfull \hbox (45.28867pt too wide) in paragraph at lines 191--191
+[]\TU/lmr/m/n/10.95 EdNote(6) 
  []
 
 
 
 
 Overfull \hbox (8.72885pt too wide) has occurred while \output is active
-\TU/lmr/m/n/8 Proceedings of Machine Learning Research vol 284:[][]1[][]–[][]24[][], 2025  19th Conference on Neurosymbolic Learning and Reasoning
+\TU/lmr/m/n/8 Proceedings of Machine Learning Research vol 284:[][]1[][]–[][]25[][], 2025  19th Conference on Neurosymbolic Learning and Reasoning
  []
 
 [1
 
-] EdNote!
-Overfull \hbox (45.28867pt too wide) in paragraph at lines 214--214
-[]\TU/lmr/m/n/10.95 EdNote(4) 
- []
+]
 
-
-
-[2] EdNote!
-Overfull \hbox (45.28867pt too wide) in paragraph at lines 261--261
-[]\TU/lmr/m/n/10.95 EdNote(5) 
- []
-
-
-
-[3]
-Overfull \hbox (19.78366pt too wide) detected at line 282
-\OML/cmm/m/it/10.95 ^^Q[]\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 x\OT1/cmr/m/n/10.95 ) := \OML/cmm/m/it/10.95 ^^N[];    f[]\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 ^^Z\OT1/cmr/m/n/10.95 )(\OML/cmm/m/it/10.95 A\OT1/cmr/m/n/10.95 ) := []  \OML/cmm/m/it/10.95 f\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 x\OT1/cmr/m/n/10.95 )(\OML/cmm/m/it/10.95 A\OT1/cmr/m/n/10.95 )\OML/cmm/m/it/10.95 d^^Z\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 x\OT1/cmr/m/n/10.95 ) []\OML/cmm/m/it/10.95 f \OT1/cmr/m/n/10.95 : (\OML/cmm/m/it/10.95 X; \OT1/cmr/m/n/10.95 ^^F[])  \OMS/cmsy/m/n/10.95 !  G\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 Y; \OT1/cmr/m/n/10.95 ^^F[])\OML/cmm/m/it/10.95 ; A \OMS/cmsy/m/n/10.95 ^^R \OML/cmm/m/it/10.95 X[][]:
- []
-
-
-Overfull \hbox (5.5539pt too wide) in paragraph at lines 292--294
-[][][] \TU/lmr/m/it/10.95 A \TU/lmr/m/n/10.95 double com-
- []
-
-
-
-[4]
-
-[5] EdNote!
-Overfull \hbox (45.28867pt too wide) in paragraph at lines 402--402
-[]\TU/lmr/m/n/10.95 EdNote(6) 
- []
+LaTeX Warning: Marginpar on page 2 moved.
 
 EdNote!
-Overfull \hbox (45.28867pt too wide) in paragraph at lines 410--410
+Overfull \hbox (45.28867pt too wide) in paragraph at lines 194--194
 []\TU/lmr/m/n/10.95 EdNote(7) 
  []
 
 EdNote!
-Overfull \hbox (45.28867pt too wide) in paragraph at lines 410--410
+Overfull \hbox (45.28867pt too wide) in paragraph at lines 205--205
 []\TU/lmr/m/n/10.95 EdNote(8) 
  []
 
-
-LaTeX Warning: Marginpar on page 6 moved.
-
-
-
-[6]
-
-LaTeX Font Warning: Font shape `U/stmry/b/n' undefined
-(Font)              using `U/stmry/m/n' instead on input line 425.
-
-
-LaTeX Warning: `h' float specifier changed to `ht'.
-
 EdNote!
-Overfull \hbox (45.28867pt too wide) in paragraph at lines 585--585
+Overfull \hbox (45.28867pt too wide) in paragraph at lines 209--209
 []\TU/lmr/m/n/10.95 EdNote(9) 
  []
 
 
 
-[7]
+[2] EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 213--213
+[]\TU/lmr/m/n/10.95 EdNote(10) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 221--221
+[]\TU/lmr/m/n/10.95 EdNote(11) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 227--227
+[]\TU/lmr/m/n/10.95 EdNote(12) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 228--228
+[]\TU/lmr/m/n/10.95 EdNote(13) 
+ []
+
+
+LaTeX Warning: Marginpar on page 3 moved.
+
+
+
+[3] EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 259--259
+[]\TU/lmr/m/n/10.95 EdNote(14) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 265--265
+[]\TU/lmr/m/n/10.95 EdNote(15) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 271--271
+[]\TU/lmr/m/n/10.95 EdNote(16) 
+ []
+
+
+Overfull \hbox (19.78366pt too wide) detected at line 285
+\OML/cmm/m/it/10.95 ^^Q[]\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 x\OT1/cmr/m/n/10.95 ) := \OML/cmm/m/it/10.95 ^^N[];    f[]\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 ^^Z\OT1/cmr/m/n/10.95 )(\OML/cmm/m/it/10.95 A\OT1/cmr/m/n/10.95 ) := []  \OML/cmm/m/it/10.95 f\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 x\OT1/cmr/m/n/10.95 )(\OML/cmm/m/it/10.95 A\OT1/cmr/m/n/10.95 )\OML/cmm/m/it/10.95 d^^Z\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 x\OT1/cmr/m/n/10.95 ) []\OML/cmm/m/it/10.95 f \OT1/cmr/m/n/10.95 : (\OML/cmm/m/it/10.95 X; \OT1/cmr/m/n/10.95 ^^F[])  \OMS/cmsy/m/n/10.95 !  G\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 Y; \OT1/cmr/m/n/10.95 ^^F[])\OML/cmm/m/it/10.95 ; A \OMS/cmsy/m/n/10.95 ^^R \OML/cmm/m/it/10.95 X[][]:
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 286--286
+[]\TU/lmr/m/n/10.95 EdNote(17) 
+ []
+
+
+Overfull \hbox (5.5539pt too wide) in paragraph at lines 296--298
+[][][] \TU/lmr/m/it/10.95 A \TU/lmr/m/n/10.95 double com-
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 301--301
+[]\TU/lmr/m/n/10.95 EdNote(18) 
+ []
+
+
+
+[4] EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 334--334
+[]\TU/lmr/m/n/10.95 EdNote(19) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 345--345
+[]\TU/lmr/m/n/10.95 EdNote(20) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 347--347
+[]\TU/lmr/m/n/10.95 EdNote(21) 
+ []
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+
+
+[5] EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 387--387
+[]\TU/lmr/m/n/10.95 EdNote(22) 
+ []
+
+
+
+[6] EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 417--417
+[]\TU/lmr/m/n/10.95 EdNote(23) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 418--418
+[]\TU/lmr/m/n/10.95 EdNote(24) 
+ []
+
+
+LaTeX Warning: Marginpar on page 7 moved.
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 422--422
+[]\TU/lmr/m/n/10.95 EdNote(25) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 428--428
+[]\TU/lmr/m/n/10.95 EdNote(26) 
+ []
+
+
+Overfull \hbox (4.25313pt too wide) in paragraph at lines 428--430
+[][][] [] \TU/lmr/m/it/10.95 Given a NeSy framework $\OT1/cmr/m/n/10.95 (\OMS/cmsy/m/n/10.95 T\OML/cmm/m/it/10.95 ; \OMS/cmsy/m/n/10.95 R\OT1/cmr/m/n/10.95 )$\TU/lmr/m/it/10.95 ,
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 433--433
+[]\TU/lmr/m/n/10.95 EdNote(27) 
+ []
+
+
+LaTeX Font Warning: Font shape `U/stmry/b/n' undefined
+(Font)              using `U/stmry/m/n' instead on input line 434.
+
+
+
+[7] EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 575--575
+[]\TU/lmr/m/n/10.95 EdNote(28) 
+ []
+
+
 
 [8] EdNote!
-Overfull \hbox (50.76367pt too wide) in paragraph at lines 617--617
-[]\TU/lmr/m/n/10.95 EdNote(10) 
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 595--595
+[]\TU/lmr/m/n/10.95 EdNote(29) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 596--596
+[]\TU/lmr/m/n/10.95 EdNote(30) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 623--623
+[]\TU/lmr/m/n/10.95 EdNote(31) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 628--628
+[]\TU/lmr/m/n/10.95 EdNote(32) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 628--628
+[]\TU/lmr/m/n/10.95 EdNote(33) 
  []
 
 
 
 [9]
-Overfull \hbox (24.11238pt too wide) in paragraph at lines 655--657
+
+LaTeX Warning: Marginpar on page 10 moved.
+
+
+Overfull \hbox (24.11238pt too wide) in paragraph at lines 666--668
 [][][] \TU/lmr/m/it/10.95 For any NeSy framework $\OT1/cmr/m/n/10.95 (\OMS/cmsy/m/n/10.95 T\OML/cmm/m/it/10.95 ; \OMS/cmsy/m/n/10.95 R\OT1/cmr/m/n/10.95 )$\TU/lmr/m/it/10.95 , let $ []\OT1/cmr/m/n/10.95 ((\OMS/cmsy/m/n/10.95 T\OML/cmm/m/it/10.95 ; \OMS/cmsy/m/n/10.95 R\OT1/cmr/m/n/10.95 )\OML/cmm/m/it/10.95 ; \OT1/cmr/m/n/10.95 ^^F)$
  []
 
 
 
 [10] EdNote!
-Overfull \hbox (50.76367pt too wide) in paragraph at lines 707--707
-[]\TU/lmr/m/n/10.95 EdNote(11) 
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 690--690
+[]\TU/lmr/m/n/10.95 EdNote(34) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 693--693
+[]\TU/lmr/m/n/10.95 EdNote(35) 
+ []
+
+
+LaTeX Warning: Marginpar on page 11 moved.
+
+
+
+[11] EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 719--719
+[]\TU/lmr/m/n/10.95 EdNote(36) 
+ []
+
+EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 721--721
+[]\TU/lmr/m/n/10.95 EdNote(37) 
  []
 
 
 
-[11] (./mULLER.bbl)
+[12] (./mULLER.bbl)
 
-[12]
-LaTeX Font Info:    Trying to load font information for U+bbold on input line 746.
- (/usr/local/texlive/2025/texmf-dist/tex/latex/bbold/Ubbold.fd)
+[13] EdNote!
+Overfull \hbox (50.76367pt too wide) in paragraph at lines 735--735
+[]\TU/lmr/m/n/10.95 EdNote(38) 
+ []
 
-[13]
+LaTeX Font Info:    Trying to load font information for U+bbold on input line 759.
+(/usr/local/texlive/2025/texmf-dist/tex/latex/bbold/Ubbold.fd)
 
 [14]
 
 [15]
 
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 972.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 972.
-
-
-
 [16]
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 985.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 985.
+
+
 
 [17]
 
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1135.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 1135.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\phi' on input line 1135.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1135.
-
-
-
 [18]
 
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1148.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 1148.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\phi' on input line 1148.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1148.
+
+
+
 [19]
+
+[20]
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
 
 
-[20]
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1324.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1324.
-
-
-
 [21]
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1337.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1337.
+
+
 
 [22]
 
 [23]
 
-[24] (./mULLER.aux)
+[24]
+
+[25] (./mULLER.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
@@ -922,10 +1076,10 @@ Package rerunfilecheck Info: File `mULLER.out' has not changed.
 Here is how much of TeX's memory you used:
  27245 strings out of 473832
  517440 string characters out of 5729481
- 953020 words of memory out of 5000000
+ 955020 words of memory out of 5000000
  49764 multiletter control sequences out of 15000+600000
  577039 words of font info for 147 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 101i,17n,107p,2227b,981s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 101i,17n,107p,2227b,977s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on mULLER.xdv (24 pages, 604860 bytes).
+Output written on mULLER.xdv (25 pages, 642996 bytes).

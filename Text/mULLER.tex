@@ -169,7 +169,7 @@
 \textbf{ULLER} (\underline{U}nified \underline{L}anguage for \underline{LE}arning and \underline{R}easoning) provides a single first‑order logic (FOL) syntax whose knowledge bases can be used without modification by a broad range of neurosymbolic systems. \ednote{ \textbf{Daniel}: Introduce the word MULLER here: noun, a heavy tool of stone or iron (usually with a flat base and a handle) that is used to grind and mix material.}
 The original specification endows this syntax with three pairwise independent semantics—classical, fuzzy, and probabilistic—each accompanied by dedicated semantic rules.  
 We prove that these seemingly disparate semantics are all instances of one categorical framework based on \emph{monads}, the very construct that models side effects in functional programming.  
-This enables the \emph{modular} addition of new semantics and systematic translations between them. As examples , we outline the addition of LTN, STL, possibilistic and continuous fuzzy semantics and their relations. In particular, our approach allows a modular implementation of ULLER in Python and Haskell. As a further outcome, we generalize quantification in Logic Tensor Networks (LTN) to arbitrary (also infinite) domains by extending the Giry monad to probability spaces.\ednote{ \textbf{1Fh6}: "The abstract claims it 'proves' that several semantics are instances of their categorical framework. However proofs of these equivalences are missing."}
+This enables the \emph{modular} addition of new semantics and systematic translations between them. As examples , we outline the addition of LTN, STL, possibilistic and continuous fuzzy semantics and their relations. In particular, our approach allows a modular implementation of ULLER in Python and Haskell.\ednote{ \textbf{sLXz}: "One should not expect to unify everything under the same framework that will then become so abstract as to have no practical value. More discussion of how Haskell could be deployed as claimed in the abstract would be valuable."} As a further outcome, we generalize quantification in Logic Tensor Networks (LTN) to arbitrary (also infinite) domains by extending the Giry monad to probability spaces.\ednote{ \textbf{1Fh6}: "The abstract claims it 'proves' that several semantics are instances of their categorical framework. However proofs of these equivalences are missing."}
 \end{abstract}
 
  \section{Introduction}
@@ -179,19 +179,19 @@ Neurosymbolic integration is a rapidly developing branch of AI.
 In the past, numerous heterogeneous approaches have emerged, each with its own code base. \cite{vankriekenULLERUnifiedLanguage2024} introduces ULLER, a unified neurosymbolic library that aspires to play for neurosymbolic systems the role that TensorFlow and PyTorch play for deep-learning workflows. Their theoretical core is the concept of a NeSy system: standard first-order logic enriched with neural components. In particular, formulas of the form
 $$x:=m(T_1,\dots,T_n)(F)$$
 are used to integrate neural models $m$ into logical formulas.
-These models leave the platonic logical world of objects and truth values.
+These models leave the platonic logical world of objects and truth values.\ednote{ \textbf{1Fh6}: "What is meant with the 'platonic logical world' of objects and truth values?"}
 Instead, they perform computations that may return multiple values and typically involve non-determinism or probability distributions as illustrated in their following toy example:
 $$x := dice() (x = 6 \wedge even(x))$$
 throws a die once, and checks whether it is 6 and even (so the resulting probability is $\frac{1}{6}$), whereas
-$$x := dice() (x = 6) \wedge x:= dice() (even(x))$$ \ednote{ \textbf{3Pt1}: "If you add computational predicates, how do these fit within the scoping concerns of ULLER? For example, winLottery() $\wedge$ winLottery()
-are two independent events according to your semantics? How to have them as one (cf the first dice example in the introduction)? I thought non-determinism is allowed only in statements to be more transparent on this."}
+$$x := dice() (x = 6) \wedge x:= dice() (even(x))$$
 throws a die twice, and checks whether the first one is 6 and the second one is even (so the resulting probability is $\frac{1}{12}$).
 With neural classifiers, regressions or other machine learning models in place of the $dice()$ function,
 one obtains a neurosymbolic first-order logic.
-However, the notion of NeSy system in \cite{vankriekenULLERUnifiedLanguage2024} has several shortcomings:
+\ednote{ \textbf{3Pt1}: "If you add computational predicates, how do these fit within the scoping concerns of ULLER? How to have them as one (cf the first dice example)?"}
+However, the notion of NeSy system in \cite{vankriekenULLERUnifiedLanguage2024} has several shortcomings:\ednote{ \textbf{sLXz}: "The main criticisms of ULLER may not be warranted. What is seen as shortcomings seem to be features, ULLER being intended as a unified library or framework."}
 \begin{itemize}
 \item
-  There is no uniform inductive definition of truth, i.e.\ of the truth value of a sentence in an interpretation. Rather, the notion of NeSy system has the inductive interpretation function as a component, meaning that classical, probabilistic and fuzzy NeSy systems employ three different inductive definitions of truth. Parts of these definitions of truth are copied verbatim from one NeSy system to another, other parts need to be replaced. This duplication of semantic rules is not modular. By contrast, we aim at a truly uniform inductive definition of truth value that is independent of the NeSy system and hence can be reused for different NeSy systems, such that the NeSy system itself is a parameter of the inductive definition of truth.
+  There is no uniform inductive definition of truth, i.e.\ of the truth value of a sentence in an interpretation. Rather, the notion of NeSy system has the inductive interpretation function as a component, meaning that classical, probabilistic and fuzzy NeSy systems employ three different inductive definitions of truth. Parts of these definitions of truth are copied verbatim from one NeSy system to another, other parts need to be replaced. This duplication of semantic rules is not modular.\ednote{ \textbf{sLXz}: "The claim of 'duplication of semantic rules' seems to miss the point of the 'library'. There are differences in the various NeSy approaches being accounted for."} By contrast, we aim at a truly uniform inductive definition of truth value that is independent of the NeSy system and hence can be reused for different NeSy systems, such that the NeSy system itself is a parameter of the inductive definition of truth.
 %\item
 %  The definition of truth for the classical case is flawed. In the NeSy system for classical two-valued logic, there is the need for a transition from continuous truth values in $[0,1]$ to classical truth values $\{0,1\}$.
 %  In this context, there is the need to obtain an individual that maximises the truth value of a given formula. Here, argmax is used. However, there might be several objects leading to the same maximal truth value. There is no satisfactory straightforward fix for this problem. For example, assuming a total order on domains would allow to resolve this ambiguity by taking the first maximum according to this order, but this is rather ad-hoc and often not what is intended.
@@ -202,16 +202,15 @@ However, the notion of NeSy system in \cite{vankriekenULLERUnifiedLanguage2024} 
 %\item
 %  The fuzzy semantics of the (computational) function symbols is not thoroughly motivated and is only given in the finite case. It also tries to interpret fuzzy or differentiable predicates which is unnecessary, if those are directly interpreted in a fuzzy or differentiable way.\ednote{I do not understand this.}
 \item
-  The high‑level concepts of semantics and computation are not properly separated. Computation (namely sampling) is mixed into the semantics at least in two places. The first one in the classical semantics, where the possibly multi-valued $\argmax$ can only be properly evaluated using sampling. We conceptualize the $\argmax$ differently as a transition \emph{between} semantics. The second time is in "Sampling Semantics", which is not really semantics but computation (sampling).%\ednote{We already address argmax in the second point. Merge them?}
+  The high‑level concepts of semantics and computation are not properly separated.\ednote{ \textbf{sLXz}: "Focus more on the semantics versus computation aspect - this discussion is by itself a relevant contribution."} Computation (namely sampling) is mixed into the semantics at least in two places. The first one in the classical semantics, where the possibly multi-valued $\argmax$ can only be properly evaluated using sampling. We conceptualize the $\argmax$ differently as a transition \emph{between} semantics. The second time is in "Sampling Semantics", which is not really semantics but computation (sampling).%\ednote{We already address argmax in the second point. Merge them?}
 \end{itemize}
 
 \noindent
-We argue that ULLER is conceptually robust and show that a monadic formulation resolves all of the foregoing issues.
+We argue that ULLER is conceptually robust and show that a monadic formulation resolves all of the foregoing issues.\ednote{ \textbf{1Fh6}: "I did not entirely follow the point about disentangling choices and how Monadic ULLER resolves this (in the end)"}
 In particular, ULLER formulas of the form
 $$x:=m(T_1,\dots,T_n)(F)$$
-can be modeled using Moggi's notion of computational monad \cite{moggiNotionsComputationMonads1991}, which has been introduced to model side effects in (functional) programming. Although monads originate in category theory, we always begin with a concrete presentation over the category $\mathbf{Set}$ (that can be understood without any knowledge of category theory) and only then sketch the generalization to an arbitrary cartesian closed category. \ednote{ \textbf{3Pt1}: "Add more intuitions and concrete examples: While the paper states to "always begin with a concrete presentation over the category 
- that can be understood without any knowledge of category thery" (btw, the notation 
- for the category of sets is never introduced), the examples that follow quickly delve into abstract notations without developing intuitions. A few words around each concept, and a more concrete example with an actual program, its inputs and outputs, would make this a lot clearer."}
+can be modeled using Moggi's notion of computational monad \cite{moggiNotionsComputationMonads1991}, which has been introduced to model side effects in (functional) programming. Although monads originate in category theory, we always begin with a concrete presentation over the category $\mathbf{Set}$ (that can be understood without any knowledge of category theory) and only then sketch the generalization to an arbitrary cartesian closed category.
+\ednote{ \textbf{3Pt1}: "Add more intuitions and concrete examples - the examples quickly delve into abstract notations without developing intuitions."}
 
 
 %
@@ -219,13 +218,14 @@ can be modeled using Moggi's notion of computational monad \cite{moggiNotionsCom
 \label{sec:neurosymbolic-frameworks}
 
 A neurosymbolic framework (NeSy framework) is the general framework for a system that combines neural models with symbolic logic, and that provides the semantic background for the specific logic involved.
-Examples are the logics behind DeepProbLog \cite{DBLP:journals/ai/ManhaeveDKDR21} or Logic Tensor Networks \cite{DBLP:journals/ai/BadreddineGSS22}. The notion of NeSy framework is not defined in \cite{vankriekenULLERUnifiedLanguage2024}. Rather, they define a notion of NeSy system, which is quite ad-hoc, because it makes a fundamental choice about the logic, while simultaneously being based on a particular interpretation, i.e.\ a particular choice of a neural and logical model.
+Examples are the logics behind DeepProbLog \cite{DBLP:journals/ai/ManhaeveDKDR21} or Logic Tensor Networks \cite{DBLP:journals/ai/BadreddineGSS22}.\ednote{ \textbf{sLXz}: "Provide some examples of the benefit of the framework when applied directly to e.g. LTN and DeepProbLog. This should offer a direct kind of comparative presentation of results."} The notion of NeSy framework is not defined in \cite{vankriekenULLERUnifiedLanguage2024}. Rather, they define a notion of NeSy system, which is quite ad-hoc, because it makes a fundamental choice about the logic, while simultaneously being based on a particular interpretation, i.e.\ a particular choice of a neural and logical model.
 Our notion of NeSy framework provides a means to disentangle these choices. A particular NeSy framework can be used to define different NeSy systems, while \cite{vankriekenULLERUnifiedLanguage2024} needs to individually bake in the framework into each system, causing semantic rule duplication.
 
 %
 \subsection{Monads}
 \label{subsec:monads}
-We interpret formulas $x:=m(T_1,\dots,T_n)(F)$ involving neural models $m$ (=certain computations) using Moggi's notion of computational monad \cite{moggiNotionsComputationMonads1991} in the form of Kleisli triples:
+\ednote{ \textbf{1Fh6}: "Please mark this section as background. The text at the beginning suggests the rest of this section is about explaining, however this only happens later."}
+We interpret formulas $x:=m(T_1,\dots,T_n)(F)$ involving neural models $m$ (=certain computations) using Moggi's notion of computational monad \cite{moggiNotionsComputationMonads1991} in the form of Kleisli triples:\ednote{ \textbf{sLXz}: "Please explain the notation to the non-expert even if that's standard in abstract algebra: if m is a neural net, what is T and what is F?"}
 
 \begin{definition} \label{def:set_Kleisli_triple}
 A \textbf{set-based Kleisli triple} $(\mathcal{T}, \eta, (-)^*)$  consists of:
@@ -256,16 +256,19 @@ such that the following axioms hold:
   f^{*}(\rho)(y):=\sum_{x\in X}\!\rho(x)f(x)(y)
   \quad\bigl(f:X\!\to\!\mathcal D Y,\; \rho\in\mathcal D X\bigr).
 \]
+\ednote{ \textbf{1Fh6}: "The definition of $f^*$ sums over $x\in X$, however this is only possible if $X$ is countable. I think the sum should be over the support of $\rho$."}
 \end{example}
 
-\ednote{}
-
+\ednote{
+  \textbf{3Pt1}: "in Example 1, I do not understand if delta x which associates to each element x of X  degenerate distribution with all probability mass in x, is supposed to be a simple example of a probabilistic system or if it is defined for all probabilistic systems. I also don't understand the purpose of f*(rho)
+  , can it be understood as computing the expected value of a computation? "
+}
 
 
 \paragraph{Categorical generalisation:}
 A Kleisli triple on a category $\mathcal{C}$ involves a mapping of objects $\mathcal{T}: \mathrm{Ob}(\mathcal{C}) \to \mathrm{Ob}(\mathcal{C})$, a family of morphisms $\eta_X : X \to \mathcal{T} X$ for each object $X$ in $\mathcal{C}$ (called the \emph{unit}), and a function that assigns to each morphism $f : X \to \mathcal{T} Y$ a morphism $f^* : \mathcal{T} X \to \mathcal{T} Y$ 
 such that the axioms hold as in Def.~\ref{def:set_Kleisli_triple}.
-Note that a set-based Kleisli triple is then a Kleisli triple on the category $\Set$.
+Note that a set-based Kleisli triple is then a Kleisli triple on the category $\Set$.\ednote{ \textbf{1Fh6}: "Please specify why this generalisation is needed at this point."}
 
 \begin{example}\label{ex:giry-monad}
 \leavevmode
@@ -280,6 +283,7 @@ For a measurable space \((X,\Sigma_X)\)
   f^{*}(\rho)(A):=\int\limits_{X}\!f(x)(A) d\rho(x)
   \quad\bigl(f:(X,\Sigma_X)\!\to\!\mathcal G(Y,\Sigma_Y), A\subseteq X\text{ measurable}\bigr).
 \]
+\ednote{ \textbf{1Fh6}: "Please specify $\delta_x$ is the dirac measure."}
 \end{example}
 
 
@@ -294,7 +298,7 @@ A \emph{double commutative monoid lattice}\footnote{This is a generalization of 
 \[
   \bigl(S, \; 0, \; 1, \; \leq,\;\otimes,\;\oplus,\;\to \bigr)
 \]
-in which $S$ is a set and $\mathcal{L}:=(S,\leq,0,1)$ forms a bounded lattice.  We have the \emph{smallest element} $0  \in S$ and \emph{largest element} $1 \in S$.
+in which $S$ is a set and $\mathcal{L}:=(S,\leq,0,1)$ forms a bounded lattice.  We have the \emph{smallest element} $0  \in S$ and \emph{largest element} $1 \in S$.\ednote{ \textbf{1Fh6}: "What is $\mathcal{L}$? Remind the reader that $\mathcal{L}$ is a lattice"}
 % and  the \emph{meet} $\land$ and \emph{join} $\lor$ as order-preserving maps:
 %\begin{align*}
 %  \land\;,\lor &:\; \mathcal{L} \times \mathcal{L} \longrightarrow \mathcal{L}.
@@ -327,6 +331,7 @@ In the case of a complete lattice, $\mathrm{aggr}_X^\forall$ can be chosen as me
 \noindent
 \paragraph{Categorical generalisation:}
 A complete 2CMon-Lat internal to a cartesian closed category $\mathcal{C}$\footnote{Such a category has exponential objects (``function spaces'') $A^B$ and currying, that is, for $f:A\times B\to C$, there is $\Lambda(f):A\to C^B$.} consists of an object $A$ in $\mathcal{C}$, a lattice on A internal to $\mathcal{C}$, morphisms $\oplus,\otimes, \to:A\times A\to A$, $0,1:1_\mathcal{C}\to A$ and for each object $X\in\mathrm{Ob}(\mathcal{C})$ morphisms $\mathrm{aggr}_X^\forall, \mathrm{aggr}_X^\exists:A^X\to A$,  such that the above axioms hold when appropriately interpreted in $\mathcal{C}$\footnote{$1_\mathcal{C}$ is a terminal object.}. %Check the appendix for details.
+\ednote{ \textbf{1Fh6}: "Specify what 'internal to' a category means, and what a cartesian closed category is"}
 \end{definition}
 
 \subsection{Neurosymbolic frameworks}
@@ -336,9 +341,10 @@ Given some basic notion of truth $\Omega$, we assume that NeSy systems work on t
 If $\mathcal T$ is the distribution or probability monad, $\mathcal T\{ 0,1\}$ is the unit interval $[0,1]$, which can be regarded as the space of probabilistic or fuzzy truth values.
 
 \begin{definition}[NeSy framework]\label{def:nesy-framework}
-A \emph{NeSy framework}  $(\mathcal T,\mathcal R)$ consists of  
+A \emph{NeSy framework}  $(\mathcal T,\mathcal R)$ consists of  \ednote{ \textbf{3Pt1}: "in Defintion 4, what is the strength of a monad? What is 
+Ob C?"}
 \begin{enumerate*}
-  \item a strong monad $\mathcal T$ with strength $\mathcal S$ on a cartesian closed category $\mathcal C$,\footnote{TODO: explain strength. Note that $\Set$ is a cartesian closed category, and every monad on $\Set$ is strong. We need cartesian closure for the semantics of quantification and computational function symbols.}
+  \item a strong monad $\mathcal T$ with strength $\mathcal S$ on a cartesian closed category $\mathcal C$,\footnote{TODO: explain strength. Note that $\Set$ is a cartesian closed category, and every monad on $\Set$ is strong. We need cartesian closure for the semantics of quantification and computational function symbols.}\ednote{ \textbf{1Fh6}: "Define 'strong monad'"}
   \item an aggregated 2CMon-Lat $\mathcal R$ internal to $\mathcal{C}$ on $\mathcal T\Omega $ for some $\Omega \in \ObC$ of truth values.
 \end{enumerate*}
 
@@ -378,6 +384,7 @@ A \emph{NeSy system signature} $\Sigma$ consists of a set $S$ of {\em sorts}, tw
 $\MF=(\MF_{w,s})_{w\in\! S^{*}\! ,s\in\! S}$ 
 of {\em function symbols} and {\em computational function symbols}, and
 two disjoint $S^{*}$-sorted families: $\P = (\P_{w})_{w \in S^{*}}$  and $\MP = (\MP_{w})_{w \in S^{*}}$ of {\em predicate symbols} and {\em computational predicate symbols}.
+\ednote{ \textbf{1Fh6}: "What does the notation $S^{*}$ mean? Are the families of function symbols confusing? Is there a single function symbol for each combination of sorts?"}
 
 Function symbols with no arguments are called constants ($\mathrm{Const}$), and (computational) predicate symbols with no arguments are called (computational) propositional symbols ($\mathrm{Prps}$ and $\mathrm{MPrps}$ respectively). Function symbols with one argument are called properties $(\mathrm{Prop})$.
 \end{definition}
@@ -398,8 +405,7 @@ Concerning syntax, we largely follow the definitions given in \cite{vankriekenUL
 
 \subsection{Tarskian Semantics}\label{subsec:tarsk-sem}
 
-\begin{definition}[{$\mathcal{T}$-interpretation of a NeSy system signature}] \ednote{ \textbf{1Fh6}: "Definition 6: The main motivation for the original ULLER was reuse of the same syntacticly specified theory + neural networks. However, if I understand correctly, the different semantics in Table 1 require difference interpretations of the computational symbols, since it depends on the choice of 
-  . Doesn't this reduce the reusability?"}
+\begin{definition}[{$\mathcal{T}$-interpretation of a NeSy system signature}]
 \label{def:monadic-model}
 Let  $(\mathcal T,\mathcal R)$ be a NeSy framework of a monad on $\mathbf{Set}$ and let \(\Sigma\) be a signature. A $\mathcal T$-interpretation $\mathcal I$ is given by
 \begin{itemize}
@@ -407,21 +413,24 @@ Let  $(\mathcal T,\mathcal R)$ be a NeSy framework of a monad on $\mathbf{Set}$ 
  \item a function $\mathcal I(f) : \mathcal I(s_1) \times \ldots \times \mathcal I(s_n) \to \mathcal I(s)$ for every (normal) function symbol $f : s_1, \ldots, s_n \to s$,
  \item a function $\mathcal I(m) : \mathcal I(s_1) \times \ldots \times \mathcal I(s_n) \to \mathcal T(\mathcal I(s))$ for every computational function symbol $m : s_1, \ldots, s_n \to s$,
  \item a function $\mathcal I(P) : \mathcal I(s_1) \times \ldots \times \mathcal I(s_n) \to \Omega$ for every predicate symbol $P : s_1, \ldots, s_n$,
-\item and a function $\mathcal I(M) : \mathcal I(s_1) \times \ldots \times \mathcal I(s_n) \to \mathcal T\Omega$ for every computational predicate symbol $M : s_1, \ldots, s_n$.\ednote{ \textbf{1Fh6}: "There are two methods for using neural networks (in functions and in predicates), which are handled quite differently. If I understand correctly, this results in behaviour that differs from the standard understanding of the frameworks discussed."} \ednote{ \textbf{1Fh6}: "As mentioned, the original ULLER did not have computational predicate symbols. Do I understand correctly the regular differentiable fuzzy logic behaviour comes from the computational predicate symbols?"}
+ \item and a function $\mathcal I(M) : \mathcal I(s_1) \times \ldots \times \mathcal I(s_n) \to \mathcal T\Omega$ for every computational predicate symbol $M : s_1, \ldots, s_n$.
+\ednote{ \textbf{1Fh6}: "There are two methods for using neural networks (in functions and in predicates), which are handled quite differently."} 
+\ednote{ \textbf{1Fh6}: "The original ULLER did not have computational predicate symbols. Do differentiable fuzzy logic behaviours come from computational predicate symbols?"}
  \end{itemize}
 In the categorical generalisation, sets are replaced by objects in $\mathcal C$ and functions are replaced by morphisms in $\mathcal C$. Therefore, a \emph{NeSy system} can be defined as a triple $(\mathcal T,\mathcal R,\mathcal I)$, where $(\mathcal T,\mathcal R)$ is a NeSy framework and $\mathcal I$ is a $\mathcal T$-interpretation.
 \end{definition}
+\ednote{ \textbf{1Fh6}: "Definition 6: The main motivation for the original ULLER was reuse of the same syntactic theory + neural networks. However, the different semantics require different interpretations of computational symbols. Doesn't this reduce reusability?"}
 
 \noindent
 In \cite{vankriekenULLERUnifiedLanguage2024}, based on an interpretation, the notion of NeSy system provides a Tarskian inductive definition $\sem{\cdot}$ of the semantics of formulas and thus it implicitly also defines the semantics of the logical symbols. The drawback of this approach is that the Tarskian semantics $\sem{\cdot}$ is inherently tied to the specific interpretation of the NeSy system. We can disentangle matters here, because we first give a semantics of the logical symbols via a NeSy framework, and based on that, the interpretation provides the semantics of the non-logical symbols. Based on this foundation, the inductive definition of the Tarskian semantics $\sem{\cdot}$ needs to be given only once, and is valid across all NeSy frameworks and systems. 
 
 
-\begin{definition}[Tarskian semantics $\sem{\cdot}$ of formulas]\label{def:Tarskian-semantics}
+\begin{definition}[Tarskian semantics $\sem{\cdot}$ of formulas]\label{def:Tarskian-semantics} \ednote{ \textbf{3Pt1}: "The categorical generalisation is hard to understand without background in category theory. Possibly, add a quick background section on Category Theory. "}
 Given a NeSy framework $(\mathcal T,\mathcal R)$, a \emph{NeSy interpretation} $\mathcal I$ over $(\mathcal T,\mathcal R)$ we can determine the interpretation morphisms:
 \begin{align*}
 \textbf{Formulas: }\sem{F}_{\mathcal I}: \mathcal{V}_F \to \mathcal T \Omega, \quad \textbf{Terms: }\sem{T}_{\mathcal I}: \mathcal{V}_T \to \mathcal{I}(s_T).
 \end{align*}
-We define $\mathcal{V}_T:=\prod_{x:t \in \Gamma_T} \mathcal{I}(t)$. Here $\Gamma_T$ is the context of T and $s_T$ is the (unique) sort of the term $T$.  Analogously $\mathcal{V}_F:=\prod_{x:t \in \Gamma_F} \mathcal{I}(t)$. Note that if $T_1$ is a subterm of $T_2$, there is a projection $\pi_{T_1,T_2}: \mathcal{V}_{T_2} \to \mathcal{V}_{T_1}$, and analogously for formulas.
+We define $\mathcal{V}_T:=\prod_{x:t \in \Gamma_T} \mathcal{I}(t)$. Here $\Gamma_T$ is the context of T and $s_T$ is the (unique) sort of the term $T$.  Analogously $\mathcal{V}_F:=\prod_{x:t \in \Gamma_F} \mathcal{I}(t)$.\ednote{ \textbf{1Fh6}: "'$s_T$ is the (unique) sort of the term $T$' how is this derived? How are the $\pi_{T_1,T_2}$ morphisms defined?"} Note that if $T_1$ is a subterm of $T_2$, there is a projection $\pi_{T_1,T_2}: \mathcal{V}_{T_2} \to \mathcal{V}_{T_1}$, and analogously for formulas.
  $\vec{T}$ stands for $T_1,\ldots,T_n$.
 Moreover, $\langle\sem{\vec{T}}_i\!\circ\!\pi_i\rangle_i=\langle
         \sem{T_1}\!\circ\!\pi_1,\dots,
@@ -563,6 +572,7 @@ $\displaystyle
 \bottomrule
 \end{tabular}
 \end{table}
+\ednote{ \textbf{sLXz}: "This is particularly problematic with the notation and the main results presented on page 6 and Table 2. Please explain the notation to the non-expert. What is T and F?"}
 
 \end{definition}
 
@@ -583,7 +593,7 @@ The (non-empty) powerset monad models non-deterministic computations, cf.\ multi
 
 \paragraph{Probabilistic Semantics}\ednote{ \textbf{1Fh6}: "For probabilistic semantics I would expect a weighted model count when using computational predicate symbols (which output distributions over true/false). However, the probabilities seem to be combined using the product algebra - So the probabilistic semantics actually acts as a fuzzy logic when using computational predicate symbols. The only way to introduce weighted model counting is via the computational function symbols. I don't think this would be intuitive for a standard NeSy person."
 } The interpretation of a function $f$ of arity $n$ is a \emph{Markov kernel}, which is a measurable map \(X \xrightarrow{q} \mathcal{G}(Y)\) where $\mathcal{G}$ denotes the \emph{Giry monad} on the category of measurable spaces denoted $\Meas$. However, $\Meas$ is not cartesian closed, so we have to generalize to the category $\mathbf{QBS}$\footnote{This category is defined and proven to be cartesian closed in \cite{heunenConvenientCategoryHigherOrder2017} and there it's also proven that $\mathbf{SMeas}$ is a full subcategory of $\mathbf{QBS}$.} of quasi-borel spaces. For simplicity of presentation, we will however mostly work within its full subcategory $\mathbf{SMeas}$ of standard measurable spaces.
-We evaluate in the Prodcut BL-Algebra on $[0,1]$ to obtain:
+We evaluate in the Product BL-Algebra on $[0,1]$ to obtain:\ednote{ \textbf{1Fh6}: "Please define the Product BL-Algebra. (Also typo: Prodcut -> Product)"}
 \begin{align}
 \sem{x:=m(\vec{T})(F)}
     &:= \int_{a \in \mathcal{I}(s_m)}^{} \sem{F}_{\nu[x\mapsto a]} \ d \rho_m( \; \cdot\mid \vec{T})(a) \label{eq:monad-integral}   \\[8pt]
@@ -610,11 +620,12 @@ We evaluate in the Prodcut BL-Algebra on $[0,1]$ to obtain:
   \sem{\top}
     := 1.
 \end{align}
+\ednote{ \textbf{1Fh6}: "Doesn't the product algebra use the Goguen implication instead of the Reichenbach implication? (Eq 4)"}
 
 \paragraph{Infinitary $\text{LTN}_p$ Semantics}
 
 The infinitary $\text{LTN}_p$ semantics is a modification of the probabilistic semantics \ednote{ \textbf{1Fh6}: "The infinitary LTN Semantics is a modification of the probabilistic semantics. This is confusing to me, LTN is a fuzzy logic framework, not a probabilistic one.
-"}, which is motivated by replacing the quantifiers in equation~\eqref{eq:prob-quant} with the $p$-means in Stable product real logic of Logic Tensor Networks \cite{DBLP:journals/ai/BadreddineGSS22}. The hyperparameter $p$ is usually increased during training, because this moves from mean (tolerant to outliers) towards maximum (logically stricter). We generalize this such that for any sort $s$ we have to provide a probability measure $\rho_s$ on $\mathcal{I}(s)$ to obtain a $p$-means for infinite domains:
+"}, which is motivated by replacing the quantifiers in equation~\eqref{eq:prob-quant} with the $p$-means in Stable product real logic of Logic Tensor Networks \cite{DBLP:journals/ai/BadreddineGSS22}.\ednote{ \textbf{sLXz}: "Consider how LTN implements the existential quantifier. This is different from Skolemization and it offers in fact a different kind of fuzzy logic-variation that could be studied by the proposed framework."} The hyperparameter $p$ is usually increased during training, because this moves from mean (tolerant to outliers) towards maximum (logically stricter). We generalize this such that for any sort $s$ we have to provide a probability measure $\rho_s$ on $\mathcal{I}(s)$ to obtain a $p$-means for infinite domains:
 
 \begin{equation}
 M_p(a_1,\dots,a_n):=\displaystyle\Bigl(\frac{1}{n}\sum_{i=1}^{n} a_i^{\,p}\Bigr)^{\!1/p}, \quad   
@@ -676,9 +687,10 @@ and for all other symbols set $\gamma(\mathcal{I}):= \mathcal{I}$. This definiti
 This gives a precise foundation for the use of $\argmax$ in the classical semantics in \cite{vankriekenULLERUnifiedLanguage2024}. 
 
 \paragraph{NeSy shifts diagram}
-This $\argmax$ shift is just one example of many possible NeSy shifts, some of which we will display in the following \emph{commutative} diagram, at least the shifts of their computational function symbols: % (check the appendix for details):
+This $\argmax$ shift is just one example of many possible NeSy shifts, some of which we will display in the following \emph{commutative} diagram, at least the shifts of their computational function symbols \ednote{ \textbf{3Pt1}: "I also found the NeSy shifts hard to understand, perhaps due to missing intuitions early on. "}: % (check the appendix for details):
 
 % https://q.uiver.app/#q=WzAsNixbMCw0LCJcXG1hdGhybXtJZH1fXFxtYXRoYmZ7U2V0fShYKShcXHRleHR7Q2xhc3NpY2FsKX0iXSxbMCwwLCIgXFxtYXRoY2Fse1B9X3tcXG5lcSBcXGVtcHR5c2V0fShYKShcXHRleHR7My12YWx1ZWQpfSJdLFsyLDAsIlxcbWF0aGNhbHtEfShYKShcXHRleHR7RGlzdHJpYnV0aW9uYWwpfSJdLFsxLDIsIlxcbWF0aGNhbHtHfShYKShcXHRleHR7UHJvYmFibGlzdGljKX0iXSxbMiw0LCJcXG1hdGhybXtJZH1fXFxtYXRoYmZ7U2V0fShYKShcXHRleHR7RnV6enkpfSJdLFszLDIsIlxcbWF0aGNhbHtPfShYKShcXHRleHR7TFROKX0iXSxbMCwxLCJcXHtcXGNkb3QgXFx9IiwxLHsic3R5bGUiOnsidGFpbCI6eyJuYW1lIjoiaG9vayIsInNpZGUiOiJ0b3AifX19XSxbMiwzLCIiLDEseyJzdHlsZSI6eyJ0YWlsIjp7Im5hbWUiOiJob29rIiwic2lkZSI6InRvcCJ9fX1dLFs0LDIsIlxcZGVsdGEiLDEseyJsYWJlbF9wb3NpdGlvbiI6MzAsInN0eWxlIjp7InRhaWwiOnsibmFtZSI6Imhvb2siLCJzaWRlIjoidG9wIn19fV0sWzAsNCwiaWQiLDEseyJzdHlsZSI6eyJ0YWlsIjp7Im5hbWUiOiJob29rIiwic2lkZSI6InRvcCJ9LCJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbMiwxLCJcXGFyZ21heCIsMSx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFswLDMsIlxcZGVsdGEiLDEseyJzdHlsZSI6eyJ0YWlsIjp7Im5hbWUiOiJob29rIiwic2lkZSI6InRvcCJ9fX1dLFsxLDMsIihcXG1hdGhybXt1bmlmfSkiLDEseyJzdHlsZSI6eyJ0YWlsIjp7Im5hbWUiOiJob29rIiwic2lkZSI6InRvcCJ9fX1dLFs0LDMsIlxcZGVsdGEiLDEseyJzdHlsZSI6eyJ0YWlsIjp7Im5hbWUiOiJob29rIiwic2lkZSI6InRvcCJ9fX1dLFszLDUsIihpZCkiLDEseyJsYWJlbF9wb3NpdGlvbiI6ODAsInN0eWxlIjp7InRhaWwiOnsibmFtZSI6Imhvb2siLCJzaWRlIjoidG9wIn0sImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dXQ==
+\ednote{ \textbf{1Fh6}: "I did not understand the NeSy shifts diagram. Where are these proven? What do the different types of arrows mean? What is id and $\delta$?"}
 \[\begin{tikzcd}[cramped,sep=scriptsize]
 	{ \mathcal{P}_{\neq \emptyset}(X)(\text{3-valued)}} && {\mathcal{D}(X)(\text{Distributional)}} \\
 	\\
@@ -706,7 +718,7 @@ But a Monte Carlo convergence theorem can easily be stated and proved. %\ednote{
 
 The ULLER language \cite{vankriekenULLERUnifiedLanguage2024} aims at a unifying foundation for neurosymbolic systems. In this paper, we have developed a new semantics for ULLER, based on Moggi's formalisation of computational effects as monads. In contrast to the original semantics, our semantics is truly modular. It is based on a notion of NeSy framework that provides the structure of the computational effects and the space of truth values. This modularity will enable a cleaner, more modular implementation of ULLER in Python \ednote{ \textbf{My3J}: "The paper would benefit from implementation examples or at least sketches demonstrating how the modular semantics could be used in practice, e.g., Python library implementation, and how existing common neurosymbolic systems can be unified under the framework."} and an easier integration of new frameworks, as well as a structured method of translating between different frameworks. Note that the distributional and probabilistic NeSy frameworks will make parameterized interpretations in the sense of \cite{vankriekenULLERUnifiedLanguage2024} differentiable and that this can be integrated by using a category of differentiable manifolds and functions.
 
-Our work suggests an analogy between ULLER's formulas $x:=m(T_1,\dots,T_n)(F)$ and Haskell's do-notation $\textbf{do } x\leftarrow m(T_1,\dots,T_n); F$ for computational effects. Inspired by this analogy, one could extend ULLER to a language with computational terms and formulas that may be nested.%\ednote{An if-then-else operator would allow to use these within computational terms. Also, we could allow computational terms $x:=m(T_1,\dots,T_n)(T)$.  Applications?}
+Our work suggests an analogy between ULLER's formulas $x:=m(T_1,\dots,T_n)(F)$ and Haskell's do-notation $\textbf{do } x\leftarrow m(T_1,\dots,T_n); F$ for computational effects. Inspired by this analogy, one could extend ULLER to a language with computational terms and formulas that may be nested. \ednote{ \textbf{sLXz}: "More detail should be provided about the last part of the paper which starts to address comparative presentation but not with sufficient clarity."} %\ednote{An if-then-else operator would allow to use these within computational terms. Also, we could allow computational terms $x:=m(T_1,\dots,T_n)(T)$.  Applications?}
 
 \acks{We thank Kai-Uwe Kühnberger for making our collaboration possible and Emile van Krieken for useful discussions. Also a big thanks to my (Daniel's) father for providing me the space-time to work on this paper.}
 
@@ -720,6 +732,7 @@ Our work suggests an analogy between ULLER's formulas $x:=m(T_1,\dots,T_n)(F)$ a
 
 \newpage
 \appendix
+\ednote{ \textbf{1Fh6}: "There is a lot of additional material in the appendices, but it is not referenced in the main text. This could help understanding where and when to read it."}
 
 \section{General note on Supplementary Material}
 
