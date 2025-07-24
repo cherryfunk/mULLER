@@ -1,6 +1,8 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
+import Data.Maybe
 
 -- algebra of truth values
 class Ord a => Aggr2SGrpBLat a where
@@ -27,8 +29,39 @@ class (Monad t, Aggr2SGrpBLat (t omega)) => NeSyFramework t omega
 instance  Aggr2SGrpBLat [Bool] where
   top = [True]
   bot = [False]
+  neg a = [not x | x<-a]
   conj a b = [x && y | x<-a, y<-b]
   disj a b = [x || y | x<-a, y<-b]
 
 instance NeSyFramework [] Bool 
   
+-- for simplicity, we use untyped FOL
+data Term = Var String
+          | Appl String [Term]
+data Formula = T | F
+             | Pred String [Term]
+             | Not Formula  
+             | And Formula Formula 
+             | Or Formula Formula
+             | Implies Formula Formula
+             | Forall String Formula
+             | Exist String Formula
+             | Comp String String [Term] Formula -- x:=m(T1,...,Tn)(F)
+               
+data Interpretation t omega a =
+     Interpretation { universe :: (Set.Set a),
+                      funcs :: Map.Map String ([a] -> a),
+                      mfuncs :: Map.Map String ([a] -> t a),
+                      preds :: Map.Map String ([a] -> omega),
+                      mpreds :: Map.Map String ([a] -> t omega) }
+
+type Valuation a = Map.Map String a
+                   
+evalT :: NeSyFramework t omega =>
+         Interpretation t omega a -> Valuation a -> Term -> a
+evalT i v (Var var) = fromJust $ Map.lookup var v
+evalT i v (Appl f ts) = undefined
+  
+evalF :: NeSyFramework t omega =>
+         Interpretation t omega a -> Valuation a -> Formula -> t omega
+evalF = undefined 
