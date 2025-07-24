@@ -1,20 +1,23 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 
+<<<<<<< HEAD
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Maybe
 
+=======
+>>>>>>> 10a8171e5841c4be30f4b179d73baa54a17f4d60
 -- algebra of truth values
 class Ord a => Aggr2SGrpBLat a where
   top, bot :: a
   neg :: a -> a
   conj, disj, implies :: a -> a -> a
-  aggrE, aggrA :: Set.Set a -> a
+  aggrE, aggrA :: [a] -> a
   -- default implementations
   neg a = a `implies` bot
   a `implies` b = (neg a) `disj` b
-  aggrE = Set.fold disj bot
-  aggrA = Set.fold conj top
+  aggrE = foldr disj bot
+  aggrA = foldr conj top
 
 -- NeSy frameworks provide an algebra on T Omega
 -- Beware that for a given t and omega, there can be only one instance
@@ -65,3 +68,6 @@ evalT i v (Appl f ts) = undefined
 evalF :: NeSyFramework t omega =>
          Interpretation t omega a -> Valuation a -> Formula -> t omega
 evalF = undefined 
+
+main :: IO ()
+main = putStrLn "NeSy framework loaded successfully"
