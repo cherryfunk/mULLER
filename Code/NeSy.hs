@@ -1,18 +1,16 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 
-import qualified Data.Set as Set
-
 -- algebra of truth values
 class Ord a => Aggr2SGrpBLat a where
   top, bot :: a
   neg :: a -> a
   conj, disj, implies :: a -> a -> a
-  aggrE, aggrA :: Set.Set a -> a
+  aggrE, aggrA :: [a] -> a
   -- default implementations
   neg a = a `implies` bot
   a `implies` b = (neg a) `disj` b
-  aggrE = Set.fold disj bot
-  aggrA = Set.fold conj top
+  aggrE = foldr disj bot
+  aggrA = foldr conj top
 
 -- NeSy frameworks provide an algebra on T Omega
 -- Beware that for a given t and omega, there can be only one instance
@@ -31,4 +29,6 @@ instance  Aggr2SGrpBLat [Bool] where
   disj a b = [x || y | x<-a, y<-b]
 
 instance NeSyFramework [] Bool 
-  
+
+main :: IO ()
+main = putStrLn "NeSy framework loaded successfully"
