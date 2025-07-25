@@ -3,21 +3,23 @@
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Maybe
+-- for specific NeSy frameworks
 import qualified Data.Set.Monad as SM
+import qualified Numeric.Probability.Distribution as Dist
 
 type Ident = String -- identifiers
 
 -- algebra of truth values
-class Ord a => Aggr2SGrpBLat a where
+class Aggr2SGrpBLat a where
   top, bot :: a
   neg :: a -> a
   conj, disj, implies :: a -> a -> a
-  aggrE, aggrA :: Set.Set a -> a
+  aggrE, aggrA :: [a] -> a
   -- default implementations
   neg a = a `implies` bot
   a `implies` b = (neg a) `disj` b
-  aggrE = Set.fold disj bot
-  aggrA = Set.fold conj top
+  aggrE = foldr disj bot
+  aggrA = foldr conj top
 
 -- NeSy frameworks provide an algebra on T Omega
 -- Beware that for a given t and omega, there can be only one instance
@@ -26,17 +28,27 @@ class Ord a => Aggr2SGrpBLat a where
 -- Another solution (which do not follow here) are identity types as in Hets
 class (Monad t, Aggr2SGrpBLat (t omega)) => NeSyFramework t omega
 
+-- Distribution instance, Omega is Bool
+newtype DBool = DBool { getDBool :: Bool } deriving (Eq, Ord, Show)
+instance Num prob => Aggr2SGrpBLat (Dist.T prob DBool) where
+  top = return $ DBool True
+  bot = return $ DBool False
+  neg a = [DBool $ not x | DBool x<-a]
+  conj a b = [DBool (x && y) | DBool x<-a, DBool y<-b]
+  disj a b = [DBool (x || y) | DBool x<-a, DBool y<-b]
+instance Num prob => NeSyFramework (Dist.T prob) DBool 
+  
 -- Non-empty powerset instance
 -- there is no standard non-empty set monad in Haskell
 -- so we use the set monad instead. Omega is Bool
-instance  Aggr2SGrpBLat (SM.Set Bool) where
-  top = SM.singleton True
-  bot = SM.singleton False
-  neg a = [not x | x<-a]
-  conj a b = [x && y | x<-a, y<-b]
-  disj a b = [x || y | x<-a, y<-b]
-
-instance NeSyFramework SM.Set Bool 
+newtype SBool = SBool { getSBool :: Bool } deriving (Eq, Ord, Show)
+instance  Aggr2SGrpBLat (SM.Set SBool) where
+  top = return $ SBool True
+  bot = return $ SBool False
+  neg a = [SBool $ not x | SBool x<-a]
+  conj a b = [SBool (x && y) | SBool x<-a, SBool y<-b]
+  disj a b = [SBool (x || y) | SBool x<-a, SBool y<-b]
+instance NeSyFramework SM.Set SBool 
   
 -- for simplicity, we use untyped FOL
 data Term = Var Ident
@@ -53,7 +65,7 @@ data Formula = T | F
              | Comp Ident Ident [Term] Formula -- x:=m(T1,...,Tn)(F)
                
 data Interpretation t omega a =
-     Interpretation { universe :: (Set.Set a),
+     Interpretation { universe :: [a],
                       funcs :: Map.Map Ident ([a] -> a),
                       mfuncs :: Map.Map Ident ([a] -> t a),
                       preds :: Map.Map Ident ([a] -> omega),
@@ -83,15 +95,18 @@ evalF i val (Not f) = neg $ evalF i val f
 evalF i val (And f1 f2) = conj (evalF i val f1) (evalF i val f2)
 evalF i val (Or f1 f2) = disj (evalF i val f1) (evalF i val f2)
 evalF i val (Implies f1 f2) = implies (evalF i val f1) (evalF i val f2)
-evalF i val (Forall var f) = aggrA $ Set.map evalAux $ universe i
+evalF i val (Forall var f) = aggrA $ map evalAux $ universe i
       where evalAux a = evalF i (Map.insert var a val) f
-evalF i val (Exists var f) = aggrE $ Set.map evalAux $ universe i
+evalF i val (Exists var f) = aggrE $ map evalAux $ universe i
       where evalAux a = evalF i (Map.insert var a val) f
 evalF i val (Comp var m ts f) = -- var:=m(ts)(f)
       do a <- m_sem $ map (evalT i val) ts
          evalF i (Map.insert var a val) f
       where m_sem = forcedLookup m (mfuncs i)
                 
-
 main :: IO ()
 main = putStrLn "NeSy framework loaded successfully"
+
+
+  
+
