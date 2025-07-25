@@ -1,12 +1,9 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 
-<<<<<<< HEAD
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Maybe
 
-=======
->>>>>>> 10a8171e5841c4be30f4b179d73baa54a17f4d60
 -- algebra of truth values
 class Ord a => Aggr2SGrpBLat a where
   top, bot :: a
@@ -59,10 +56,13 @@ data Interpretation t omega a =
                       mpreds :: Map.Map String ([a] -> t omega) }
 
 type Valuation a = Map.Map String a
-                   
+
+forcedLookup :: Ord k => k -> Map.Map k v -> v
+forcedLookup k m = fromJust $ Map.lookup k m 
+
 evalT :: NeSyFramework t omega =>
          Interpretation t omega a -> Valuation a -> Term -> a
-evalT i v (Var var) = fromJust $ Map.lookup var v
+evalT i v (Var var) = forcedLookup var v
 evalT i v (Appl f ts) = undefined
   
 evalF :: NeSyFramework t omega =>
