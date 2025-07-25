@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, MonadComprehensions #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -28,9 +28,9 @@ class (Monad t, Aggr2SGrpBLat (t omega)) => NeSyFramework t omega
 instance Monad t => Aggr2SGrpBLat (t Bool) where
   top = return True
   bot = return  False
-  neg a = [not x | x<-a]
-  conj a b = [x && y | x<-a, y<-b]
-  disj a b = [x || y | x<-a, y<-b]
+  neg a = do x<-a; return $ not x
+  conj a b = do x<-a; y<-b; return $ x && y 
+  disj a b = do x<-a; y<-b; return $ x || y 
 
 -- Distribution instance, Omega is Bool
 instance Num prob => NeSyFramework (Dist.T prob) Bool 
