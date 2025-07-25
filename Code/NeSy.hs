@@ -1,8 +1,9 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, MonadComprehensions #-}
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Maybe
+import qualified Data.Set.Monad as SM
 
 type Ident = String -- identifiers
 
@@ -27,15 +28,15 @@ class (Monad t, Aggr2SGrpBLat (t omega)) => NeSyFramework t omega
 
 -- Non-empty powerset instance
 -- there is no standard non-empty set monad in Haskell
--- so we use the list monad instead. Omega is Bool
-instance  Aggr2SGrpBLat [Bool] where
-  top = [True]
-  bot = [False]
+-- so we use the set monad instead. Omega is Bool
+instance  Aggr2SGrpBLat (SM.Set Bool) where
+  top = SM.singleton True
+  bot = SM.singleton False
   neg a = [not x | x<-a]
   conj a b = [x && y | x<-a, y<-b]
   disj a b = [x || y | x<-a, y<-b]
 
-instance NeSyFramework [] Bool 
+instance NeSyFramework SM.Set Bool 
   
 -- for simplicity, we use untyped FOL
 data Term = Var Ident
