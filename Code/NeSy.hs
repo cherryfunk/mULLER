@@ -22,33 +22,28 @@ class Aggr2SGrpBLat a where
   aggrA = foldr conj top
 
 -- NeSy frameworks provide an algebra on T Omega
--- Beware that for a given t and omega, there can be only one instance
--- If needed, use several isomorphic copies of omega to
---   distinguish several instances
--- Another solution (which do not follow here) are identity types as in Hets
 class (Monad t, Aggr2SGrpBLat (t omega)) => NeSyFramework t omega
 
 -- Distribution instance, Omega is Bool
-newtype DBool = DBool { getDBool :: Bool } deriving (Eq, Ord, Show)
-instance Num prob => Aggr2SGrpBLat (Dist.T prob DBool) where
-  top = return $ DBool True
-  bot = return $ DBool False
-  neg a = [DBool $ not x | DBool x<-a]
-  conj a b = [DBool (x && y) | DBool x<-a, DBool y<-b]
-  disj a b = [DBool (x || y) | DBool x<-a, DBool y<-b]
-instance Num prob => NeSyFramework (Dist.T prob) DBool 
+instance Num prob => Aggr2SGrpBLat (Dist.T prob Bool) where
+  top = return True
+  bot = return  False
+  neg a = [not x | x<-a]
+  conj a b = [x && y | x<-a, y<-b]
+  disj a b = [x || y | x<-a, y<-b]
+instance Num prob => NeSyFramework (Dist.T prob) Bool 
   
 -- Non-empty powerset instance
 -- there is no standard non-empty set monad in Haskell
 -- so we use the set monad instead. Omega is Bool
-newtype SBool = SBool { getSBool :: Bool } deriving (Eq, Ord, Show)
-instance  Aggr2SGrpBLat (SM.Set SBool) where
-  top = return $ SBool True
-  bot = return $ SBool False
-  neg a = [SBool $ not x | SBool x<-a]
-  conj a b = [SBool (x && y) | SBool x<-a, SBool y<-b]
-  disj a b = [SBool (x || y) | SBool x<-a, SBool y<-b]
-instance NeSyFramework SM.Set SBool 
+--newtype SBool = SBool { getSBool :: Bool } deriving (Eq, Ord, Show)
+instance  Aggr2SGrpBLat (SM.Set Bool) where
+  top = return True
+  bot = return  False
+  neg a = [not x | x<-a]
+  conj a b = [x && y | x<-a, y<-b]
+  disj a b = [x || y | x<-a, y<-b]
+instance NeSyFramework SM.Set Bool 
   
 -- for simplicity, we use untyped FOL
 data Term = Var Ident
@@ -110,25 +105,25 @@ main :: IO ()
 main = putStrLn "NeSy framework loaded successfully"
 
 -- dice example
-dieModel :: Interpretation (Dist.T Double) DBool Integer
+dieModel :: Interpretation (Dist.T Double) Bool Integer
 dieModel =  Interpretation { universe = [1..6],
                funcs = Map.fromList $ map (\x -> (show x,\_ -> x)) [1..6],
                mfuncs = Map.fromList [("die",\_ -> Dist.uniform [1..6])],
-               preds = Map.fromList[("==",\[x,y] -> DBool $ x==y),
-                                    ("even",\[x] -> DBool $ even x)],
+               preds = Map.fromList[("==",\[x,y] -> x==y),
+                                    ("even",\[x] -> even x)],
                mpreds = Map.empty }
 
 -- x:=dice() (x==6 ∧ even(x))  
 dieSen1 :: Formula  
 dieSen1 = Comp "x" "die" [] (And (Pred "==" [Var "x",Appl "6" []])
                                  (Pred "even" [Var "x"]) ) 
-d1 :: Dist.T Double DBool
+d1 :: Dist.T Double Bool
 d1 = evalF dieModel Map.empty dieSen1  
 
 -- (x:=dice() (x==6)) ∧ (x:=dice() even(x))
 dieSen2 :: Formula  
 dieSen2 = And (Comp "x" "die" [] (Pred "==" [Var "x",Appl "6" []]))
               (Comp "x" "die" [] (Pred "even" [Var "x"]))
-d2 :: Dist.T Double DBool
+d2 :: Dist.T Double Bool
 d2 = evalF dieModel Map.empty dieSen2  
 
