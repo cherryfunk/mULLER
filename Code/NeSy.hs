@@ -24,25 +24,20 @@ class Aggr2SGrpBLat a where
 -- NeSy frameworks provide an algebra on T Omega
 class (Monad t, Aggr2SGrpBLat (t omega)) => NeSyFramework t omega
 
--- Distribution instance, Omega is Bool
-instance Num prob => Aggr2SGrpBLat (Dist.T prob Bool) where
+-- generic Aggr2SGrpBLat instance for any monad
+instance Monad t => Aggr2SGrpBLat (t Bool) where
   top = return True
   bot = return  False
   neg a = [not x | x<-a]
   conj a b = [x && y | x<-a, y<-b]
   disj a b = [x || y | x<-a, y<-b]
+
+-- Distribution instance, Omega is Bool
 instance Num prob => NeSyFramework (Dist.T prob) Bool 
   
 -- Non-empty powerset instance
 -- there is no standard non-empty set monad in Haskell
 -- so we use the set monad instead. Omega is Bool
---newtype SBool = SBool { getSBool :: Bool } deriving (Eq, Ord, Show)
-instance  Aggr2SGrpBLat (SM.Set Bool) where
-  top = return True
-  bot = return  False
-  neg a = [not x | x<-a]
-  conj a b = [x && y | x<-a, y<-b]
-  disj a b = [x || y | x<-a, y<-b]
 instance NeSyFramework SM.Set Bool 
   
 -- for simplicity, we use untyped FOL
