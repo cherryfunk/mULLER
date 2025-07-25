@@ -73,9 +73,11 @@ data Interpretation t omega a =
 
 type Valuation a = Map.Map Ident a
 
--- we risk a runtime error if some identifier is not declared
-forcedLookup :: Ord k => k -> Map.Map k v -> v
-forcedLookup k m = fromJust $ Map.lookup k m 
+-- throw a useful runtime error if some identifier is not declared
+forcedLookup :: (Show k, Ord k)=> k -> Map.Map k v -> v
+forcedLookup k m = case Map.lookup k m of
+   Just x -> x
+   Nothing -> error (show k++" has not been declared")
 
 evalT :: NeSyFramework t omega =>
          Interpretation t omega a -> Valuation a -> Term -> a
