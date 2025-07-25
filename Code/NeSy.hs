@@ -117,11 +117,15 @@ dieModel =  Interpretation { universe = [1..6],
                preds = Map.fromList[("==",\[x,y] -> DBool $ x==y),
                                     ("even",\[x] -> DBool $ even x)],
                mpreds = Map.empty }
+
+-- x:=dice() (x==6 ∧ even(x))  
 dieSen1 :: Formula  
 dieSen1 = Comp "x" "die" [] (And (Pred "==" [Var "x",Appl "6" []])
                                  (Pred "even" [Var "x"]) ) 
 d1 :: Dist.T Double DBool
 d1 = evalF dieModel Map.empty dieSen1  
+
+-- (x:=dice() (x==6)) ∧ (x:=dice() even(x))
 dieSen2 :: Formula  
 dieSen2 = And (Comp "x" "die" [] (Pred "==" [Var "x",Appl "6" []]))
               (Comp "x" "die" [] (Pred "even" [Var "x"]))
