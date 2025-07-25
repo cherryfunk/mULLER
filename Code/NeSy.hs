@@ -107,6 +107,22 @@ evalF i val (Comp var m ts f) = -- var:=m(ts)(f)
 main :: IO ()
 main = putStrLn "NeSy framework loaded successfully"
 
-
-  
+-- dice example
+dieModel :: Interpretation (Dist.T Double) DBool Integer
+dieModel =  Interpretation { universe = [1..6],
+               funcs = Map.fromList $ map (\x -> (show x,\_ -> x)) [1..6],
+               mfuncs = Map.fromList [("die",\_ -> Dist.uniform [1..6])],
+               preds = Map.fromList[("==",\[x,y] -> DBool $ x==y),
+                                    ("even",\[x] -> DBool $ even x)],
+               mpreds = Map.empty }
+dieSen1 :: Formula  
+dieSen1 = Comp "x" "die" [] (And (Pred "==" [Var "x",Appl "6" []])
+                                 (Pred "even" [Var "x"]) ) 
+d1 :: Dist.T Double DBool
+d1 = evalF dieModel Map.empty dieSen1  
+dieSen2 :: Formula  
+dieSen2 = And (Comp "x" "die" [] (Pred "==" [Var "x",Appl "6" []]))
+              (Comp "x" "die" [] (Pred "even" [Var "x"]))
+d2 :: Dist.T Double DBool
+d2 = evalF dieModel Map.empty dieSen2  
 
