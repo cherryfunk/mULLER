@@ -74,25 +74,25 @@ data Interpretation t omega a =
 type Valuation a = Map.Map Ident a
 
 -- throw a useful runtime error if some identifier is not declared
-forcedLookup :: (Show k, Ord k)=> k -> Map.Map k v -> v
-forcedLookup k m = case Map.lookup k m of
+lookupId :: (Show k, Ord k)=> k -> Map.Map k v -> v
+lookupId k m = case Map.lookup k m of
    Just x -> x
    Nothing -> error (show k++" has not been declared")
 
 evalT :: NeSyFramework t omega =>
          Interpretation t omega a -> Valuation a -> Term -> a
-evalT _ val (Var var) = forcedLookup var val
+evalT _ val (Var var) = lookupId var val
 evalT i val (Appl f ts) = f_sem $ map (evalT i val) ts
-      where f_sem = forcedLookup f (funcs i)
+      where f_sem = lookupId f (funcs i)
            
 evalF :: NeSyFramework t omega =>
          Interpretation t omega a -> Valuation a -> Formula -> t omega
 evalF _ _ T = top
 evalF _ _ F = bot
 evalF i val (Pred p ts) = return $ p_sem $ map (evalT i val) ts
-      where p_sem = forcedLookup p (preds i)
+      where p_sem = lookupId p (preds i)
 evalF i val (MPred p ts) = p_sem $ map (evalT i val) ts
-      where p_sem = forcedLookup p (mpreds i)
+      where p_sem = lookupId p (mpreds i)
 evalF i val (Not f) = neg $ evalF i val f
 evalF i val (And f1 f2) = conj (evalF i val f1) (evalF i val f2)
 evalF i val (Or f1 f2) = disj (evalF i val f1) (evalF i val f2)
@@ -104,7 +104,7 @@ evalF i val (Exists var f) = aggrE $ map evalAux $ universe i
 evalF i val (Comp var m ts f) = -- var:=m(ts)(f)
       do a <- m_sem $ map (evalT i val) ts
          evalF i (Map.insert var a val) f
-      where m_sem = forcedLookup m (mfuncs i)
+      where m_sem = lookupId m (mfuncs i)
                 
 main :: IO ()
 main = putStrLn "NeSy framework loaded successfully"
