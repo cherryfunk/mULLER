@@ -1,5 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 
+-- cabal install probability set-monad
+
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Maybe
