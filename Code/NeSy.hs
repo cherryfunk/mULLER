@@ -27,7 +27,7 @@ class (Monad t, Aggr2SGrpBLat (t omega)) => NeSyFramework t omega
 -- generic Aggr2SGrpBLat instance for any monad
 instance Monad t => Aggr2SGrpBLat (t Bool) where
   top = return True
-  bot = return  False
+  bot = return False
   neg a = do x<-a; return $ not x
   conj a b = do x<-a; y<-b; return $ x && y 
   disj a b = do x<-a; y<-b; return $ x || y 
