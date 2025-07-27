@@ -1,4 +1,3 @@
-# pip install pymonad numpy scipy
 from pymonad.monad import Monad
 from typing import TypeVar, Callable, Union, List, Tuple, Optional
 import numpy as np
@@ -7,18 +6,11 @@ from scipy.stats import norm, uniform as scipy_uniform, expon, gamma
 import random
 import math
 
-T = TypeVar('T')
-U = TypeVar('U')
-
-class GiryMeasure(Monad):
+class GiryMeasure[T: float](Monad[T]):
     """
     Giry Monad for Probability Measures on Measurable Spaces
     
     Represents probability measures, supporting both discrete and continuous distributions.
-    Based on the mathematical definition:
-    - ηX(x) := δx (Dirac delta measure)
-    - δx(A) = { 1, x ∈ A; 0, x ∉ A }
-    - f*(ρ)(A) := ∫ f(x)(A) dρ(x) for f : X → GY, ρ ∈ GX, A ⊆ Y measurable
     """
     
     def __init__(self, distribution_type: str = "discrete", 

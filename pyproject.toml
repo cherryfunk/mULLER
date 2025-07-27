@@ -1,0 +1,11 @@
+[project]
+name = "muller"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "numpy>=2.3.2",
+    "pymonad>=2.4.0",
+    "scipy>=1.16.0",
+]
