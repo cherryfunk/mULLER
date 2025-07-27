@@ -35,7 +35,8 @@ instance Monad t => Aggr2SGrpBLat (t Bool) where
   neg a = do x<-a; return $ not x
   conj a b = do x<-a; y<-b; return $ x && y 
   disj a b = do x<-a; y<-b; return $ x || y 
-
+  --implies a b = do x<-a; y<-b; return $ ((not x) || y)
+  
 -- Classical instance using identity monad, Omega is Bool
 instance NeSyFramework Identity Bool 
   
