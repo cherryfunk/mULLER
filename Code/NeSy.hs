@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, RankNTypes #-}
 
 -- cabal install probability set-monad
 
@@ -12,6 +12,7 @@ import qualified Numeric.Probability.Distribution as Dist
 
 type Ident = String -- identifiers
 
+-------------------------- NeSy Frameworks ------------------------------
 -- algebra of truth values
 class Aggr2SGrpBLat a where
   top, bot :: a
@@ -45,8 +46,10 @@ instance Num prob => NeSyFramework (Dist.T prob) Bool
 -- there is no standard non-empty set monad in Haskell
 -- so we use the set monad instead. Omega is Bool
 instance NeSyFramework SM.Set Bool 
-  
--- for simplicity, we use untyped FOL
+
+-------------------------- Syntax ------------------------------
+         
+-- For simplicity, we use untyped FOL
 data Term = Var Ident
           | Appl Ident [Term]
 data Formula = T | F
@@ -59,6 +62,8 @@ data Formula = T | F
              | Forall Ident Formula
              | Exists Ident Formula
              | Comp Ident Ident [Term] Formula -- x:=m(T1,...,Tn)(F)
+
+-------------------------- Semantics ------------------------------
                
 data Interpretation t omega a =
      Interpretation { universe :: [a],
@@ -67,10 +72,32 @@ data Interpretation t omega a =
                       preds :: Map.Map Ident ([a] -> omega),
                       mpreds :: Map.Map Ident ([a] -> t omega) }
 
+type NeSyFrameworkTransformation t1 omega1 t2 omega2 =
+     forall a . Ord a => Interpretation t1 omega1 a ->
+                         Interpretation t2 omega2 a
+
+-- argmax NeSy transformation
+maximalValues :: (Num prob, Ord prob, Eq prob, Ord a) =>
+                   Dist.T prob a -> SM.Set a
+maximalValues dist = SM.fromList maxVals
+  where
+    probMap = Map.fromListWith (+) $  Dist.decons dist
+    maxProb = maximum $ Map.elems probMap
+    maxVals = map fst $ filter ((== maxProb) . snd) $ Map.toList probMap
+
+argmax ::  (Num prob, Ord prob, Eq prob) =>
+           NeSyFrameworkTransformation (Dist.T prob) Bool SM.Set Bool
+argmax i = Interpretation { universe = universe i,
+             funcs = funcs i,
+             mfuncs = Map.map (maximalValues .) $ mfuncs i,
+             preds = preds i,
+             mpreds = Map.map (maximalValues .) $ mpreds i }
+
+-- Tarskian semantics  
 type Valuation a = Map.Map Ident a
 
 -- throw a useful runtime error if some identifier is not declared
-lookupId :: (Show k, Ord k)=> k -> Map.Map k v -> v
+lookupId :: (Show k, Ord k) => k -> Map.Map k v -> v
 lookupId k m = case Map.lookup k m of
    Just x -> x
    Nothing -> error (show k++" has not been declared")
@@ -101,10 +128,9 @@ evalF i val (Comp var m ts f) = -- var:=m(ts)(f)
       do a <- m_sem $ map (evalT i val) ts
          evalF i (Map.insert var a val) f
       where m_sem = lookupId m (mfuncs i)
-                
-main :: IO ()
-main = putStrLn "NeSy framework loaded successfully"
 
+-------------------------- Examples ------------------------------
+              
 -- dice example
 dieModel :: Interpretation (Dist.T Double) Bool Integer
 dieModel =  Interpretation { universe = [1..6],
@@ -127,4 +153,12 @@ dieSen2 = And (Comp "x" "die" [] (Pred "==" [Var "x",Appl "6" []]))
               (Comp "x" "die" [] (Pred "even" [Var "x"]))
 d2 :: Dist.T Double Bool
 d2 = evalF dieModel Map.empty dieSen2  
+
+-- after transformation to classical NeSy framework
+dieModelC = argmax dieModel
+d1C = evalF dieModelC Map.empty dieSen1  
+d2C = evalF dieModelC Map.empty dieSen2
+
+main :: IO ()
+main = putStrLn "NeSy framework loaded successfully"
 
