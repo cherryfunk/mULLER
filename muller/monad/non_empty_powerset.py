@@ -4,7 +4,7 @@ from pymonad.monad import Monad
 from typing import Generic, Self, TypeVar, Callable, Set, FrozenSet, Any, Union
 import random
 
-from monad.util import ParametrizedMonad
+from muller.monad.util import ParametrizedMonad
 
 class NonEmptyPowerset[T](ParametrizedMonad[T]):
     """
@@ -35,7 +35,7 @@ class NonEmptyPowerset[T](ParametrizedMonad[T]):
         if len(value) == 0:
             raise ValueError("NonEmptyPowerset cannot be initialized with empty values")
 
-        super().__init__(self.value, None)
+        super().__init__(value, None)
 
     @classmethod
     def unit(cls, value: T) -> "NonEmptyPowerset[T]":

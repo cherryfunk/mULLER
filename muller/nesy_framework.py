@@ -1,24 +1,51 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, Type, TypeVar, assert_type, cast, overload
+from typing import Any, Callable, Type, cast, overload
+import re
 
 from pymonad.monad import Monad
 
-from .aggr2sgrpblat.aggr2sgrpblat import non_empty_set_bool
+from muller.monad.util import bind
 
-from .monad.util import bind
 
-from .non_empty_powerset_monad import NonEmptyPowerset
-
-from .aggr2sgrpblat.aggr2sgrpblat import (
+from muller.aggr2sgrpblat import (
     Aggr2SGrpBLat,
+    get_lattice,
 )
-
 
 
 Ident = str
 
-type SingleArgumentTypeFunction[I, O] = Callable[[], O] | Callable[[I], O] | Callable[[I, I], O] | Callable[[I, I, I], O]  | Callable[[I, I, I, I], O]
+def _format_function_ident(ident: str) -> str:
+    """
+    Format a function identifier with quotes if needed.
+    Functions can start with numbers or letters.
+    """
+    # Check if it's a simple lowercase identifier
+    if re.match(r'^[a-z][a-zA-Z0-9_]*$', ident):
+        return ident
+    # Check if it's a numeric identifier - functions can be numeric
+    if re.match(r'^[0-9]+$', ident):
+        return ident
+    # Otherwise, it needs quotes
+    return f"'{ident}'"
+
+def _format_predicate_ident(ident: str) -> str:
+    """
+    Format a predicate identifier with quotes if needed.
+    Predicates must start with letters, NOT numbers.
+    """
+    # Check if it's a simple lowercase identifier (predicates must start with letter)
+    if re.match(r'^[a-z][a-zA-Z0-9_]*$', ident):
+        return ident
+    # Predicates cannot be purely numeric - they need quotes
+    # Otherwise, it needs quotes
+    return f"'{ident}'"
+
+
+type SingleArgumentTypeFunction[I, O] = Callable[[], O] | Callable[[I], O] | Callable[
+    [I, I], O
+] | Callable[[I, I, I], O] | Callable[[I, I, I, I], O]
 
 
 @dataclass
@@ -37,7 +64,6 @@ class NeSyFramework[_T: Monad, _O, _R: Aggr2SGrpBLat]:
     _t: type[_T]
     _omega: type[_O]
     _r: _R
-
 
     @property
     def T(self) -> Type[_T]:
@@ -85,7 +111,6 @@ class NeSyFramework[_T: Monad, _O, _R: Aggr2SGrpBLat]:
         return m
 
 
-
 class Term(ABC):
     """
     Base class for all terms in the logic system.
@@ -112,10 +137,13 @@ class Variable(Term):
         valuation: "Valuation[A]",
     ) -> A:
         return valuation[self.ident]
+    
+    def __repr__(self) -> str:
+        return self.ident
 
 
 @dataclass
-class Application(Term):
+class FunctionApplication(Term):
     function: Ident
     arguments: list[Term]
 
@@ -128,6 +156,13 @@ class Application(Term):
         f = interpretation.functions[self.function]
         args = [a.eval(nesy, interpretation, valuation) for a in self.arguments]
         return f(*args)
+    
+    def __repr__(self) -> str:
+        args_str = ", ".join(str(arg) for arg in self.arguments)
+        formatted_function = _format_function_ident(self.function)
+        if not args_str:
+            return formatted_function
+        return f"{formatted_function}({args_str})"
 
 
 class Formula(ABC):
@@ -145,6 +180,7 @@ class Formula(ABC):
         raise NotImplementedError()
 
 
+@dataclass
 class TrueFormula(Formula):
     """
     Represents the logical constant True.
@@ -162,6 +198,7 @@ class TrueFormula(Formula):
         return nesy.R_T.top()
 
 
+@dataclass
 class FalseFormula(Formula):
     """
     Represents the logical constant False.
@@ -190,7 +227,10 @@ class Predicate(Formula):
 
     def __repr__(self):
         args_str = ", ".join(str(arg) for arg in self.arguments)
-        return f"{self.name}({args_str})"
+        formatted_name = _format_predicate_ident(self.name)
+        if not args_str:
+            return formatted_name
+        return f"{formatted_name}({args_str})"
 
     def eval[T: Monad, O, R: Aggr2SGrpBLat, A](
         self,
@@ -213,7 +253,11 @@ class MonadicPredicate(Formula):
     arguments: list[Term]
 
     def __repr__(self):
-        return f"{self.name}({self.arguments})"
+        args_str = ", ".join(str(arg) for arg in self.arguments)
+        formatted_name = _format_predicate_ident(self.name)
+        if not args_str:
+            return formatted_name
+        return f"{formatted_name}({args_str})"
 
     def eval[T: Monad, O, R: Aggr2SGrpBLat, A](
         self,
@@ -302,7 +346,7 @@ class Implication(Formula):
     consequent: Formula
 
     def __repr__(self):
-        return f"({self.antecedent} → {self.consequent})"
+        return f"({self.antecedent} -> {self.consequent})"
 
     def eval[T: Monad, O, R: Aggr2SGrpBLat, A](
         self,
@@ -327,7 +371,6 @@ class UniversalQuantification(Formula):
     def __repr__(self):
         return f"∀{self.variable} ({self.formula})"
 
-
     def eval[T: Monad, O, R: Aggr2SGrpBLat, A](
         self,
         nesy: "NeSyFramework[T, O, R]",
@@ -335,7 +378,10 @@ class UniversalQuantification(Formula):
         valuation: "Valuation[A]",
     ) -> T:
         universe = interpretation.universe
-        results = (self.formula.eval(nesy, interpretation, {**valuation, self.variable: a}) for a in universe)
+        results = (
+            self.formula.eval(nesy, interpretation, {**valuation, self.variable: a})
+            for a in universe
+        )
         return nesy.R_T.aggrA(results)
 
 
@@ -358,7 +404,10 @@ class ExistentialQuantification(Formula):
         valuation: "Valuation[A]",
     ) -> T:
         universe = interpretation.universe
-        results = (self.formula.eval(nesy, interpretation, {**valuation, self.variable: a}) for a in universe)
+        results = (
+            self.formula.eval(nesy, interpretation, {**valuation, self.variable: a})
+            for a in universe
+        )
         return nesy.R_T.aggrE(results)
 
 
@@ -371,9 +420,8 @@ class Computation(Formula):
 
     def __repr__(self):
         args_str = ", ".join(str(arg) for arg in self.arguments)
-        return f"{self.variable} := {self.function}({args_str})({self.formula})"
-    
-
+        formatted_function = _format_function_ident(self.function)
+        return f"{self.variable} := {formatted_function}({args_str})({self.formula})"
 
     def eval[T: Monad, O, R: Aggr2SGrpBLat, A](
         self,
@@ -384,7 +432,32 @@ class Computation(Formula):
         f = interpretation.mfunctions[self.function]
         args = [a.eval(nesy, interpretation, valuation) for a in self.arguments]
         result = f(*args)
-        x = bind(result, lambda res: nesy.castT( self.formula.eval(nesy, interpretation, {**valuation, self.variable: res})))
+        x = bind(
+            result,
+            lambda res: nesy.castT(
+                self.formula.eval(
+                    nesy, interpretation, {**valuation, self.variable: res}
+                )
+            ),
+        )
         return nesy.castT(x)
 
- # pyright: ignore[reportArgumentType]
+
+def get_nesy_framework(
+    monad_type: Type[Monad], omega: Type[bool] | None = None
+) -> NeSyFramework[Monad, Any, Aggr2SGrpBLat[Monad]]:
+    """
+    Create a NeSyFramework instance with the given monad type and optional omega type.
+
+    Args:
+        monad_type: The type of the monad to use.
+        omega: Optional type for the outcomes of the monadic computations.
+
+    Returns:
+        An instance of NeSyFramework with the specified monad and omega types.
+    """
+    if omega is None:
+        omega = bool  # Default to boolean outcomes if not specified
+    
+    return NeSyFramework(monad_type, omega, get_lattice(monad_type, omega))
+
