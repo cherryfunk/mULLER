@@ -129,9 +129,9 @@ evalF i val (Comp var m ts f) = -- var:=m(ts)(f)
          evalF i (Map.insert var a val) f
       where m_sem = lookupId m (mfuncs i)
 
--------------------------- Examples ------------------------------
+-------------------------- Dice example ------------------------------
               
--- dice example
+-- interpretation for dice example
 dieModel :: Interpretation (Dist.T Double) Bool Integer
 dieModel =  Interpretation { universe = [1..6],
                funcs = Map.fromList $ map (\x -> (show x,\_ -> x)) [1..6],
@@ -158,6 +158,54 @@ d2 = evalF dieModel Map.empty dieSen2
 dieModelC = argmax dieModel
 d1C = evalF dieModelC Map.empty dieSen1  
 d2C = evalF dieModelC Map.empty dieSen2
+
+-------------------------- Traffic light example ------------------------------
+              
+-- interpretation for traffic light example
+data Universe = Red | Yellow | Green | B Bool deriving (Eq, Ord, Show)
+trafficModel :: Interpretation (Dist.T Double) Bool Universe
+trafficModel =  Interpretation {
+  universe = [Red, Yellow, Green, B False, B True],
+  funcs = Map.fromList [("green",\_ -> Green)],
+  mfuncs = Map.fromList [("light",\_ ->
+              Dist.fromFreqs [(Red, 0.3),(Green, 0.6),(Yellow, 0.1)]),
+              ("driveF",\[l] -> case l of
+                  Red -> Dist.fromFreqs [(B True, 0.1),(B False, 0.9)]
+                  Yellow -> Dist.fromFreqs [(B True, 0.2),(B False, 0.8)]
+                  Green -> Dist.fromFreqs [(B True, 0.9),(B False, 0.1)])
+                    ],
+  preds = Map.fromList[
+             ("==",\[x,y] -> x==y),
+             ("eval",\[b] -> case b of
+                               B False -> False
+                               B True -> True)],
+  mpreds = Map.fromList[("driveP",\[l] -> case l of
+                  Red -> Dist.fromFreqs [(True, 0.1),(False, 0.9)]
+                  Yellow -> Dist.fromFreqs [(True, 0.2),(False, 0.8)]
+                  Green -> Dist.fromFreqs [(True, 0.9),(False, 0.1)])]}
+
+-- l:=light(), d:=driveF(l) (eval d -> l==green)
+trafficSen1 :: Formula  
+trafficSen1 = Comp "l" "light" []
+                (Comp "d" "driveF" [Var "l"]
+                   (Implies (Pred "eval" [Var "d"])
+                            (Pred "==" [Var "l",Appl "green" []])))
+t1 :: Dist.T Double Bool
+t1 = evalF trafficModel Map.empty trafficSen1
+
+-- l:=light() (driveP(l) -> l==green)
+trafficSen2 :: Formula  
+trafficSen2 = Comp "l" "light" []
+                (Implies (MPred "driveP" [Var "l"])
+                         (Pred "==" [Var "l",Appl "green" []]))
+t2 :: Dist.T Double Bool
+t2 = evalF trafficModel Map.empty trafficSen2
+
+-- after transformation to classical NeSy framework
+trafficModelC = argmax trafficModel
+t1C = evalF trafficModelC Map.empty trafficSen1
+t2C = evalF trafficModelC Map.empty trafficSen2
+
 
 main :: IO ()
 main = putStrLn "NeSy framework loaded successfully"
