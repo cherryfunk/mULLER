@@ -9,8 +9,8 @@ import Data.Maybe
 import Control.Monad.Identity
 import qualified Data.Set.Monad as SM
 import qualified Numeric.Probability.Distribution as Dist
-
-type Ident = String -- identifiers
+-- for sampling
+import System.Random
 
 -------------------------- NeSy Frameworks ------------------------------
 -- algebra of truth values
@@ -42,13 +42,15 @@ instance NeSyFramework Identity Bool
 -- Distribution instance, Omega is Bool
 instance Num prob => NeSyFramework (Dist.T prob) Bool 
 
--- Non-empty powerset instance
+-- Non-empty powerset instance (non-determinism)
 -- there is no standard non-empty set monad in Haskell
 -- so we use the set monad instead. Omega is Bool
 instance NeSyFramework SM.Set Bool 
 
 -------------------------- Syntax ------------------------------
          
+type Ident = String -- identifiers
+
 -- For simplicity, we use untyped FOL
 data Term = Var Ident
           | Appl Ident [Term]
@@ -154,7 +156,7 @@ dieSen2 = And (Comp "x" "die" [] (Pred "==" [Var "x",Appl "6" []]))
 d2 :: Dist.T Double Bool
 d2 = evalF dieModel Map.empty dieSen2  
 
--- after transformation to classical NeSy framework
+-- after transformation to non-deterministic NeSy framework
 dieModelC = argmax dieModel
 d1C = evalF dieModelC Map.empty dieSen1  
 d2C = evalF dieModelC Map.empty dieSen2
@@ -201,12 +203,28 @@ trafficSen2 = Comp "l" "light" []
 t2 :: Dist.T Double Bool
 t2 = evalF trafficModel Map.empty trafficSen2
 
--- after transformation to classical NeSy framework
+-- after transformation to non-deterministic NeSy framework
 trafficModelC = argmax trafficModel
 t1C = evalF trafficModelC Map.empty trafficSen1
 t2C = evalF trafficModelC Map.empty trafficSen2
 
+-------------------------- Random sampling -------------------------
 
-main :: IO ()
-main = putStrLn "NeSy framework loaded successfully"
+-- Sample one element uniformly from a list
+sampleUniform :: [a] -> IO a
+sampleUniform xs = do
+    index <- randomRIO (0, length xs - 1)
+    return (xs !! index)
+
+-- Sample from non-deterministic values and print result
+sample :: (Ord a, Show a) => (String, SM.Set a) -> IO ()
+sample (label,set) =
+  do sample <- sampleUniform $ SM.toList set
+     putStrLn $ label ++ ": "++ show sample
+
+main :: IO()
+main = do
+  let values = [("d1C",d1C),("d2C",d2C),("t1C",t1C),("t2C",t2C)]
+  mapM_ sample values
+
 
