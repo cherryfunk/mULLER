@@ -6,6 +6,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Maybe
 -- for specific NeSy frameworks
+import Control.Monad.Identity
 import qualified Data.Set.Monad as SM
 import qualified Numeric.Probability.Distribution as Dist
 
@@ -34,9 +35,12 @@ instance Monad t => Aggr2SGrpBLat (t Bool) where
   conj a b = do x<-a; y<-b; return $ x && y 
   disj a b = do x<-a; y<-b; return $ x || y 
 
+-- Classical instance using identity monad, Omega is Bool
+instance NeSyFramework Identity Bool 
+  
 -- Distribution instance, Omega is Bool
 instance Num prob => NeSyFramework (Dist.T prob) Bool 
-  
+
 -- Non-empty powerset instance
 -- there is no standard non-empty set monad in Haskell
 -- so we use the set monad instead. Omega is Bool
