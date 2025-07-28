@@ -1,5 +1,6 @@
 from .distribution import Prob, uniform, weighted, bernoulli
 from .non_empty_powerset import NonEmptyPowerset, singleton, from_list
+from .identity import Identity
 
 __all__ = [
     "Prob",
@@ -9,4 +10,5 @@ __all__ = [
     "NonEmptyPowerset",
     "singleton",
     "from_list",
+    "Identity",
 ]

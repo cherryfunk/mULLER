@@ -30,3 +30,8 @@ class Aggr2SGrpBLat[T](ABC):
     def aggrA(self, s: Iterable[T]) -> T:
         return reduce(lambda a, b: self.conjunction(a, b), s, self.top())
 
+
+class NeSyLogicMeta[T](ABC):
+    def as_base(self) -> 'Aggr2SGrpBLat[Monad[T]]':
+        """Cast this instance to Aggr2SGrpBLat[Monad[T]]"""
+        return cast('Aggr2SGrpBLat[Monad[T]]', self)

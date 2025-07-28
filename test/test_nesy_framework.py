@@ -1,5 +1,6 @@
 import unittest
-from typing import Dict, List, Literal
+from typing import Dict, List, Literal, cast
+from muller.logics.aggr2sgrpblat import Aggr2SGrpBLat, NeSyLogicMeta
 from muller.logics.boolean import (
     NonDeterministicBooleanLogic,
     ProbabilisticBooleanLogic,
@@ -21,11 +22,14 @@ from muller.nesy_framework import (
     ExistentialQuantification,
     Computation,
     nesy,
+    nesy_for_logic,
     nesy_framework_for_monad,
 )
 from muller.parser import parse
 from muller.monad.distribution import Prob, uniform, weighted
 from muller.monad.non_empty_powerset import NonEmptyPowerset, singleton, from_list
+
+from pymonad.monad import Monad
 
 
 class TestNeSyFramework(unittest.TestCase):
@@ -618,7 +622,42 @@ class TestNeSyFramework(unittest.TestCase):
         result = light_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertAlmostEqual(result.value[True], 0.95, places=5)
+        
+    def test_get_nesy_for_logic(self):
+        """Test getting NeSy framework for a specific logic."""
+        logic =  NonDeterministicBooleanLogic().as_base()
+        nesy_framework = nesy(logic)
+        self.assertIsInstance(nesy_framework, NeSyFramework)
+        self.assertEqual(nesy_framework.M, NonEmptyPowerset)
 
+    def test_get_nesy_for_monad_and_omega(self):
+        """Test getting NeSy framework for a specific monad and omega."""
+        
+        nesy_framework = nesy(MyMonad, bool)
+        self.assertIsInstance(nesy_framework, NeSyFramework)
+        self.assertEqual(nesy_framework.M, MyMonad)
+
+
+class MyMonad[T](Monad[T]):
+    ...
+    
+class MyProbabilityLogic(Aggr2SGrpBLat[MyMonad[bool]], NeSyLogicMeta[bool]):
+    """Custom logic for testing"""
+
+    def top(self) -> MyMonad[bool]:
+        raise NotImplementedError
+
+    def bottom(self) -> MyMonad[bool]:
+        raise NotImplementedError
+
+    def conjunction(self, a: MyMonad[bool], b: MyMonad[bool]) -> MyMonad[bool]:
+        raise NotImplementedError
+
+    def disjunction(self, a: MyMonad[bool], b: MyMonad[bool]) -> MyMonad[bool]:
+        raise NotImplementedError
+
+    
+    
 
 if __name__ == "__main__":
     unittest.main()

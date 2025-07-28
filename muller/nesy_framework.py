@@ -433,7 +433,8 @@ class Computation(Formula):
 
 
 def nesy_for_logic[O](
-    logic: Aggr2SGrpBLat[Monad[O]],
+    logic: Aggr2SGrpBLat[Monad],
+    omega: Type[O] = Type[bool]
 ) -> NeSyFramework[Monad[O], O, Aggr2SGrpBLat[Monad[O]]]:
     """
     Create a NeSyFramework instance for the given logic.
@@ -445,7 +446,7 @@ def nesy_for_logic[O](
         An instance of NeSyFramework with the logic's monad and omega type.
     """
     monad_type = type(logic.top())
-    assert issubclass(monad_type, Monad), "Logic must use a Monad type"
+    assert issubclass(monad_type, Monad), "Logic must be over a Monad type"
 
     return NeSyFramework(monad_type, logic)
 
@@ -469,14 +470,15 @@ def nesy_framework_for_monad[O](
 
 @overload
 def nesy[O](
-    logic: Aggr2SGrpBLat[Monad[O]],
+    logic: Aggr2SGrpBLat[Monad],
+    omega: Type[O] = Type[bool]
 ) -> NeSyFramework[Monad[O], O, Aggr2SGrpBLat[Monad[O]]]: ...
 @overload
 def nesy[O](
     monad_type: Type[Monad], omega: Type[O] = Type[bool]
 ) -> NeSyFramework[Monad, Any, Aggr2SGrpBLat[Monad]]: ...
 def nesy[O](  # pyright: ignore[reportInconsistentOverload]
-    arg1: Aggr2SGrpBLat[Monad[O]] | Type[Monad], omega: Type[O] | None = None
+    arg1: Aggr2SGrpBLat[Monad[O]] | Type[Monad], omega: Type[O] = Type[bool]
 ) -> NeSyFramework[Monad, Any, Aggr2SGrpBLat[Monad]]:
     """
     Create a NeSyFramework instance based on the provided argument.
@@ -490,9 +492,5 @@ def nesy[O](  # pyright: ignore[reportInconsistentOverload]
     """
     if isinstance(arg1, Aggr2SGrpBLat):
         return nesy_for_logic(arg1)
-    elif omega is not None:
-        return nesy_framework_for_monad(arg1, omega)
     else:
-        raise ValueError(
-            "If the first argument is a monad type, the second argument must be provided as omega type."
-        )
+        return nesy_framework_for_monad(arg1, omega)

@@ -1,11 +1,14 @@
-from muller.logics.aggr2sgrpblat import Aggr2SGrpBLat
+from typing import cast
+from muller.logics.aggr2sgrpblat import Aggr2SGrpBLat, NeSyLogicMeta
 from muller.monad.distribution import Prob
 from muller.monad.identity import Identity
 from muller.monad.non_empty_powerset import NonEmptyPowerset, from_list, singleton
 from muller.monad.util import bind_T, fmap_T
 
+from pymonad.monad import Monad
 
-class ClassicalBooleanLogic(Aggr2SGrpBLat[Identity[bool]]):
+
+class ClassicalBooleanLogic(Aggr2SGrpBLat[Identity[bool]], NeSyLogicMeta[bool]):
     def top(self) -> Identity[bool]:
         return Identity.insert(True)
 
@@ -21,7 +24,7 @@ class ClassicalBooleanLogic(Aggr2SGrpBLat[Identity[bool]]):
     def disjunction(self, a: Identity[bool], b: Identity[bool]) -> Identity[bool]:
         return Identity.insert(a.value or b.value)
 
-class NonDeterministicBooleanLogic(Aggr2SGrpBLat[NonEmptyPowerset[bool]]):
+class NonDeterministicBooleanLogic(Aggr2SGrpBLat[NonEmptyPowerset[bool]], NeSyLogicMeta[bool]):
     def top(self) -> NonEmptyPowerset[bool]:
         return singleton(True)
 
@@ -38,7 +41,7 @@ class NonDeterministicBooleanLogic(Aggr2SGrpBLat[NonEmptyPowerset[bool]]):
         return from_list([x or y for x in a.value for y in b.value])
 
 
-class ProbabilisticBooleanLogic(Aggr2SGrpBLat[Prob[bool]]):
+class ProbabilisticBooleanLogic(Aggr2SGrpBLat[Prob[bool]], NeSyLogicMeta[bool]):
     def top(self) -> Prob[bool]:
         return Prob({True: 1.0, False: 0.0})
 
