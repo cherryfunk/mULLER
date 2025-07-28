@@ -55,6 +55,7 @@ mpred_ident: /\$[a-z][a-zA-Z0-9_]*/ | /\$'[^']*'/
 ?atom : "T" -> true
       | "F" -> false
       | "(" formula ")"
+      | term "==" term -> equality
       | pred_ident "(" [term ("," term)*] ")" -> predicate
       | pred_ident -> predicate
       | mpred_ident "(" [term ("," term)*] ")" -> computational_predicate
@@ -140,6 +141,10 @@ class NeSyTransformer(Transformer):
         args = [arg for arg in args if arg is not None]
         # Use MonadicPredicate for computational predicates
         return MonadicPredicate(name, args)
+
+    def equality(self, children: list) -> Predicate:
+        [left, right] = children
+        return Predicate("==", [left, right])
 
     def conjunction(self, children: list) -> Conjunction:
         [left, right] = children

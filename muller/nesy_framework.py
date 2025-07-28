@@ -245,6 +245,13 @@ class Predicate(Formula):
     arguments: list[Term]
 
     def __repr__(self):
+        # Special case for equality operator: use infix notation
+        if self.name == "==" and len(self.arguments) == 2:
+            left, right = self.arguments
+            # Add parentheses for clarity, similar to other binary operators
+            return f"({left} == {right})"
+        
+        # Standard predicate representation
         args_str = ", ".join(str(arg) for arg in self.arguments)
         formatted_name = _format_predicate_ident(self.name)
         if not args_str:

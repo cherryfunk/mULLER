@@ -124,6 +124,37 @@ class ParserTestCase(TestCase):
         f = parse("T -> F")
         self.assertEqual(f, Implication(TrueFormula(), FalseFormula()))
 
+    # Test equality operator
+    def test_equality_variables(self):
+        f = parse("X == Y")
+        self.assertEqual(f, Predicate("==", [Variable("X"), Variable("Y")]))
+
+    def test_equality_variable_constant(self):
+        f = parse("X == 5")
+        expected = Predicate("==", [Variable("X"), FunctionApplication("5", [])])
+        self.assertEqual(f, expected)
+
+    def test_equality_functions(self):
+        f = parse("f(X) == g(Y)")
+        expected = Predicate("==", [
+            FunctionApplication("f", [Variable("X")]),
+            FunctionApplication("g", [Variable("Y")])
+        ])
+        self.assertEqual(f, expected)
+
+    def test_equality_with_conjunction(self):
+        f = parse("X == Y and Y == Z")
+        expected = Conjunction(
+            Predicate("==", [Variable("X"), Variable("Y")]),
+            Predicate("==", [Variable("Y"), Variable("Z")])
+        )
+        self.assertEqual(f, expected)
+
+    def test_equality_with_negation(self):
+        f = parse("not (X == Y)")
+        expected = Negation(Predicate("==", [Variable("X"), Variable("Y")]))
+        self.assertEqual(f, expected)
+
     def test_complex_logical_expression(self):
         f = parse("human(X) and mortal(Y)")
         expected = Conjunction(
