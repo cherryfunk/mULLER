@@ -1,15 +1,12 @@
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable, Type, cast, overload
-import re
 
 from pymonad.monad import Monad
 
-from muller.monad.util import bind
-
-
 from muller.logics import Aggr2SGrpBLat, get_logic
-
+from muller.monad.util import bind
 
 Ident = str
 
@@ -42,9 +39,13 @@ def _format_predicate_ident(ident: str) -> str:
     return f"'{ident}'"
 
 
-type SingleArgumentTypeFunction[I, O] = Callable[[], O] | Callable[[I], O] | Callable[
-    [I, I], O
-] | Callable[[I, I, I], O] | Callable[[I, I, I, I], O]
+type SingleArgumentTypeFunction[I, O] = (
+    Callable[[], O]
+    | Callable[[I], O]
+    | Callable[[I, I], O]
+    | Callable[[I, I, I], O]
+    | Callable[[I, I, I, I], O]
+)
 
 
 class NeSyTransformer[A, O1, O2](ABC):
@@ -250,7 +251,7 @@ class Predicate(Formula):
             left, right = self.arguments
             # Add parentheses for clarity, similar to other binary operators
             return f"({left} == {right})"
-        
+
         # Standard predicate representation
         args_str = ", ".join(str(arg) for arg in self.arguments)
         formatted_name = _format_predicate_ident(self.name)
@@ -334,9 +335,9 @@ class Conjunction(Formula):
         interpretation: "Interpretation[A, O]",
         valuation: "Valuation[A]",
     ) -> T:
-        l = self.left.eval(nesy, interpretation, valuation)
-        r = self.right.eval(nesy, interpretation, valuation)
-        return nesy.logic_T.conjunction(l, r)
+        result_left = self.left.eval(nesy, interpretation, valuation)
+        result_right = self.right.eval(nesy, interpretation, valuation)
+        return nesy.logic_T.conjunction(result_left, result_right)
 
 
 @dataclass
@@ -357,9 +358,9 @@ class Disjunction(Formula):
         interpretation: "Interpretation[A, O]",
         valuation: "Valuation[A]",
     ) -> T:
-        l = self.left.eval(nesy, interpretation, valuation)
-        r = self.right.eval(nesy, interpretation, valuation)
-        return nesy.logic_T.disjunction(l, r)
+        result_left = self.left.eval(nesy, interpretation, valuation)
+        result_right = self.right.eval(nesy, interpretation, valuation)
+        return nesy.logic_T.disjunction(result_left, result_right)
 
 
 @dataclass
@@ -380,9 +381,9 @@ class Implication(Formula):
         interpretation: "Interpretation[A, O]",
         valuation: "Valuation[A]",
     ) -> T:
-        l = self.antecedent.eval(nesy, interpretation, valuation)
-        r = self.consequent.eval(nesy, interpretation, valuation)
-        return nesy.logic_T.implies(l, r)
+        result_left = self.antecedent.eval(nesy, interpretation, valuation)
+        result_right = self.consequent.eval(nesy, interpretation, valuation)
+        return nesy.logic_T.implies(result_left, result_right)
 
 
 @dataclass

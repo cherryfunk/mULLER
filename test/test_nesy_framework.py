@@ -1,41 +1,36 @@
 import unittest
-from typing import Dict, List, Literal, cast
+
+from common import traffic_light_model
+from pymonad.monad import Monad
+
 from muller.logics.aggr2sgrpblat import Aggr2SGrpBLat, NeSyLogicMeta
 from muller.logics.boolean import (
     NonDeterministicBooleanLogic,
-    ProbabilisticBooleanLogic,
 )
+from muller.monad.distribution import Prob, uniform
+from muller.monad.non_empty_powerset import NonEmptyPowerset, from_list, singleton
 from muller.nesy_framework import (
-    NeSyFramework,
-    Interpretation,
-    Variable,
-    FunctionApplication,
-    TrueFormula,
-    FalseFormula,
-    Predicate,
-    MonadicPredicate,
-    Negation,
+    Computation,
     Conjunction,
     Disjunction,
-    Implication,
-    UniversalQuantification,
     ExistentialQuantification,
-    Computation,
+    FalseFormula,
+    FunctionApplication,
+    Interpretation,
+    MonadicPredicate,
+    Negation,
+    NeSyFramework,
+    Predicate,
+    TrueFormula,
+    UniversalQuantification,
+    Variable,
     nesy,
-    nesy_for_logic,
-    nesy_framework_for_monad,
 )
 from muller.parser import parse
-from muller.monad.distribution import Prob, uniform
-from muller.monad.non_empty_powerset import NonEmptyPowerset, singleton, from_list
 
-from pymonad.monad import Monad
 
-from common import traffic_light_model
 class TestNeSyFramework(unittest.TestCase):
     """Test suite for different NeSy systems."""
-    
-    
 
     def setUp(self):
         """Set up common test data."""
@@ -131,9 +126,7 @@ class TestNeSyFramework(unittest.TestCase):
         valuation = {}
 
         # Test universal quantification: forall X human(X)
-        forall_formula = UniversalQuantification(
-            "X", Predicate("human", [Variable("X")])
-        )
+        forall_formula = UniversalQuantification("X", Predicate("human", [Variable("X")]))
         result = forall_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertEqual(result.value[True], 1.0)  # All are human
@@ -416,7 +409,8 @@ class TestNeSyFramework(unittest.TestCase):
 
         valuation = {}
 
-        # Test sequential computations: X := confidence_level(), Y := adjust_confidence(X), high_confidence(Y)
+        # Test sequential computations:
+        # X := confidence_level(), Y := adjust_confidence(X), high_confidence(Y)
         nested_formula = Computation(
             "X",
             "confidence_level",

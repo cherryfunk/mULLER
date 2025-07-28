@@ -1,21 +1,22 @@
+from lark import Lark, Transformer
+
 from muller.nesy_framework import (
-    FunctionApplication,
+    Computation,
+    Conjunction,
+    Disjunction,
+    ExistentialQuantification,
     FalseFormula,
     Formula,
+    FunctionApplication,
+    Implication,
+    MonadicPredicate,
     Negation,
     Predicate,
     Term,
     TrueFormula,
-    Variable,
-    Conjunction,
-    Disjunction,
-    Implication,
     UniversalQuantification,
-    ExistentialQuantification,
-    Computation,
-    MonadicPredicate,
+    Variable,
 )
-from lark import Lark, Transformer
 
 parser = Lark(
     r"""
@@ -71,14 +72,19 @@ term : func_ident -> constant
      | term "." func_ident -> property
      | func_ident "(" [term ("," term)*] ")" -> function
      | var_ident -> variable
-""",
+""",  # noqa: E501
     start="formula",
 )
 
 
 class NeSyTransformer(Transformer):
-    true = lambda self, _: TrueFormula()
-    false = lambda self, _: FalseFormula()
+    def true(self, _) -> TrueFormula:
+        """Transform 'T' into a TrueFormula."""
+        return TrueFormula()
+
+    def false(self, _) -> FalseFormula:
+        """Transform 'F' into a FalseFormula."""
+        return FalseFormula()
 
     def _remove_quotes(self, ident: str) -> str:
         """Remove surrounding single quotes if present."""
@@ -113,7 +119,8 @@ class NeSyTransformer(Transformer):
     def mpred_ident(self, items):
         return self._process_monadic_ident(items[0])
 
-    variable = lambda self, items: Variable(items[0])
+    def variable(self, items):
+        return Variable(items[0])
 
     def constant(self, children: list) -> Term:
         [name] = children
@@ -172,7 +179,6 @@ class NeSyTransformer(Transformer):
         [variable, formula] = children
         return ExistentialQuantification(variable, formula)
 
-
     def computation_assignment(self, children: list) -> tuple:
         """Handle a single computation assignment like 'X := $f(args)'."""
         [variable, function, *args] = children
@@ -185,12 +191,12 @@ class NeSyTransformer(Transformer):
         # The last element is always the formula
         # All other elements are computation assignments (tuples)
         [*assignments, formula] = children
-        
+
         # Build nested computations from right to left
         result_formula = formula
         for variable, function, args in reversed(assignments):
             result_formula = Computation(variable, function, args, result_formula)
-        
+
         return result_formula
 
 

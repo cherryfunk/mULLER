@@ -1,13 +1,12 @@
+import unittest
+
+from common import traffic_light_model
+
 from muller.monad.distribution import Prob
 from muller.monad.non_empty_powerset import NonEmptyPowerset
 from muller.nesy_framework import Interpretation, nesy
 from muller.parser import parse
 from muller.transformation import argmax
-
-from common import traffic_light_model
-
-
-import unittest
 
 
 class TestTransformation(unittest.TestCase):
@@ -159,7 +158,7 @@ class TestTransformation(unittest.TestCase):
         result_false = nondet_interpretation.mpreds["certain_false"](*["alice"])
         self.assertIsInstance(result_false, NonEmptyPowerset)
         self.assertEqual(set(result_false.value), {False})
-        
+
     def test_traffic_light_example(self):
         """Test argmax with a traffic light example."""
         traffic_interpretation = traffic_light_model
@@ -174,7 +173,7 @@ class TestTransformation(unittest.TestCase):
         result = f.eval(self.prob_nesy, nondet_interpretation, {})
         self.assertIsInstance(result, NonEmptyPowerset)
         self.assertSetEqual(set(result.value), {True})
-        
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,7 @@
 # pip install pymonad
+from typing import Callable, FrozenSet, Iterable
+
 from pymonad.monad import Monad
-from typing import Generic, Iterable, TypeVar, Callable, Set, FrozenSet, Any, Union
-import random
 
 ParametrizedMonad = Monad
 
@@ -37,7 +37,7 @@ class Powerset[T](Monad[T]):
         """
         return cls({value})
 
-    def bind[S](self, kleisli_function: Callable[[T], "Powerset[S]"]) -> "Powerset[S]": # pyright: ignore[reportIncompatibleMethodOverride] This is the correct signature for bind # fmt: skip
+    def bind[S](self, kleisli_function: Callable[[T], "Powerset[S]"]) -> "Powerset[S]":  # pyright: ignore[reportIncompatibleMethodOverride] This is the correct signature for bind # fmt: skip
         """
         Monadic bind operation (Kleisli extension).
 

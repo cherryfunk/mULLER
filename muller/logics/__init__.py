@@ -1,20 +1,22 @@
-from functools import cache, lru_cache
-from itertools import chain
 import sys
+from functools import lru_cache
+from itertools import chain
 from types import get_original_bases
+
 from pymonad.monad import Monad
 
 import muller.logics
+
 from .aggr2sgrpblat import Aggr2SGrpBLat
 from .boolean import (
+    ClassicalBooleanLogic,
     NonDeterministicBooleanLogic,
     ProbabilisticBooleanLogic,
-    ClassicalBooleanLogic,
 )
 from .priest import (
+    ClassicalPriestLogic,
     NonDeterministicPriestLogic,
     ProbabilisticPriestLogic,
-    ClassicalPriestLogic,
 )
 
 
@@ -37,7 +39,8 @@ def get_logic[T: Monad, O](
         if isinstance(val, type) and hasattr(val, "__module__"):
             # Check if it's a subclass of Aggr2SGrpBLat
             if issubclass(val, Aggr2SGrpBLat):
-                # Find the class in the inheritance hierarchy that directly inherits from Aggr2SGrpBLat with generic parameters
+                # Find the class in the inheritance hierarchy that directly inherits
+                # from Aggr2SGrpBLat with generic parameters
                 def find_aggr2sgrpblat_base(cls) -> type | None:
                     if any(base is Aggr2SGrpBLat for base in cls.__bases__):
                         return cls
@@ -56,7 +59,9 @@ def get_logic[T: Monad, O](
                     val = generic_base_class
 
                 # Check if it's a subclass of Aggr2SGrpBLat
-                original_bases = get_original_bases(val) if hasattr(val, "__bases__") else []
+                original_bases = (
+                    get_original_bases(val) if hasattr(val, "__bases__") else []
+                )
                 base = next(
                     (
                         base
@@ -71,7 +76,6 @@ def get_logic[T: Monad, O](
 
                 # Check if the base is Aggr2SGrpBLat with a generic parameter
                 if base is not None:
-
                     monad_arg = base.__args__[0]
 
                     # Check if the monad type matches our target T
@@ -82,7 +86,6 @@ def get_logic[T: Monad, O](
                         and len(monad_arg.__args__) > 0
                         and monad_arg.__args__[0] is omega
                     ):
-
                         # Return an instance of the matching class
                         return val()
 

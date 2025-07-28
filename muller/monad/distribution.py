@@ -1,8 +1,9 @@
 # pip install pymonad
-from pymonad.monad import Monad
-from collections import defaultdict
-from typing import TypeVar, Callable, Dict, Tuple, Any
 import random
+from collections import defaultdict
+from typing import Any, Callable, Dict, Tuple
+
+from pymonad.monad import Monad
 
 
 class Prob[T](Monad[T]):
@@ -38,7 +39,7 @@ class Prob[T](Monad[T]):
         """
         return cls({value: 1.0})
 
-    def bind[S](self, kleisli_function: Callable[[T], 'Prob[S]']) -> 'Prob[S]': # pyright: ignore[reportIncompatibleMethodOverride] This is the correct signature for bind # fmt: skip
+    def bind[S](self, kleisli_function: Callable[[T], 'Prob[S]']) -> 'Prob[S]':  # pyright: ignore[reportIncompatibleMethodOverride] This is the correct signature for bind # fmt: skip
         """
         Monadic bind operation (>>=).
 
@@ -96,7 +97,6 @@ class Prob[T](Monad[T]):
         filtered = {v: p for v, p in self.value.items() if predicate(v)}
         return Prob(filtered)
 
-    
     def max_probability(self) -> float:
         """Get the maximum probability value"""
         return max(self.value.values()) if self.value else 0.0
@@ -128,4 +128,3 @@ def weighted(pairs: list[Tuple[Any, float]]) -> Prob:
 def bernoulli(p: float, true_val=True, false_val=False) -> Prob:
     """Create Bernoulli distribution."""
     return Prob({true_val: p, false_val: 1 - p})
-

@@ -1,27 +1,28 @@
-from typing import cast
 import unittest
+from typing import cast
+from unittest import TestCase
+
+from lark import LarkError
+
 from muller.nesy_framework import (
-    FalseFormula,
-    Predicate,
-    TrueFormula,
-    Negation,
-    Variable,
+    Computation,
     Conjunction,
     Disjunction,
-    Implication,
-    UniversalQuantification,
     ExistentialQuantification,
+    FalseFormula,
     FunctionApplication,
-    Computation,
+    Implication,
     MonadicPredicate,
+    Negation,
+    Predicate,
+    TrueFormula,
+    UniversalQuantification,
+    Variable,
 )
 from muller.parser import parse
-from unittest import TestCase
-from lark import LarkError
 
 
 class ParserTestCase(TestCase):
-
     def test_true(self):
         f = parse("T")
         self.assertEqual(f, TrueFormula())
@@ -136,17 +137,20 @@ class ParserTestCase(TestCase):
 
     def test_equality_functions(self):
         f = parse("f(X) == g(Y)")
-        expected = Predicate("==", [
-            FunctionApplication("f", [Variable("X")]),
-            FunctionApplication("g", [Variable("Y")])
-        ])
+        expected = Predicate(
+            "==",
+            [
+                FunctionApplication("f", [Variable("X")]),
+                FunctionApplication("g", [Variable("Y")]),
+            ],
+        )
         self.assertEqual(f, expected)
 
     def test_equality_with_conjunction(self):
         f = parse("X == Y and Y == Z")
         expected = Conjunction(
             Predicate("==", [Variable("X"), Variable("Y")]),
-            Predicate("==", [Variable("Y"), Variable("Z")])
+            Predicate("==", [Variable("Y"), Variable("Z")]),
         )
         self.assertEqual(f, expected)
 
@@ -353,9 +357,7 @@ class ParserTestCase(TestCase):
     # Test string identifiers - now we support complex identifiers in single quotes
     def test_string_identifier(self):
         f = parse("'is greater than'(X, Y)")
-        self.assertEqual(
-            f, Predicate("is greater than", [Variable("X"), Variable("Y")])
-        )
+        self.assertEqual(f, Predicate("is greater than", [Variable("X"), Variable("Y")]))
 
     def test_complex_predicate_names(self):
         f = parse("'has property'(X)")
@@ -451,9 +453,7 @@ class ParserTestCase(TestCase):
     # Negative tests - verify grammar rejects invalid patterns
     def test_reject_lowercase_variable(self):
         # Variables must start with uppercase, lowercase should be parsed as constants
-        f = parse(
-            "human(person)"
-        )  # 'person' should be parsed as constant, not variable
+        f = parse("human(person)")  # 'person' should be parsed as constant, not variable
         expected = Predicate("human", [FunctionApplication("person", [])])
         self.assertEqual(f, expected)
 
@@ -616,11 +616,12 @@ class ParserTestCase(TestCase):
         """Test the formal syntax with nested parentheses."""
         f = parse("X := $a()(Y := $b(X)(p(X, Y)))")
         expected = Computation(
-            "X", "a", [],
+            "X",
+            "a",
+            [],
             Computation(
-                "Y", "b", [Variable("X")],
-                Predicate("p", [Variable("X"), Variable("Y")])
-            )
+                "Y", "b", [Variable("X")], Predicate("p", [Variable("X"), Variable("Y")])
+            ),
         )
         self.assertEqual(f, expected)
 
@@ -628,11 +629,12 @@ class ParserTestCase(TestCase):
         """Test the syntactic sugar form with comma separation."""
         f = parse("X := $a(), Y := $b(X)(p(X, Y))")
         expected = Computation(
-            "X", "a", [],
+            "X",
+            "a",
+            [],
             Computation(
-                "Y", "b", [Variable("X")],
-                Predicate("p", [Variable("X"), Variable("Y")])
-            )
+                "Y", "b", [Variable("X")], Predicate("p", [Variable("X"), Variable("Y")])
+            ),
         )
         self.assertEqual(f, expected)
 
@@ -646,14 +648,20 @@ class ParserTestCase(TestCase):
         """Test three consecutive computations in formal syntax."""
         f = parse("X := $a()(Y := $b(X)(Z := $c(X, Y)(p(X, Y, Z))))")
         expected = Computation(
-            "X", "a", [],
+            "X",
+            "a",
+            [],
             Computation(
-                "Y", "b", [Variable("X")],
+                "Y",
+                "b",
+                [Variable("X")],
                 Computation(
-                    "Z", "c", [Variable("X"), Variable("Y")],
-                    Predicate("p", [Variable("X"), Variable("Y"), Variable("Z")])
-                )
-            )
+                    "Z",
+                    "c",
+                    [Variable("X"), Variable("Y")],
+                    Predicate("p", [Variable("X"), Variable("Y"), Variable("Z")]),
+                ),
+            ),
         )
         self.assertEqual(f, expected)
 
@@ -661,14 +669,17 @@ class ParserTestCase(TestCase):
         """Test formal syntax with complex logical formula."""
         f = parse("X := $a()(Y := $b(X)(p(X) and q(Y)))")
         expected = Computation(
-            "X", "a", [],
+            "X",
+            "a",
+            [],
             Computation(
-                "Y", "b", [Variable("X")],
+                "Y",
+                "b",
+                [Variable("X")],
                 Conjunction(
-                    Predicate("p", [Variable("X")]),
-                    Predicate("q", [Variable("Y")])
-                )
-            )
+                    Predicate("p", [Variable("X")]), Predicate("q", [Variable("Y")])
+                ),
+            ),
         )
         self.assertEqual(f, expected)
 
@@ -676,14 +687,20 @@ class ParserTestCase(TestCase):
         """Test three consecutive computations in syntactic sugar form."""
         f = parse("X := $a(), Y := $b(X), Z := $c(X, Y)(p(X, Y, Z))")
         expected = Computation(
-            "X", "a", [],
+            "X",
+            "a",
+            [],
             Computation(
-                "Y", "b", [Variable("X")],
+                "Y",
+                "b",
+                [Variable("X")],
                 Computation(
-                    "Z", "c", [Variable("X"), Variable("Y")],
-                    Predicate("p", [Variable("X"), Variable("Y"), Variable("Z")])
-                )
-            )
+                    "Z",
+                    "c",
+                    [Variable("X"), Variable("Y")],
+                    Predicate("p", [Variable("X"), Variable("Y"), Variable("Z")]),
+                ),
+            ),
         )
         self.assertEqual(f, expected)
 

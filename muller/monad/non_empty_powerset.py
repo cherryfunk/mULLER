@@ -1,10 +1,8 @@
 # pip install pymonad
-from abc import ABC, abstractmethod
-from pymonad.monad import Monad
-from typing import Generic, Self, TypeVar, Callable, Set, FrozenSet, Any, Union
-import random
+from typing import Callable, FrozenSet, Set, Union
 
 from muller.monad.util import ParametrizedMonad
+
 
 class NonEmptyPowerset[T](ParametrizedMonad[T]):
     """
@@ -51,10 +49,8 @@ class NonEmptyPowerset[T](ParametrizedMonad[T]):
         """
         return cls({value})
 
-    # fmt: off
-    def bind[S](self, kleisli_function: Callable[[T], "NonEmptyPowerset[S]"]) -> "NonEmptyPowerset[S]": # pyright: ignore[reportIncompatibleMethodOverride] Python doesn't support Self[S] or other forms of changing type variables in method signatures
+    def bind[S](self, kleisli_function: Callable[[T], "NonEmptyPowerset[S]"]) -> "NonEmptyPowerset[S]":  # pyright: ignore[reportIncompatibleMethodOverride] Python doesn't support Self[S] or other forms of changing type variables in method signatures # fmt: skip # noqa: E501
         return join(self.map(kleisli_function))
-    # fmt: on
 
     def map[S](self, function: Callable[[T], S]) -> "NonEmptyPowerset[S]":
         return NonEmptyPowerset([function(x) for x in self.value])
@@ -63,10 +59,9 @@ class NonEmptyPowerset[T](ParametrizedMonad[T]):
         sorted_values = sorted(self.value, key=str)
         return f"NonEmptyPowerset({set(sorted_values)})"
 
+
 def join[T](monad: NonEmptyPowerset[NonEmptyPowerset[T]]) -> NonEmptyPowerset[T]:
-    return NonEmptyPowerset(
-        [element for sets in monad.value for element in sets.value]
-    )
+    return NonEmptyPowerset([element for sets in monad.value for element in sets.value])
 
 
 # Convenience functions for creating common non-empty powersets
@@ -107,5 +102,3 @@ def choice[T](option: T, *options: T) -> NonEmptyPowerset[T]:
         ValueError: If no options provided
     """
     return NonEmptyPowerset(list((option, *options)))
-
-

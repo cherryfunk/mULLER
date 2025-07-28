@@ -1,11 +1,11 @@
-from pymonad.monad import Monad
+from abc import ABC, abstractmethod
 from functools import reduce
 from typing import Iterable, cast
 
-from abc import ABC, abstractmethod
+from pymonad.monad import Monad
 
 
-class Aggr2SGrpBLat[T](ABC):    
+class Aggr2SGrpBLat[T](ABC):
     @abstractmethod
     def top(self) -> T: ...
 
@@ -32,6 +32,6 @@ class Aggr2SGrpBLat[T](ABC):
 
 
 class NeSyLogicMeta[T](ABC):
-    def as_base(self) -> 'Aggr2SGrpBLat[Monad[T]]':
+    def as_base(self) -> "Aggr2SGrpBLat[Monad[T]]":
         """Cast this instance to Aggr2SGrpBLat[Monad[T]]"""
-        return cast('Aggr2SGrpBLat[Monad[T]]', self)
+        return cast("Aggr2SGrpBLat[Monad[T]]", self)
