@@ -23,14 +23,14 @@ The framework supports formulas of the form `x := m(T₁, ..., Tₙ)(F)` where `
 ### Install from source
 
 ```bash
-git clone https://github.com/your-username/mULLER.git
+git clone https://github.com/cherryfunk/mULLER.git
 cd mULLER
 uv pip install -e .
 ```
 
 ### Install from GitHub
 ```bash
-uv pip install git+https://github.com/your-username/mULLER.git
+uv pip install git+https://github.com/cherryfunk/mULLER.git
 ```
 
 ### Dependencies
