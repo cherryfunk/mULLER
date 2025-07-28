@@ -26,14 +26,16 @@ from muller.nesy_framework import (
     nesy_framework_for_monad,
 )
 from muller.parser import parse
-from muller.monad.distribution import Prob, uniform, weighted
+from muller.monad.distribution import Prob, uniform
 from muller.monad.non_empty_powerset import NonEmptyPowerset, singleton, from_list
 
 from pymonad.monad import Monad
 
-
+from common import traffic_light_model
 class TestNeSyFramework(unittest.TestCase):
     """Test suite for different NeSy systems."""
+    
+    
 
     def setUp(self):
         """Set up common test data."""
@@ -513,134 +515,45 @@ class TestNeSyFramework(unittest.TestCase):
 
     def test_traffic_light_example1(self):
         """Test a traffic light example."""
-        interpretation = Interpretation(
-            universe=["red", "green", "yellow", False, True],
-            functions={
-                "green": lambda: "green",
-                "red": lambda: "red",
-                "yellow": lambda: "yellow",
-            },
-            mfunctions={
-                "light": lambda: weighted(
-                    [("red", 0.3), ("green", 0.6), ("yellow", 0.1)]
-                ),
-                "driveF": lambda l: (
-                    weighted([(True, 0.1), (False, 0.9)])
-                    if l == "red"
-                    else (
-                        weighted([(True, 0.2), (False, 0.8)])
-                        if l == "yellow"
-                        else (
-                            weighted([(True, 0.9), (False, 0.1)])
-                            if l == "green"
-                            else Prob({})
-                        )
-                    )
-                ),
-            },
-            preds={
-                "equals": lambda a, b: a == b,
-                "eval": lambda x: x == True,
-            },
-            mpreds={
-                "driveP": lambda l: (
-                    weighted([(True, 0.1), (False, 0.9)])
-                    if l == "red"
-                    else (
-                        weighted([(True, 0.2), (False, 0.8)])
-                        if l == "yellow"
-                        else (
-                            weighted([(True, 0.9), (False, 0.1)])
-                            if l == "green"
-                            else Prob({})
-                        )
-                    )
-                )
-            },
-        )
 
         valuation = {}
 
         # Test monadic predicate for traffic light
-        light_formula = parse("L := $light()(D := $driveF(L) (eval(D) -> equals(L, green)))")
-        result = light_formula.eval(self.prob_nesy, interpretation, valuation)
+        light_formula = parse(
+            "L := $light()(D := $driveF(L) (eval(D) -> equals(L, green)))"
+        )
+        result = light_formula.eval(self.prob_nesy, traffic_light_model, valuation)
         self.assertIsInstance(result, Prob)
         self.assertAlmostEqual(result.value[True], 0.95, places=5)
 
     def test_traffic_light_example2(self):
         """Test a traffic light example."""
-        interpretation: Interpretation[Literal["red", "green", "yellow", True, False], bool] = Interpretation(
-            universe=["red", "green", "yellow", False, True],
-            functions={
-                "green": lambda: "green",
-                "red": lambda: "red",
-                "yellow": lambda: "yellow",
-            },
-            mfunctions={
-                "light": lambda: weighted(
-                    [("red", 0.3), ("green", 0.6), ("yellow", 0.1)]
-                ),
-                "driveF": lambda l: (
-                    weighted([(True, 0.1), (False, 0.9)])
-                    if l == "red"
-                    else (
-                        weighted([(True, 0.2), (False, 0.8)])
-                        if l == "yellow"
-                        else (
-                            weighted([(True, 0.9), (False, 0.1)])
-                            if l == "green"
-                            else Prob({})
-                        )
-                    )
-                ),
-            },
-            preds={
-                "equals": lambda a, b: a == b,
-                "eval": lambda x: x == True,
-            },
-            mpreds={
-                "driveP": lambda l: (
-                    weighted([(True, 0.1), (False, 0.9)])
-                    if l == "red"
-                    else (
-                        weighted([(True, 0.2), (False, 0.8)])
-                        if l == "yellow"
-                        else (
-                            weighted([(True, 0.9), (False, 0.1)])
-                            if l == "green"
-                            else Prob({})
-                        )
-                    )
-                )
-            },
-        )
-
         valuation = {}
 
         # Test monadic predicate for traffic light
         light_formula = parse("L := $light() ($driveP(L) -> equals(L, green))")
-        result = light_formula.eval(self.prob_nesy, interpretation, valuation)
+        result = light_formula.eval(self.prob_nesy, traffic_light_model, valuation)
         self.assertIsInstance(result, Prob)
         self.assertAlmostEqual(result.value[True], 0.95, places=5)
-        
+
     def test_get_nesy_for_logic(self):
         """Test getting NeSy framework for a specific logic."""
-        logic =  NonDeterministicBooleanLogic().as_base()
+        logic = NonDeterministicBooleanLogic().as_base()
         nesy_framework = nesy(logic)
         self.assertIsInstance(nesy_framework, NeSyFramework)
         self.assertEqual(nesy_framework.M, NonEmptyPowerset)
 
     def test_get_nesy_for_monad_and_omega(self):
         """Test getting NeSy framework for a specific monad and omega."""
-        
+
         nesy_framework = nesy(MyMonad, bool)
         self.assertIsInstance(nesy_framework, NeSyFramework)
         self.assertEqual(nesy_framework.M, MyMonad)
 
 
-class MyMonad[T](Monad[T]):
-    ...
-    
+class MyMonad[T](Monad[T]): ...
+
+
 class MyProbabilityLogic(Aggr2SGrpBLat[MyMonad[bool]], NeSyLogicMeta[bool]):
     """Custom logic for testing"""
 
@@ -656,8 +569,6 @@ class MyProbabilityLogic(Aggr2SGrpBLat[MyMonad[bool]], NeSyLogicMeta[bool]):
     def disjunction(self, a: MyMonad[bool], b: MyMonad[bool]) -> MyMonad[bool]:
         raise NotImplementedError
 
-    
-    
 
 if __name__ == "__main__":
     unittest.main()

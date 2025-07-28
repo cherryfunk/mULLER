@@ -96,6 +96,18 @@ class Prob[T](Monad[T]):
         filtered = {v: p for v, p in self.value.items() if predicate(v)}
         return Prob(filtered)
 
+    
+    def max_probability(self) -> float:
+        """Get the maximum probability value"""
+        return max(self.value.values()) if self.value else 0.0
+
+    def argmax(self) -> list[T]:
+        """Get outcomes with maximum probability"""
+        if not self.value:
+            return []
+        max_prob = self.max_probability()
+        return [k for k, v in self.value.items() if v >= max_prob - 1e-5]
+
 
 # Convenience functions for creating common distributions
 

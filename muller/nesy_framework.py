@@ -47,6 +47,31 @@ type SingleArgumentTypeFunction[I, O] = Callable[[], O] | Callable[[I], O] | Cal
 ] | Callable[[I, I, I], O] | Callable[[I, I, I, I], O]
 
 
+class NeSyTransformer[A, O1, O2](ABC):
+    """
+    Base class for transformations in the NeSy framework.
+    Transformations can be applied to interpretations to produce new interpretations.
+    """
+
+    @abstractmethod
+    def __call__(
+        self, interpretation: "Interpretation[A, O1]"
+    ) -> "Interpretation[A, O2]":
+        """
+        Apply the transformation to the given interpretation.
+
+        Args:
+            interpretation: The interpretation to transform.
+
+        Returns:
+            A new interpretation after applying the transformation.
+        """
+        raise NotImplementedError()
+
+
+NeSyTransformation = NeSyTransformer
+
+
 @dataclass
 class Interpretation[A, O]:
     universe: list[A]
@@ -54,6 +79,11 @@ class Interpretation[A, O]:
     mfunctions: dict[Ident, SingleArgumentTypeFunction[A, Monad[A]]]
     preds: dict[Ident, SingleArgumentTypeFunction[A, O]]
     mpreds: dict[Ident, SingleArgumentTypeFunction[A, Monad[O]]]
+
+    def transform[P](
+        self, transformation: NeSyTransformation[A, O, P]
+    ) -> "Interpretation[A, P]":
+        return transformation(self)
 
 
 type Valuation[A] = dict[Ident, A]
@@ -433,8 +463,7 @@ class Computation(Formula):
 
 
 def nesy_for_logic[O](
-    logic: Aggr2SGrpBLat[Monad],
-    omega: Type[O] = Type[bool]
+    logic: Aggr2SGrpBLat[Monad], omega: Type[O] = Type[bool]
 ) -> NeSyFramework[Monad[O], O, Aggr2SGrpBLat[Monad[O]]]:
     """
     Create a NeSyFramework instance for the given logic.
@@ -470,8 +499,7 @@ def nesy_framework_for_monad[O](
 
 @overload
 def nesy[O](
-    logic: Aggr2SGrpBLat[Monad],
-    omega: Type[O] = Type[bool]
+    logic: Aggr2SGrpBLat[Monad], omega: Type[O] = Type[bool]
 ) -> NeSyFramework[Monad[O], O, Aggr2SGrpBLat[Monad[O]]]: ...
 @overload
 def nesy[O](

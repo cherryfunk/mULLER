@@ -494,16 +494,12 @@ def argmax_transform(interp: Interpretation) -> Interpretation:
     """Transform probabilistic interpretation to non-deterministic"""
     new_mfuncs = {}
     for name, func in interp.mfuncs.items():
-        def wrapped_func(args, original_func=func):
-            prob_result = original_func(args)
-            return maximal_values(prob_result)
+        wrapped_func = lambda *args: maximal_values(func(*args))
         new_mfuncs[name] = wrapped_func
     
     new_mpreds = {}
     for name, pred in interp.mpreds.items():
-        def wrapped_pred(args, original_pred=pred):
-            prob_result = original_pred(args)
-            return maximal_values(prob_result)
+        wrapped_pred = lambda *args: maximal_values(pred(*args))
         new_mpreds[name] = wrapped_pred
     
     # Keep original predicates and functions unchanged

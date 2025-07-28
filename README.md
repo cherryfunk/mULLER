@@ -48,6 +48,7 @@ The package automatically installs the following dependencies:
 ```python
 from muller import nesy, parse, Prob, uniform, weighted
 from muller import NeSyFramework, Interpretation
+from muller.transformation import argmax  # For transformations between frameworks
 
 # Create a probabilistic NeSy framework
 prob_framework = nesy(Prob, bool)
@@ -168,6 +169,22 @@ Parses a first-order logic formula string into an AST.
 
 **Returns:** Formula AST that can be evaluated
 
+### Transformations
+
+#### `argmax()`
+Transformation that converts probabilistic interpretations to non-deterministic ones by selecting values with maximum probability.
+
+**Usage:**
+```python
+from muller.transformation import argmax
+nondet_interpretation = prob_interpretation.transform(argmax())
+```
+
+**Features:**
+- Converts `Prob[T]` to `NonEmptyPowerset[T]`
+- Handles probability ties by including all maximal values
+- Preserves regular functions and predicates
+
 ### Monads
 
 #### `Prob`
@@ -224,6 +241,56 @@ class MyCustomLogic(Aggr2SGrpBLat[MyCustomMonad[bool]]):
 # Use with mULLER
 logic = MyCustomLogic()
 custom_framework = nesy(logic)
+```
+
+### Transformations
+
+mULLER supports systematic transformations between semantic frameworks, converting interpretations from one monad to another.
+
+#### Using Built-in Transformations
+
+```python
+from muller.transformation import argmax
+
+# Apply argmax to convert probabilistic to non-deterministic
+prob_interpretation = Interpretation(...)  # Your probabilistic interpretation
+nondet_interpretation = prob_interpretation.transform(argmax())
+```
+
+The `argmax` transformation selects values with maximum probability, handling ties by including all maximal values.
+
+#### Custom Transformations
+
+Create custom transformations by inheriting from `NeSyTransformer`:
+
+```python
+from muller.nesy_framework import NeSyTransformer, Interpretation
+
+class MyTransformer[A, B, C](NeSyTransformer[A, B, C]):
+    def __call__(self, interpretation: Interpretation[A, B]) -> Interpretation[A, C]:
+        # Transform monadic functions/predicates as needed
+        transformed_mfunctions = {}
+        for name, func in interpretation.mfunctions.items():
+            def transform_function(original_func):
+                def wrapper(*args):
+                    result = original_func(*args)
+                    # Apply your transformation logic here
+                    return your_transformation(result)
+                return wrapper
+            transformed_mfunctions[name] = transform_function(func)
+        
+        # Similar for mpreds...
+        return Interpretation(
+            universe=interpretation.universe,
+            functions=interpretation.functions,  # Usually preserved
+            mfunctions=transformed_mfunctions,
+            preds=interpretation.preds,  # Usually preserved
+            mpreds=transformed_mpreds,
+        )
+
+# Use your custom transformer
+my_transformer = MyTransformer()
+transformed_interpretation = interpretation.transform(my_transformer)
 ```
 
 ## Examples and Tests
