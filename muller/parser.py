@@ -49,12 +49,18 @@ mpred_ident: /\$[a-z][a-zA-Z0-9_]*/ | /\$'[^']*'/
             | "forall" var_ident quantified -> forall
             | computation
 
-?computation : var_ident ":=" mfunc_ident "(" [term ("," term)*] ")" "(" formula ")" -> computation
+?computation : computation_sequence
              | atom
+
+?computation_sequence : computation_assignment ("," computation_assignment)* "(" formula ")" -> computation_sequence
+                     | computation_assignment
+
+?computation_assignment : var_ident ":=" mfunc_ident "(" [term ("," term)*] ")" -> computation_assignment
 
 ?atom : "T" -> true
       | "F" -> false
       | "(" formula ")"
+      | "(" computation_assignment ")" "(" formula ")" -> parenthesized_computation
       | term "==" term -> equality
       | pred_ident "(" [term ("," term)*] ")" -> predicate
       | pred_ident -> predicate
@@ -166,14 +172,26 @@ class NeSyTransformer(Transformer):
         [variable, formula] = children
         return ExistentialQuantification(variable, formula)
 
-    def computation(self, children: list) -> Computation:
-        [variable, function, *args_and_formula] = children
-        # The last element is always the formula, everything else are args
-        formula = args_and_formula[-1]
-        args = args_and_formula[:-1]
+
+    def computation_assignment(self, children: list) -> tuple:
+        """Handle a single computation assignment like 'X := $f(args)'."""
+        [variable, function, *args] = children
         # Filter out None values that come from empty optional groups
         args = [arg for arg in args if arg is not None]
-        return Computation(variable, function, args, formula)
+        return (variable, function, args)
+
+    def computation_sequence(self, children: list) -> Computation:
+        """Handle a sequence of computation assignments followed by a formula."""
+        # The last element is always the formula
+        # All other elements are computation assignments (tuples)
+        [*assignments, formula] = children
+        
+        # Build nested computations from right to left
+        result_formula = formula
+        for variable, function, args in reversed(assignments):
+            result_formula = Computation(variable, function, args, result_formula)
+        
+        return result_formula
 
 
 def parse(formula: str) -> Formula:

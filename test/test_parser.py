@@ -611,6 +611,82 @@ class ParserTestCase(TestCase):
         )
         self.assertEqual(f, expected)
 
+    # Test syntactic sugar for consequent computations
+    def test_computation_sequence_formal(self):
+        """Test the formal syntax with nested parentheses."""
+        f = parse("X := $a()(Y := $b(X)(p(X, Y)))")
+        expected = Computation(
+            "X", "a", [],
+            Computation(
+                "Y", "b", [Variable("X")],
+                Predicate("p", [Variable("X"), Variable("Y")])
+            )
+        )
+        self.assertEqual(f, expected)
+
+    def test_computation_sequence_syntactic_sugar(self):
+        """Test the syntactic sugar form with comma separation."""
+        f = parse("X := $a(), Y := $b(X)(p(X, Y))")
+        expected = Computation(
+            "X", "a", [],
+            Computation(
+                "Y", "b", [Variable("X")],
+                Predicate("p", [Variable("X"), Variable("Y")])
+            )
+        )
+        self.assertEqual(f, expected)
+
+    def test_computation_sequence_equivalence(self):
+        """Test that syntactic sugar and formal forms are equivalent."""
+        formal = parse("X := $a()(Y := $b(X)(p(X, Y)))")
+        sugar = parse("X := $a(), Y := $b(X)(p(X, Y))")
+        self.assertEqual(formal, sugar)
+
+    def test_computation_sequence_three_computations(self):
+        """Test three consecutive computations in formal syntax."""
+        f = parse("X := $a()(Y := $b(X)(Z := $c(X, Y)(p(X, Y, Z))))")
+        expected = Computation(
+            "X", "a", [],
+            Computation(
+                "Y", "b", [Variable("X")],
+                Computation(
+                    "Z", "c", [Variable("X"), Variable("Y")],
+                    Predicate("p", [Variable("X"), Variable("Y"), Variable("Z")])
+                )
+            )
+        )
+        self.assertEqual(f, expected)
+
+    def test_computation_sequence_with_complex_formula(self):
+        """Test formal syntax with complex logical formula."""
+        f = parse("X := $a()(Y := $b(X)(p(X) and q(Y)))")
+        expected = Computation(
+            "X", "a", [],
+            Computation(
+                "Y", "b", [Variable("X")],
+                Conjunction(
+                    Predicate("p", [Variable("X")]),
+                    Predicate("q", [Variable("Y")])
+                )
+            )
+        )
+        self.assertEqual(f, expected)
+
+    def test_computation_sequence_three_computations_sugar(self):
+        """Test three consecutive computations in syntactic sugar form."""
+        f = parse("X := $a(), Y := $b(X), Z := $c(X, Y)(p(X, Y, Z))")
+        expected = Computation(
+            "X", "a", [],
+            Computation(
+                "Y", "b", [Variable("X")],
+                Computation(
+                    "Z", "c", [Variable("X"), Variable("Y")],
+                    Predicate("p", [Variable("X"), Variable("Y"), Variable("Z")])
+                )
+            )
+        )
+        self.assertEqual(f, expected)
+
 
 if __name__ == "__main__":
     unittest.main()
