@@ -1,10 +1,8 @@
-from types import UnionType
-from typing import Any, TypeIs, cast
+from typing import cast
 import unittest
 from muller.nesy_framework import (
     FalseFormula,
     Predicate,
-    Term,
     TrueFormula,
     Negation,
     Variable,
