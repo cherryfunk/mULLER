@@ -22,5 +22,33 @@ include = ["muller*"]
 [dependency-groups]
 dev = [
     "coverage>=7.10.1",
+    "pytest>=8.0.0",
+    "ruff>=0.8.0",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+extend-select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings  
+    "F",  # Pyflakes
+    "I",  # isort
+]
+ignore = [
+
+]
+
+[tool.coverage.run]
+source = ["muller"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
 ]
 

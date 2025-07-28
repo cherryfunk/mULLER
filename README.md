@@ -17,7 +17,7 @@ The framework supports formulas of the form `x := m(T₁, ..., Tₙ)(F)` where `
 
 ### Prerequisites
 
-- Python 3.13 or higher
+- Python 3.12 or higher
 - uv package manager
 
 ### Install from source
@@ -308,9 +308,6 @@ python -m pytest test/
 
 Contributions are welcome! Please feel free to submit issues, feature requests, or pull requests.
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Citation
 
