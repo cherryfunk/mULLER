@@ -8,13 +8,11 @@ from pymonad.monad import Monad
 from muller.monad.util import bind
 
 
-from muller.aggr2sgrpblat import (
-    Aggr2SGrpBLat,
-    get_lattice,
-)
+from muller.logics import Aggr2SGrpBLat, get_logic
 
 
 Ident = str
+
 
 def _format_function_ident(ident: str) -> str:
     """
@@ -22,13 +20,14 @@ def _format_function_ident(ident: str) -> str:
     Functions can start with numbers or letters.
     """
     # Check if it's a simple lowercase identifier
-    if re.match(r'^[a-z][a-zA-Z0-9_]*$', ident):
+    if re.match(r"^[a-z][a-zA-Z0-9_]*$", ident):
         return ident
     # Check if it's a numeric identifier - functions can be numeric
-    if re.match(r'^[0-9]+$', ident):
+    if re.match(r"^[0-9]+$", ident):
         return ident
     # Otherwise, it needs quotes
     return f"'{ident}'"
+
 
 def _format_predicate_ident(ident: str) -> str:
     """
@@ -36,7 +35,7 @@ def _format_predicate_ident(ident: str) -> str:
     Predicates must start with letters, NOT numbers.
     """
     # Check if it's a simple lowercase identifier (predicates must start with letter)
-    if re.match(r'^[a-z][a-zA-Z0-9_]*$', ident):
+    if re.match(r"^[a-z][a-zA-Z0-9_]*$", ident):
         return ident
     # Predicates cannot be purely numeric - they need quotes
     # Otherwise, it needs quotes
@@ -61,43 +60,33 @@ type Valuation[A] = dict[Ident, A]
 
 
 class NeSyFramework[_T: Monad, _O, _R: Aggr2SGrpBLat]:
-    _t: type[_T]
-    _omega: type[_O]
-    _r: _R
+    _monad: Type[_T]
+    _logic: _R
 
     @property
-    def T(self) -> Type[_T]:
-        return self._t
+    def M(self) -> Type[Monad[_O]]:
+        return self._monad
 
     @property
-    def T_O(self) -> Type[Monad[_O]]:
-        return self._t
+    def logic(self) -> Aggr2SGrpBLat[Monad[_O]]:
+        return self._logic
 
     @property
-    def R(self) -> _R:
-        return self._r
-
-    @property
-    def R_O(self) -> Aggr2SGrpBLat[Monad[_O]]:
-        return self._r
-
-    @property
-    def R_T(self) -> Aggr2SGrpBLat[_T]:
-        return self._r
+    def logic_T(self) -> Aggr2SGrpBLat[_T]:
+        return self._logic
 
     def __init__(
         self,
-        monad_type: type[_T],
-        omega: type[_O],
-        r: Aggr2SGrpBLat[Monad[_O]],
+        monad: type[_T],
+        logic: Aggr2SGrpBLat[Monad[_O]],
     ) -> None:
-        self._t = monad_type
-        self._omega = omega
-        self._r = cast(_R, r)
+        self._monad = monad
+
+        self._logic = cast(_R, logic)
 
     def unitT(self, value: _O) -> _T:
         """Returns a monadic value of type 'T' with the value 'value' in it."""
-        return cast(_T, self.T.insert(value))
+        return cast(_T, self.M.insert(value))
 
     @overload
     def castT(self, m: _T) -> Monad[_O]:
@@ -137,7 +126,7 @@ class Variable(Term):
         valuation: "Valuation[A]",
     ) -> A:
         return valuation[self.ident]
-    
+
     def __repr__(self) -> str:
         return self.ident
 
@@ -156,7 +145,7 @@ class FunctionApplication(Term):
         f = interpretation.functions[self.function]
         args = [a.eval(nesy, interpretation, valuation) for a in self.arguments]
         return f(*args)
-    
+
     def __repr__(self) -> str:
         args_str = ", ".join(str(arg) for arg in self.arguments)
         formatted_function = _format_function_ident(self.function)
@@ -195,7 +184,7 @@ class TrueFormula(Formula):
         interpretation: "Interpretation[A, O]",
         valuation: "Valuation[A]",
     ) -> T:
-        return nesy.R_T.top()
+        return nesy.logic_T.top()
 
 
 @dataclass
@@ -213,7 +202,7 @@ class FalseFormula(Formula):
         interpretation: "Interpretation[A, O]",
         valuation: "Valuation[A]",
     ) -> T:
-        return nesy.R_T.bottom()
+        return nesy.logic_T.bottom()
 
 
 @dataclass
@@ -287,7 +276,7 @@ class Negation(Formula):
         interpretation: "Interpretation[A, O]",
         valuation: "Valuation[A]",
     ) -> T:
-        return nesy.R_T.neg(self.formula.eval(nesy, interpretation, valuation))
+        return nesy.logic_T.neg(self.formula.eval(nesy, interpretation, valuation))
 
 
 @dataclass
@@ -310,7 +299,7 @@ class Conjunction(Formula):
     ) -> T:
         l = self.left.eval(nesy, interpretation, valuation)
         r = self.right.eval(nesy, interpretation, valuation)
-        return nesy.R_T.conjunction(l, r)
+        return nesy.logic_T.conjunction(l, r)
 
 
 @dataclass
@@ -333,7 +322,7 @@ class Disjunction(Formula):
     ) -> T:
         l = self.left.eval(nesy, interpretation, valuation)
         r = self.right.eval(nesy, interpretation, valuation)
-        return nesy.R_T.disjunction(l, r)
+        return nesy.logic_T.disjunction(l, r)
 
 
 @dataclass
@@ -356,7 +345,7 @@ class Implication(Formula):
     ) -> T:
         l = self.antecedent.eval(nesy, interpretation, valuation)
         r = self.consequent.eval(nesy, interpretation, valuation)
-        return nesy.R_T.implies(l, r)
+        return nesy.logic_T.implies(l, r)
 
 
 @dataclass
@@ -382,7 +371,7 @@ class UniversalQuantification(Formula):
             self.formula.eval(nesy, interpretation, {**valuation, self.variable: a})
             for a in universe
         )
-        return nesy.R_T.aggrA(results)
+        return nesy.logic_T.aggrA(results)
 
 
 @dataclass
@@ -408,7 +397,7 @@ class ExistentialQuantification(Formula):
             self.formula.eval(nesy, interpretation, {**valuation, self.variable: a})
             for a in universe
         )
-        return nesy.R_T.aggrE(results)
+        return nesy.logic_T.aggrE(results)
 
 
 @dataclass
@@ -443,8 +432,26 @@ class Computation(Formula):
         return nesy.castT(x)
 
 
-def get_nesy_framework(
-    monad_type: Type[Monad], omega: Type[bool] | None = None
+def nesy_for_logic[O](
+    logic: Aggr2SGrpBLat[Monad[O]],
+) -> NeSyFramework[Monad[O], O, Aggr2SGrpBLat[Monad[O]]]:
+    """
+    Create a NeSyFramework instance for the given logic.
+
+    Args:
+        logic: An instance of Aggr2SGrpBLat representing the logic.
+
+    Returns:
+        An instance of NeSyFramework with the logic's monad and omega type.
+    """
+    monad_type = type(logic.top())
+    assert issubclass(monad_type, Monad), "Logic must use a Monad type"
+
+    return NeSyFramework(monad_type, logic)
+
+
+def nesy_framework_for_monad[O](
+    monad_type: Type[Monad], omega: Type[O] = Type[bool]
 ) -> NeSyFramework[Monad, Any, Aggr2SGrpBLat[Monad]]:
     """
     Create a NeSyFramework instance with the given monad type and optional omega type.
@@ -456,8 +463,36 @@ def get_nesy_framework(
     Returns:
         An instance of NeSyFramework with the specified monad and omega types.
     """
-    if omega is None:
-        omega = bool  # Default to boolean outcomes if not specified
-    
-    return NeSyFramework(monad_type, omega, get_lattice(monad_type, omega))
 
+    return NeSyFramework(monad_type, get_logic(monad_type, omega))
+
+
+@overload
+def nesy[O](
+    logic: Aggr2SGrpBLat[Monad[O]],
+) -> NeSyFramework[Monad[O], O, Aggr2SGrpBLat[Monad[O]]]: ...
+@overload
+def nesy[O](
+    monad_type: Type[Monad], omega: Type[O] = Type[bool]
+) -> NeSyFramework[Monad, Any, Aggr2SGrpBLat[Monad]]: ...
+def nesy[O](  # pyright: ignore[reportInconsistentOverload]
+    arg1: Aggr2SGrpBLat[Monad[O]] | Type[Monad], omega: Type[O] | None = None
+) -> NeSyFramework[Monad, Any, Aggr2SGrpBLat[Monad]]:
+    """
+    Create a NeSyFramework instance based on the provided argument.
+
+    Args:
+        arg1: Either an instance of Aggr2SGrpBLat or a monad type.
+        omega: Optional type for the outcomes of the monadic computations.
+
+    Returns:
+        An instance of NeSyFramework.
+    """
+    if isinstance(arg1, Aggr2SGrpBLat):
+        return nesy_for_logic(arg1)
+    elif omega is not None:
+        return nesy_framework_for_monad(arg1, omega)
+    else:
+        raise ValueError(
+            "If the first argument is a monad type, the second argument must be provided as omega type."
+        )

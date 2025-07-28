@@ -499,3 +499,22 @@ class ParserTestCase(TestCase):
             parse("FORALL X human(X)")  # Should be 'forall'
         with self.assertRaises(LarkError):
             parse("EXISTS X human(X)")  # Should be 'exists'
+            
+    def test_traffic_light_example1(self):
+        # Test a more complex example with traffic light logic
+        f = parse("L := $light()(D := $driveF(L) (eval(D) -> equals(L, green)))")
+
+        expected = Computation("L", "light", [],
+                       Computation("D", "driveF", [Variable("L")],
+                           Implication(Predicate("eval", [Variable("D")]),
+                                  Predicate("equals", [Variable("L"), FunctionApplication("green", [])]))))
+        self.assertEqual(f, expected)
+            
+    def test_traffic_light_example2(self):
+        # Test a more complex example with traffic light logic
+        f = parse("L := $light() ($driveP(L) -> equals(L, green))")
+        
+        expected = Computation("L", "light", [],
+                       Implication(MonadicPredicate("driveP", [Variable("L")]),
+                                   Predicate("equals", [Variable("L"), FunctionApplication("green", [])])))
+        self.assertEqual(f, expected)

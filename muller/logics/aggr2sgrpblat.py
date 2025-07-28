@@ -1,10 +1,11 @@
+from pymonad.monad import Monad
 from functools import reduce
-from typing import Iterable
+from typing import Iterable, cast
 
 from abc import ABC, abstractmethod
 
 
-class Aggr2SGrpBLat[T](ABC):
+class Aggr2SGrpBLat[T](ABC):    
     @abstractmethod
     def top(self) -> T: ...
 
@@ -28,3 +29,4 @@ class Aggr2SGrpBLat[T](ABC):
 
     def aggrA(self, s: Iterable[T]) -> T:
         return reduce(lambda a, b: self.conjunction(a, b), s, self.top())
+

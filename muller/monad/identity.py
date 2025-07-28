@@ -17,8 +17,8 @@ class Identity[T](Monad[T]):
         Args:
             value: The value to wrap
         """
-        self.value = value
-    
+        super().__init__(value, None)
+
     @classmethod
     def insert(cls, value: T) -> 'Identity':
         """

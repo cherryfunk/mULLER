@@ -1,10 +1,13 @@
 import unittest
-from typing import Dict, List
-from muller.aggr2sgrpblat.boolean import NonEmptyPowersetBoolDoubleSemiGroupBoundedLattice, ProbBoolDoubleSemiGroupBoundedLattice
+from typing import Dict, List, Literal
+from muller.logics.boolean import (
+    NonDeterministicBooleanLogic,
+    ProbabilisticBooleanLogic,
+)
 from muller.nesy_framework import (
-    NeSyFramework, 
-    Interpretation, 
-    Variable, 
+    NeSyFramework,
+    Interpretation,
+    Variable,
     FunctionApplication,
     TrueFormula,
     FalseFormula,
@@ -17,57 +20,55 @@ from muller.nesy_framework import (
     UniversalQuantification,
     ExistentialQuantification,
     Computation,
-    get_nesy_framework
+    nesy,
+    nesy_framework_for_monad,
 )
 from muller.parser import parse
-from muller.monad.distribution import Prob, uniform
+from muller.monad.distribution import Prob, uniform, weighted
 from muller.monad.non_empty_powerset import NonEmptyPowerset, singleton, from_list
 
 
 class TestNeSyFramework(unittest.TestCase):
     """Test suite for different NeSy systems."""
-    
+
     def setUp(self):
         """Set up common test data."""
         # Simple universe for testing
         self.universe = ["alice", "bob", "charlie"]
-        
+
         # Probabilistic NeSy system
-        self.prob_nesy = get_nesy_framework(Prob, bool)
+        self.prob_nesy = nesy(Prob, bool)
 
         # Non-deterministic NeSy system
-        self.nondet_nesy = get_nesy_framework(NonEmptyPowerset, bool)
+        self.nondet_nesy = nesy(NonEmptyPowerset, bool)
 
     def test_probabilistic_basic_formulas(self):
         """Test basic formulas in probabilistic logic."""
         interpretation = Interpretation(
             universe=self.universe,
-            functions={
-                "alice": lambda: "alice",
-                "bob": lambda: "bob"
-            },
+            functions={"alice": lambda: "alice", "bob": lambda: "bob"},
             mfunctions={},
             preds={
                 "human": lambda x: x in ["alice", "bob", "charlie"],
-                "likes": lambda x, y: (x, y) in [("alice", "bob"), ("bob", "alice")]
+                "likes": lambda x, y: (x, y) in [("alice", "bob"), ("bob", "alice")],
             },
-            mpreds={}
+            mpreds={},
         )
-        
+
         valuation = {"X": "alice", "Y": "bob"}
-        
+
         # Test True formula
         true_formula = TrueFormula()
         result = true_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertEqual(result.value[True], 1.0)
-        
+
         # Test False formula
         false_formula = FalseFormula()
         result = false_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertEqual(result.value[False], 1.0)
-        
+
         # Test predicate
         human_formula = Predicate("human", [Variable("X")])
         result = human_formula.eval(self.prob_nesy, interpretation, valuation)
@@ -84,22 +85,24 @@ class TestNeSyFramework(unittest.TestCase):
             mfunctions={},
             preds={
                 "parent": lambda x, y: (x, y) in [("bob", "alice"), ("charlie", "bob")],
-                "male": lambda x: x in ["bob", "charlie"]
+                "male": lambda x: x in ["bob", "charlie"],
             },
-            mpreds={}
+            mpreds={},
         )
-        
+
         valuation = {"X": "alice", "Y": "bob"}
-        
+
         # Test conjunction: parent(Y, X) and male(Y)
         conj_formula = Conjunction(
             Predicate("parent", [Variable("Y"), Variable("X")]),
-            Predicate("male", [Variable("Y")])
+            Predicate("male", [Variable("Y")]),
         )
         result = conj_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
-        self.assertEqual(result.value[True], 1.0)  # Both parent(bob, alice) and male(bob) are true
-        
+        self.assertEqual(
+            result.value[True], 1.0
+        )  # Both parent(bob, alice) and male(bob) are true
+
         # Test negation
         not_male = Negation(Predicate("male", [Variable("X")]))
         result = not_male.eval(self.prob_nesy, interpretation, valuation)
@@ -110,32 +113,28 @@ class TestNeSyFramework(unittest.TestCase):
         """Test quantification in probabilistic logic."""
         interpretation = Interpretation(
             universe=["alice", "bob"],
-            functions={
-                "alice": lambda: "alice"  # Add alice as a constant function
-            },
+            functions={"alice": lambda: "alice"},  # Add alice as a constant function
             mfunctions={},
             preds={
                 "human": lambda x: True,  # Everyone is human
-                "likes": lambda x, y: x == "alice"  # Only alice likes anyone
+                "likes": lambda x, y: x == "alice",  # Only alice likes anyone
             },
-            mpreds={}
+            mpreds={},
         )
-        
+
         valuation = {}
-        
+
         # Test universal quantification: forall X human(X)
         forall_formula = UniversalQuantification(
-            "X", 
-            Predicate("human", [Variable("X")])
+            "X", Predicate("human", [Variable("X")])
         )
         result = forall_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertEqual(result.value[True], 1.0)  # All are human
-        
+
         # Test existential quantification: exists X likes(X alice)
         exists_formula = ExistentialQuantification(
-            "X",
-            Predicate("likes", [Variable("X"), FunctionApplication("alice", [])])
+            "X", Predicate("likes", [Variable("X"), FunctionApplication("alice", [])])
         )
         result = exists_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
@@ -146,30 +145,28 @@ class TestNeSyFramework(unittest.TestCase):
         interpretation = Interpretation(
             universe=["alice", "bob"],
             functions={},
-            mfunctions={
-                "coin_flip": lambda: Prob({"alice": 0.5, "bob": 0.5})
-            },
+            mfunctions={"coin_flip": lambda: Prob({"alice": 0.5, "bob": 0.5})},
             preds={},
             mpreds={
-                "probably_tall": lambda x: Prob({True: 0.8, False: 0.2}) if x == "alice" 
-                                        else Prob({True: 0.3, False: 0.7})
-            }
+                "probably_tall": lambda x: (
+                    Prob({True: 0.8, False: 0.2})
+                    if x == "alice"
+                    else Prob({True: 0.3, False: 0.7})
+                )
+            },
         )
-        
+
         valuation = {"X": "alice"}
-        
+
         # Test monadic predicate
         prob_formula = MonadicPredicate("probably_tall", [Variable("X")])
         result = prob_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertAlmostEqual(result.value[True], 0.8, places=2)
-        
+
         # Test computation
         comp_formula = Computation(
-            "Y",
-            "coin_flip", 
-            [],
-            MonadicPredicate("probably_tall", [Variable("Y")])
+            "Y", "coin_flip", [], MonadicPredicate("probably_tall", [Variable("Y")])
         )
         result = comp_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
@@ -182,30 +179,26 @@ class TestNeSyFramework(unittest.TestCase):
         interpretation = Interpretation(
             universe=["alice", "bob"],
             functions={},
-            mfunctions={
-                "choose_person": lambda: from_list(["alice", "bob"])
-            },
+            mfunctions={"choose_person": lambda: from_list(["alice", "bob"])},
             preds={},
             mpreds={
-                "might_be_tall": lambda x: from_list([True, False]) if x == "alice"
-                                        else singleton(False)
-            }
+                "might_be_tall": lambda x: (
+                    from_list([True, False]) if x == "alice" else singleton(False)
+                )
+            },
         )
-        
+
         valuation = {"X": "alice"}
-        
+
         # Test monadic predicate
         nondet_formula = MonadicPredicate("might_be_tall", [Variable("X")])
         result = nondet_formula.eval(self.nondet_nesy, interpretation, valuation)
         self.assertIsInstance(result, NonEmptyPowerset)
         self.assertEqual(result.value, frozenset([True, False]))
-        
+
         # Test computation
         comp_formula = Computation(
-            "Y",
-            "choose_person",
-            [],
-            MonadicPredicate("might_be_tall", [Variable("Y")])
+            "Y", "choose_person", [], MonadicPredicate("might_be_tall", [Variable("Y")])
         )
         result = comp_formula.eval(self.nondet_nesy, interpretation, valuation)
         self.assertIsInstance(result, NonEmptyPowerset)
@@ -217,24 +210,25 @@ class TestNeSyFramework(unittest.TestCase):
         interpretation = Interpretation(
             universe=["alice", "bob"],
             functions={},
-            mfunctions={
-                "random_person": lambda: Prob({"alice": 0.6, "bob": 0.4})
-            },
+            mfunctions={"random_person": lambda: Prob({"alice": 0.6, "bob": 0.4})},
             preds={},
             mpreds={
-                "tall": lambda x: Prob({True: 0.7, False: 0.3}) if x == "alice" 
-                              else Prob({True: 0.4, False: 0.6})
-            }
+                "tall": lambda x: (
+                    Prob({True: 0.7, False: 0.3})
+                    if x == "alice"
+                    else Prob({True: 0.4, False: 0.6})
+                )
+            },
         )
-        
+
         valuation = {"X": "alice"}
-        
+
         # Test monadic predicate parsing (using $ prefix)
         formula = parse("$tall(X)")
         result = formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertAlmostEqual(result.value[True], 0.7, places=2)
-        
+
         # Test computation parsing
         formula = parse("Y := $random_person()($tall(Y))")
         result = formula.eval(self.prob_nesy, interpretation, valuation)
@@ -248,30 +242,30 @@ class TestNeSyFramework(unittest.TestCase):
             universe=["alice", "bob", "charlie"],
             functions={
                 "alice": lambda: "alice",
-                "father": lambda x: "bob" if x == "alice" else "charlie"
+                "father": lambda x: "bob" if x == "alice" else "charlie",
             },
             mfunctions={},
             preds={
                 "human": lambda x: x in ["alice", "bob", "charlie"],
-                "parent": lambda x, y: (x, y) in [("bob", "alice"), ("charlie", "bob")]
+                "parent": lambda x, y: (x, y) in [("bob", "alice"), ("charlie", "bob")],
             },
-            mpreds={}
+            mpreds={},
         )
-        
+
         valuation = {"X": "alice", "Y": "bob", "Z": "charlie"}
-        
+
         # Test simple predicate parsing
         formula = parse("human(alice)")
         result = formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertEqual(result.value[True], 1.0)
-        
+
         # Test complex formula parsing
         formula = parse("human(X) and parent(Y, X)")
         result = formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertEqual(result.value[True], 1.0)
-        
+
         # Test implication
         formula = parse("human(X) -> parent(Y, X)")
         result = formula.eval(self.prob_nesy, interpretation, valuation)
@@ -284,22 +278,19 @@ class TestNeSyFramework(unittest.TestCase):
             universe=["alice", "bob"],
             functions={},
             mfunctions={},
-            preds={
-                "human": lambda x: True,
-                "mortal": lambda x: True
-            },
-            mpreds={}
+            preds={"human": lambda x: True, "mortal": lambda x: True},
+            mpreds={},
         )
-        
+
         valuation = {}
-        
+
         # Test universal quantification
         formula = parse("forall X (human(X) -> mortal(X))")
         result = formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertEqual(result.value[True], 1.0)
-        
-        # Test existential quantification  
+
+        # Test existential quantification
         formula = parse("exists X human(X)")
         result = formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
@@ -311,22 +302,22 @@ class TestNeSyFramework(unittest.TestCase):
             universe=["alice", "bob", "charlie"],
             functions={
                 "father": lambda x: {"alice": "bob", "bob": "charlie"}.get(x, "alice"),
-                "mother": lambda x: {"alice": "charlie", "bob": "alice"}.get(x, "bob")
+                "mother": lambda x: {"alice": "charlie", "bob": "alice"}.get(x, "bob"),
             },
             mfunctions={},
-            preds={
-                "human": lambda x: x in ["alice", "bob", "charlie"]
-            },
-            mpreds={}
+            preds={"human": lambda x: x in ["alice", "bob", "charlie"]},
+            mpreds={},
         )
-        
+
         valuation = {"X": "alice"}
-        
+
         # Test function application in predicate
         formula = parse("human(father(X))")
         result = formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
-        self.assertEqual(result.value[True], 1.0)  # human(father(alice)) = human(bob) = True
+        self.assertEqual(
+            result.value[True], 1.0
+        )  # human(father(alice)) = human(bob) = True
 
     def test_edge_cases(self):
         """Test edge cases and error conditions."""
@@ -335,18 +326,18 @@ class TestNeSyFramework(unittest.TestCase):
             functions={},
             mfunctions={},
             preds={},
-            mpreds={}
+            mpreds={},
         )
-        
+
         valuation = {}
-        
+
         # Test with empty universe - quantifiers should handle gracefully
         forall_formula = UniversalQuantification("X", TrueFormula())
         result = forall_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertEqual(result.value[True], 1.0)  # Vacuously true
-        
-        exists_formula = ExistentialQuantification("X", TrueFormula())  
+
+        exists_formula = ExistentialQuantification("X", TrueFormula())
         result = exists_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertEqual(result.value[False], 1.0)  # No elements to satisfy
@@ -355,35 +346,29 @@ class TestNeSyFramework(unittest.TestCase):
         """Test mixed deterministic and probabilistic computations."""
         interpretation = Interpretation(
             universe=["good", "bad"],
-            functions={
-                "outcome": lambda: "good"  # Deterministic function
-            },
-            mfunctions={
-                "random_outcome": lambda: Prob({"good": 0.8, "bad": 0.2})
-            },
-            preds={
-                "positive": lambda x: x == "good"
-            },
+            functions={"outcome": lambda: "good"},  # Deterministic function
+            mfunctions={"random_outcome": lambda: Prob({"good": 0.8, "bad": 0.2})},
+            preds={"positive": lambda x: x == "good"},
             mpreds={
-                "likely_positive": lambda x: Prob({True: 0.9, False: 0.1}) if x == "good"
-                                           else Prob({True: 0.1, False: 0.9})
-            }
+                "likely_positive": lambda x: (
+                    Prob({True: 0.9, False: 0.1})
+                    if x == "good"
+                    else Prob({True: 0.1, False: 0.9})
+                )
+            },
         )
-        
+
         valuation = {}
-        
+
         # Test deterministic function with probabilistic predicate
         formula = parse("positive(outcome)")
         result = formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertEqual(result.value[True], 1.0)
-        
+
         # Test probabilistic computation with deterministic predicate
         comp_formula = Computation(
-            "X",
-            "random_outcome",
-            [],
-            Predicate("positive", [Variable("X")])
+            "X", "random_outcome", [], Predicate("positive", [Variable("X")])
         )
         result = comp_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
@@ -396,21 +381,35 @@ class TestNeSyFramework(unittest.TestCase):
             universe=["low", "medium", "high"],
             functions={},
             mfunctions={
-                "confidence_level": lambda: Prob({"low": 0.3, "medium": 0.5, "high": 0.2}),
-                "adjust_confidence": lambda x: Prob({"low": 0.8, "medium": 0.15, "high": 0.05}) if x == "low"
-                                             else Prob({"low": 0.1, "medium": 0.3, "high": 0.6}) if x == "medium"
-                                             else Prob({"low": 0.05, "medium": 0.25, "high": 0.7})
+                "confidence_level": lambda: Prob(
+                    {"low": 0.3, "medium": 0.5, "high": 0.2}
+                ),
+                "adjust_confidence": lambda x: (
+                    Prob({"low": 0.8, "medium": 0.15, "high": 0.05})
+                    if x == "low"
+                    else (
+                        Prob({"low": 0.1, "medium": 0.3, "high": 0.6})
+                        if x == "medium"
+                        else Prob({"low": 0.05, "medium": 0.25, "high": 0.7})
+                    )
+                ),
             },
             preds={},
             mpreds={
-                "high_confidence": lambda x: Prob({True: 0.9, False: 0.1}) if x == "high"
-                                            else Prob({True: 0.5, False: 0.5}) if x == "medium"
-                                            else Prob({True: 0.1, False: 0.9})
-            }
+                "high_confidence": lambda x: (
+                    Prob({True: 0.9, False: 0.1})
+                    if x == "high"
+                    else (
+                        Prob({True: 0.5, False: 0.5})
+                        if x == "medium"
+                        else Prob({True: 0.1, False: 0.9})
+                    )
+                )
+            },
         )
-        
+
         valuation = {}
-        
+
         # Test sequential computations: X := confidence_level(), Y := adjust_confidence(X), high_confidence(Y)
         nested_formula = Computation(
             "X",
@@ -420,10 +419,10 @@ class TestNeSyFramework(unittest.TestCase):
                 "Y",
                 "adjust_confidence",
                 [Variable("X")],
-                MonadicPredicate("high_confidence", [Variable("Y")])
-            )
+                MonadicPredicate("high_confidence", [Variable("Y")]),
+            ),
         )
-        
+
         result = nested_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         # This should compute the probability through all the nested transformations
@@ -440,87 +439,185 @@ class TestNeSyFramework(unittest.TestCase):
             preds={},
             mpreds={
                 "maybe_smart": lambda x: from_list([True, False]),
-                "maybe_kind": lambda x: from_list([True]) if x == "alice" else from_list([False])
-            }
+                "maybe_kind": lambda x: (
+                    from_list([True]) if x == "alice" else from_list([False])
+                ),
+            },
         )
-        
+
         valuation = {"X": "alice", "Y": "bob"}
-        
+
         # Test conjunction of non-deterministic predicates
         conj_formula = Conjunction(
             MonadicPredicate("maybe_smart", [Variable("X")]),
-            MonadicPredicate("maybe_kind", [Variable("X")])
+            MonadicPredicate("maybe_kind", [Variable("X")]),
         )
         result = conj_formula.eval(self.nondet_nesy, interpretation, valuation)
         self.assertIsInstance(result, NonEmptyPowerset)
         # alice: {T,F} ∧ {T} = {T∧T, F∧T} = {T, F}
         self.assertEqual(result.value, frozenset([True, False]))
-        
+
         # Test disjunction
         disj_formula = Disjunction(
             MonadicPredicate("maybe_smart", [Variable("Y")]),
-            MonadicPredicate("maybe_kind", [Variable("Y")])
+            MonadicPredicate("maybe_kind", [Variable("Y")]),
         )
         result = disj_formula.eval(self.nondet_nesy, interpretation, valuation)
         self.assertIsInstance(result, NonEmptyPowerset)
         # bob: {T,F} ∨ {F} = {T∨F, F∨F} = {T, F}
         self.assertEqual(result.value, frozenset([True, False]))
 
-    def test_dice_example_style(self):
+    def test_dice_example2(self):
         """Test a dice-style example similar to the Haskell code."""
         interpretation = Interpretation(
             universe=list(range(7)),
-            functions={
-                str(i): lambda i=i: i for i in range(1, 7)
-            },
-            mfunctions={
-                "die": lambda: uniform(list(range(1, 7)))
-            },
-            preds={
-                "equals": lambda x, y: x == y,
-                "even": lambda x: x % 2 == 0
-            },
-            mpreds={}
+            functions={str(i): lambda i=i: i for i in range(1, 7)},
+            mfunctions={"die": lambda: uniform(list(range(1, 7)))},
+            preds={"equals": lambda x, y: x == y, "even": lambda x: x % 2 == 0},
+            mpreds={},
         )
-        
+
         valuation = {}
 
         dice_formula = parse("X := $die() (equals(X, 6) and even(X))")
 
-
         result = dice_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         # P(X == 6 ∧ even(X))  = 1/6 * 1 = 1/6
-        expected_prob = 1/6
+        expected_prob = 1 / 6
         self.assertAlmostEqual(result.value[True], expected_prob, places=6)
-        
+
     def test_dice_example_style(self):
         """Test a dice-style example similar to the Haskell code."""
         interpretation = Interpretation(
             universe=list(range(7)),
-            functions={
-                str(i): lambda i=i: i for i in range(1, 7)
-            },
-            mfunctions={
-                "die": lambda: uniform(list(range(1, 7)))
-            },
-            preds={
-                "equals": lambda x, y: x == y,
-                "even": lambda x: x % 2 == 0
-            },
-            mpreds={}
+            functions={str(i): lambda i=i: i for i in range(1, 7)},
+            mfunctions={"die": lambda: uniform(list(range(1, 7)))},
+            preds={"equals": lambda x, y: x == y, "even": lambda x: x % 2 == 0},
+            mpreds={},
         )
-        
+
         valuation = {}
 
         dice_formula = parse("X := $die() (equals(X, 6)) and X := $die() (even(X))")
 
-
         result = dice_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         # P(X == 6) * P(even(X)) = P(X == 6) * P(even(X)) = 1/6 * 3/6 = 1/12
-        expected_prob = 1/12
+        expected_prob = 1 / 12
         self.assertAlmostEqual(result.value[True], expected_prob, places=6)
+
+    def test_traffic_light_example1(self):
+        """Test a traffic light example."""
+        interpretation = Interpretation(
+            universe=["red", "green", "yellow", False, True],
+            functions={
+                "green": lambda: "green",
+                "red": lambda: "red",
+                "yellow": lambda: "yellow",
+            },
+            mfunctions={
+                "light": lambda: weighted(
+                    [("red", 0.3), ("green", 0.6), ("yellow", 0.1)]
+                ),
+                "driveF": lambda l: (
+                    weighted([(True, 0.1), (False, 0.9)])
+                    if l == "red"
+                    else (
+                        weighted([(True, 0.2), (False, 0.8)])
+                        if l == "yellow"
+                        else (
+                            weighted([(True, 0.9), (False, 0.1)])
+                            if l == "green"
+                            else Prob({})
+                        )
+                    )
+                ),
+            },
+            preds={
+                "equals": lambda a, b: a == b,
+                "eval": lambda x: x == True,
+            },
+            mpreds={
+                "driveP": lambda l: (
+                    weighted([(True, 0.1), (False, 0.9)])
+                    if l == "red"
+                    else (
+                        weighted([(True, 0.2), (False, 0.8)])
+                        if l == "yellow"
+                        else (
+                            weighted([(True, 0.9), (False, 0.1)])
+                            if l == "green"
+                            else Prob({})
+                        )
+                    )
+                )
+            },
+        )
+
+        valuation = {}
+
+        # Test monadic predicate for traffic light
+        light_formula = parse("L := $light()(D := $driveF(L) (eval(D) -> equals(L, green)))")
+        result = light_formula.eval(self.prob_nesy, interpretation, valuation)
+        self.assertIsInstance(result, Prob)
+        self.assertAlmostEqual(result.value[True], 0.95, places=5)
+
+    def test_traffic_light_example2(self):
+        """Test a traffic light example."""
+        interpretation: Interpretation[Literal["red", "green", "yellow", True, False], bool] = Interpretation(
+            universe=["red", "green", "yellow", False, True],
+            functions={
+                "green": lambda: "green",
+                "red": lambda: "red",
+                "yellow": lambda: "yellow",
+            },
+            mfunctions={
+                "light": lambda: weighted(
+                    [("red", 0.3), ("green", 0.6), ("yellow", 0.1)]
+                ),
+                "driveF": lambda l: (
+                    weighted([(True, 0.1), (False, 0.9)])
+                    if l == "red"
+                    else (
+                        weighted([(True, 0.2), (False, 0.8)])
+                        if l == "yellow"
+                        else (
+                            weighted([(True, 0.9), (False, 0.1)])
+                            if l == "green"
+                            else Prob({})
+                        )
+                    )
+                ),
+            },
+            preds={
+                "equals": lambda a, b: a == b,
+                "eval": lambda x: x == True,
+            },
+            mpreds={
+                "driveP": lambda l: (
+                    weighted([(True, 0.1), (False, 0.9)])
+                    if l == "red"
+                    else (
+                        weighted([(True, 0.2), (False, 0.8)])
+                        if l == "yellow"
+                        else (
+                            weighted([(True, 0.9), (False, 0.1)])
+                            if l == "green"
+                            else Prob({})
+                        )
+                    )
+                )
+            },
+        )
+
+        valuation = {}
+
+        # Test monadic predicate for traffic light
+        light_formula = parse("L := $light() ($driveP(L) -> equals(L, green))")
+        result = light_formula.eval(self.prob_nesy, interpretation, valuation)
+        self.assertIsInstance(result, Prob)
+        self.assertAlmostEqual(result.value[True], 0.95, places=5)
 
 
 if __name__ == "__main__":
