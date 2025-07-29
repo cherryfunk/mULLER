@@ -1,349 +1,155 @@
 import random
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple, TypeVar, cast
 
 import numpy as np
 from pymonad.monad import Monad
-from scipy.stats import expon, norm
-from scipy.stats import uniform as scipy_uniform
+
+from scipy.special import comb, betaln
+from scipy.integrate import quad
+
+type Measure[T] = Callable[[Callable[[T], float]], float]
+
+def integrate[T](f: Callable[[T], float], measure: Measure[T]) -> float:
+    return measure(f)
 
 
-class GiryMeasure[T: float](Monad[T]):
-    """
-    Giry Monad for Probability Measures on Measurable Spaces
+class GiryMonad[T](Monad[Measure[T]]):
+    value: Measure[T]
 
-    Represents probability measures, supporting both discrete and continuous distributions
-    """
-
-    def __init__(
-        self,
-        distribution_type: str = "discrete",
-        values: Optional[List] = None,
-        probabilities: Optional[List] = None,
-        density_func: Optional[Callable] = None,
-        sampler: Optional[Callable] = None,
-        support: Optional[Tuple[float, float]] = None,
-        name: str = "unnamed",
-    ):
-        """
-        Initialize a Giry measure.
-
-        Args:
-            distribution_type: "discrete", "continuous", or "dirac"
-            values: For discrete distributions, list of values
-            probabilities: For discrete distributions, corresponding probabilities
-            density_func: For continuous distributions, probability density function
-            sampler: Function to sample from the distribution
-            support: (min, max) support of the distribution
-            name: Name for debugging/display
-        """
-        self.distribution_type = distribution_type
-        self.values = values or []
-        self.probabilities = probabilities or []
-        self.density_func = density_func
-        self.sampler = sampler
-        self.support = support
-        self.name = name
-
-        # Normalize discrete probabilities
-        if distribution_type == "discrete" and self.probabilities:
-            total = sum(self.probabilities)
-            if total > 0:
-                self.probabilities = [p / total for p in self.probabilities]
+    def __init__(self, value: Measure[T]):
+        self.value = value
 
     @classmethod
-    def unit(cls, value: T) -> "GiryMeasure":
-        """
-        Create a Dirac delta measure δx.
-        Implements ηX(x) := δx
+    def unit(cls, value: T) -> "GiryMonad":
+        return cls(lambda f: f(value))
 
-        Args:
-            value: The point mass location
+    def bind[S](self, kleisli_function: Callable[[T], "GiryMonad[S]"]) -> "GiryMonad[S]": # pyright: ignore[reportIncompatibleMethodOverride] # fmt: skip # noqa: E501
+        rho = kleisli_function
 
-        Returns:
-            Dirac delta measure at the given point
-        """
-        return cls(
-            distribution_type="dirac",
-            values=[value],
-            probabilities=[1.0],
-            sampler=lambda: value,
-            name=f"δ_{value}",
+        return GiryMonad(
+            lambda f: integrate(lambda m: integrate(f, rho(m).value), self.value)
         )
 
-    def bind(self, f: Callable[[T], "GiryMeasure"]) -> "GiryMeasure":
-        """
-        Monadic bind operation (Kleisli extension).
-        Implements f*(ρ)(A) := ∫ f(x)(A) dρ(x)
+    def map[U](self, function: Callable[[T], U]) -> "GiryMonad[U]":  # pyright: ignore[reportIncompatibleMethodOverride] # fmt: skip # noqa: E501
+        return GiryMonad(lambda f: integrate(lambda m: f(function(m)), self.value))
 
-        For discrete measures, this becomes a weighted sum.
-        For continuous measures, we use Monte Carlo integration.
-
-        Args:
-            f: Function from value to Giry measure
-
-        Returns:
-            New Giry measure
-        """
-        if self.distribution_type == "discrete" or self.distribution_type == "dirac":
-            # Discrete case: weighted sum
-            new_values = []
-            new_probabilities = []
-
-            for value, prob in zip(self.values, self.probabilities):
-                new_measure = f(value)
-                if (
-                    new_measure.distribution_type == "discrete"
-                    or new_measure.distribution_type == "dirac"
-                ):
-                    for new_val, new_prob in zip(
-                        new_measure.values, new_measure.probabilities
-                    ):
-                        new_values.append(new_val)
-                        new_probabilities.append(prob * new_prob)
-                else:
-                    # If f returns continuous distribution, we need to sample
-                    # This is a simplification - in practice would need more
-                    # sophisticated handling
-                    samples = [new_measure.sample() for _ in range(100)]
-                    for sample in samples:
-                        new_values.append(sample)
-                        new_probabilities.append(prob / 100)
-
-            return GiryMeasure(
-                distribution_type="discrete",
-                values=new_values,
-                probabilities=new_probabilities,
-                name=f"bind({self.name})",
-            )
-
-        else:
-            # Continuous case: Monte Carlo integration
-            n_samples = 1000
-            samples = [self.sample() for _ in range(n_samples)]
-
-            # Apply f to each sample and collect results
-            result_samples = []
-            for sample in samples:
-                new_measure = f(sample)
-                result_samples.append(new_measure.sample())
-
-            # Create empirical distribution from samples
-            return GiryMeasure(
-                distribution_type="discrete",
-                values=result_samples,
-                probabilities=[1.0 / len(result_samples)] * len(result_samples),
-                name=f"bind({self.name})",
-            )
-
-    def map[U](self, function: Callable[[T], U]) -> "GiryMeasure":
-        """
-        Apply a function to the measure (pushforward measure).
-
-        Args:
-            f: Function to apply
-
-        Returns:
-            New Giry measure
-        """
-        if self.distribution_type == "discrete" or self.distribution_type == "dirac":
-            # Apply function to discrete values
-            new_values = [function(val) for val in self.values]
-            return GiryMeasure(
-                distribution_type="discrete",
-                values=new_values,
-                probabilities=self.probabilities.copy(),
-                name=f"map({self.name})",
-            )
-        else:
-            # For continuous distributions, create new sampler
-            def new_sampler():
-                return function(self.sample())
-
-            return GiryMeasure(
-                distribution_type="continuous",
-                sampler=new_sampler,
-                name=f"map({self.name})",
-            )
-
-    def sample(self) -> T:
-        """Sample from the measure."""
-        if self.sampler:
-            return self.sampler()
-        elif self.distribution_type == "discrete":
-            return random.choices(self.values, weights=self.probabilities)[0]
-        else:
-            raise ValueError("No sampler available for this measure")
-
-    def measure(self, measurable_set: Callable[[T], bool]) -> float:
-        """
-        Compute the measure of a measurable set.
-        Implements δx(A) = { 1, x ∈ A; 0, x ∉ A } for Dirac measures
-
-        Args:
-            measurable_set: Characteristic function of the set
-
-        Returns:
-            Measure of the set
-        """
-        if self.distribution_type == "discrete" or self.distribution_type == "dirac":
-            # Sum probabilities of values in the set
-            total = 0.0
-            for value, prob in zip(self.values, self.probabilities):
-                if measurable_set(value):
-                    total += prob
-            return total
-        else:
-            # Monte Carlo estimation for continuous distributions
-            n_samples = 10000
-            samples = [self.sample() for _ in range(n_samples)]
-            count = sum(1 for s in samples if measurable_set(s))
-            return count / n_samples
-
-    def expected_value(self, f: Callable[[T], float] = lambda x: float(x)) -> float:
-        """Compute expected value E[f(X)]."""
-        if self.distribution_type == "discrete" or self.distribution_type == "dirac":
-            return sum(
-                f(val) * prob for val, prob in zip(self.values, self.probabilities)
-            )
-        else:
-            # Monte Carlo estimation
-            n_samples = 1000
-            samples = [self.sample() for _ in range(n_samples)]
-            return sum(f(s) for s in samples) / n_samples
-
-    def __repr__(self):
-        if self.distribution_type == "dirac":
-            return f"δ_{self.values[0]}"
-        elif self.distribution_type == "discrete":
-            return f"GiryMeasure({self.name}, discrete)"
-        else:
-            return f"GiryMeasure({self.name}, continuous)"
+    def amap[S](self: 'GiryMonad[Callable[[S], T]]', monad_value: 'GiryMonad[S]') -> 'GiryMonad[T]':   # pyright: ignore[reportIncompatibleMethodOverride] # fmt: skip # noqa: E501
+        g = self.value
+        h = monad_value.value
+        return GiryMonad(lambda f: g(lambda k: h(lambda x: f(k(x)))))
 
 
 # Convenience functions for creating common measures
 
 
-def dirac[T: float](value: T) -> GiryMeasure[T]:
-    """Create a Dirac delta measure δx."""
-    return GiryMeasure.unit(value)
+# fromMassFunction :: (a -> Double) -> [a] -> Measure a
+# fromMassFunction f support = Measure $ \g ->
+#   foldl' (\acc x -> acc + f x * g x) 0 support
+def fromMassFunction[T](f: Callable[[T], float], support: list[T]) -> GiryMonad[T]:
+    """Creates a GiryMonad from a mass function.
+
+    Args:
+        f: A function that maps values of type T to their probabilities.
+        support: A list of values of type T representing the support of the mass function.
+
+    Returns:
+        A GiryMonad representing the mass function.
+    """
+    return GiryMonad(lambda g: sum(g(x) * f(x) for x in support))
 
 
-def discrete_uniform[T: float](values: List[T]) -> GiryMeasure[T]:
-    """Create discrete uniform distribution."""
-    n = len(values)
-    probs = [1.0 / n] * n
-    return GiryMeasure(
-        distribution_type="discrete",
-        values=values,
-        probabilities=probs,
-        name="discrete_uniform",
-    )
+# binomial :: Int -> Double -> Measure Int
+# binomial n p = fromMassFunction (pmf n p) [0..n] where
+#   pmf n p x
+#     | x < 0 || n < x = 0
+#     | otherwise = choose n x * p ^^ x * (1 - p) ^^ (n - x)
+def binomial(n: int, p: float) -> GiryMonad[int]:
+    """Creates a GiryMonad from a binomial distribution.
+
+    Args:
+        n: The number of trials.
+        p: The probability of success.
+
+    Returns:
+        A GiryMonad representing the binomial distribution.
+    """
+
+    def mass_function(x: int) -> float:
+        if x < 0 or x > n:
+            return 0.0
+
+        return cast(float, comb(n, x)) * (p**x) * ((1 - p) ** (n - x))
+
+    support = list(range(n + 1))
+    return fromMassFunction(mass_function, support)
+
+# fromDensityFunction :: (Double -> Double) -> Measure Double
+# fromDensityFunction d = Measure $ \f ->
+#     quadratureTanhSinh (\x -> f x * d x)
+#   where
+#     quadratureTanhSinh = result . last . everywhere trap
+def fromDensityFunction(d: Callable[[float], float]) -> GiryMonad[float]:
+    """Creates a GiryMonad from a density function.
+
+    Args:
+        d: A function that maps values in the support to their densities.
+
+    Returns:
+        A GiryMonad representing the density function.
+    """
+    return GiryMonad(lambda f: quad(lambda x: f(x) * d(x), -np.inf, np.inf)[0])
 
 
-def bernoulli(p: float) -> GiryMeasure[float]:
-    """Create Bernoulli distribution."""
-    return GiryMeasure(
-        distribution_type="discrete",
-        values=[True, False],
-        probabilities=[p, 1 - p],
-        name=f"Bernoulli({p})",
-    )
+# beta :: Double -> Double -> Measure Double
+# beta a b = fromDensityFunction (density a b) where
+#   density a b p
+#     | p < 0 || p > 1 = 0
+#     | otherwise = 1 / exp (logBeta a b) * p ** (a - 1) * (1 - p) ** (b - 1)
+def beta(a: float, b: float) -> GiryMonad[float]:
+    """Creates a GiryMonad from a beta distribution.
 
+    Args:
+        a: The alpha parameter of the beta distribution.
+        b: The beta parameter of the beta distribution.
 
-def normal(mu: float = 0.0, sigma: float = 1.0) -> GiryMeasure[float]:
-    """Create normal distribution."""
-    dist = norm(loc=mu, scale=sigma)
-    return GiryMeasure(
-        distribution_type="continuous",
-        density_func=dist.pdf,
-        sampler=dist.rvs,
-        support=(-np.inf, np.inf),
-        name=f"N({mu},{sigma})",
-    )
+    Returns:
+        A GiryMonad representing the beta distribution.
+    """
 
+    def density(p: float) -> float:
+        if p < 0 or p > 1:
+            return 0.0
+        return 1 / np.exp(betaln(a, b)) * (p ** (a - 1)) * ((1 - p) ** (b - 1))
 
-def uniform(a: float = 0.0, b: float = 1.0) -> GiryMeasure[float]:
-    """Create uniform distribution."""
-    dist = scipy_uniform(loc=a, scale=b - a)
-    return GiryMeasure(
-        distribution_type="continuous",
-        density_func=dist.pdf,
-        sampler=dist.rvs,
-        support=(a, b),
-        name=f"U({a},{b})",
-    )
+    return fromDensityFunction(density)
 
+# betaBinomial :: Int -> Double -> Double -> Measure Int
+# betaBinomial n a b = beta a b >>= binomial n
+def betaBinomial(n: int, a: float, b: float) -> GiryMonad[int]:
+    """Creates a GiryMonad from a beta-binomial distribution.
 
-def exponential(rate: float = 1.0) -> GiryMeasure:
-    """Create exponential distribution."""
-    dist = expon(scale=1 / rate)
-    return GiryMeasure(
-        distribution_type="continuous",
-        density_func=dist.pdf,
-        sampler=dist.rvs,
-        support=(0, np.inf),
-        name=f"Exp({rate})",
-    )
+    Args:
+        n: The number of trials.
+        a: The alpha parameter of the beta distribution.
+        b: The beta parameter of the beta distribution.
 
+    Returns:
+        A GiryMonad representing the beta-binomial distribution.
+    """
+    return beta(a, b).bind(lambda p: binomial(n, p))
 
-# Example usage demonstrating probability measures
+# fromSample :: Foldable f => f a -> Measure a
+# fromSample = Measure . flip weightedAverage
+def fromSample[T](sample: List[T]) -> GiryMonad[T]:
+    """Creates a GiryMonad from a sample.
 
-if __name__ == "__main__":
-    # Example 1: Dirac delta measure
-    delta_5 = dirac(5)
-    print("Dirac δ_5:", delta_5)
-    print("δ_5({5}):", delta_5.measure(lambda x: x == 5))
-    print("δ_5({1,2,3}):", delta_5.measure(lambda x: x in [1, 2, 3]))
+    Args:
+        sample: A list of values representing the sample.
 
-    # Example 2: Discrete uniform distribution
-    dice = discrete_uniform([1, 2, 3, 4, 5, 6])
-    print("\nDice:", dice)
-    print("P(X ≤ 3):", dice.measure(lambda x: x <= 3))
-    print("E[X]:", dice.expected_value())
+    Returns:
+        A GiryMonad representing the sample.
+    """
+    def weighted_average(f: Callable[[T], float]) -> float:
+        return sum(f(x) for x in sample) / len(sample)
 
-    # Example 3: Bernoulli distribution
-    coin = bernoulli(0.6)
-    print("\nBiased coin:", coin)
-    print("P(True):", coin.measure(lambda x: x))
-
-    # Example 4: Normal distribution
-    gaussian = normal(0, 1)
-    print("\nStandard normal:", gaussian)
-    print("E[X]:", gaussian.expected_value())
-    print("E[X²]:", gaussian.expected_value(lambda x: x**2))
-
-    # Example 5: Monadic bind with Dirac measures
-    # Start with δ_2, then map x → δ_{x+1}
-    result = delta_5.bind(lambda x: dirac(x + 1))
-    print("\nδ_5 >>= (x → δ_{x+1}):", result)
-    print("Sample:", result.sample())
-
-    # Example 6: Bind with discrete distribution
-    # Roll dice, then flip coins based on the result
-    dice_then_coins = dice.bind(lambda x: discrete_uniform([0, 1] * x))
-    print("\nDice then coins:", dice_then_coins)
-    print("Sample:", dice_then_coins.sample())
-
-    # Example 7: Continuous distribution bind
-    # Sample from normal, then create exponential with that rate
-    normal_to_exp = normal(2, 0.5).bind(
-        lambda x: exponential(abs(x)) if x > 0 else dirac(0)
-    )
-    print("\nNormal to exponential:", normal_to_exp)
-    print("Sample:", normal_to_exp.sample())
-
-    # Example 8: Pushforward measure (map)
-    squared_dice = dice.map(lambda x: x**2)
-    print("\nSquared dice:", squared_dice)
-    print("E[X²]:", squared_dice.expected_value())
-
-    # Example 9: Measure of intervals for continuous distributions
-    unit_uniform = uniform(0, 1)
-    print("\nUnit uniform:", unit_uniform)
-    print("P(X ∈ [0.3, 0.7]):", unit_uniform.measure(lambda x: 0.3 <= x <= 0.7))
-
-    # Example 10: Composition of measures
-    # Sample from uniform, then normal with that mean
-    composition = unit_uniform.bind(lambda mu: normal(mu, 0.1))
-    print("\nComposition:", composition)
-    print("Sample:", composition.sample())
+    return GiryMonad(weighted_average)
