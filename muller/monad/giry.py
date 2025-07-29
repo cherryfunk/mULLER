@@ -8,22 +8,83 @@ from scipy.special import comb, betaln
 from scipy.integrate import quad
 
 type Measure[T] = Callable[[Callable[[T], float]], float]
+"""
+Type alias for a measure.
+
+A measure is represented as a higher-order function that takes an integrable 
+function f: T -> float and returns the integral of f with respect to the measure.
+This representation allows for a uniform treatment of discrete and continuous
+probability distributions.
+"""
+
 
 def integrate[T](f: Callable[[T], float], measure: Measure[T]) -> float:
+    """
+    Integrate a function with respect to a measure.
+
+    This is a convenience function that applies the measure to the function,
+    effectively computing the integral of f with respect to the measure.
+
+    Args:
+        f: The function to integrate
+        measure: The measure to integrate with respect to
+
+    Returns:
+        The integral of f with respect to the measure
+    """
     return measure(f)
 
 
 class GiryMonad[T](Monad[Measure[T]]):
+    """
+    Giry Monad for Probabilistic Computation with Measures
+
+    Represents probabilistic computations using measures (generalized probability distributions).
+    The Giry monad provides a mathematical foundation for probability theory that can handle
+    both discrete and continuous distributions uniformly.
+
+    A measure is represented as a higher-order function that takes an integrable function
+    and returns the integral of that function with respect to the measure.
+    """
+
     value: Measure[T]
 
     def __init__(self, value: Measure[T]):
+        """
+        Initialize a Giry monad with a measure.
+
+        Args:
+            value: A measure function that takes an integrable function and returns the integral
+        """
         self.value = value
 
     @classmethod
     def unit(cls, value: T) -> "GiryMonad":
+        """
+        Create a Giry monad with a point mass (Dirac delta measure).
+        Also known as 'return' or 'pure' in Haskell.
+
+        Args:
+            value: The value at which to place a point mass
+
+        Returns:
+            GiryMonad with a Dirac delta measure at the given value
+        """
         return cls(lambda f: f(value))
 
     def bind[S](self, kleisli_function: Callable[[T], "GiryMonad[S]"]) -> "GiryMonad[S]": # pyright: ignore[reportIncompatibleMethodOverride] # fmt: skip # noqa: E501
+        """
+        Monadic bind operation (>>=) for the Giry monad.
+
+        Implements the integration of measures according to the monadic law.
+        This allows for composing probabilistic computations.
+
+        Args:
+            kleisli_function: Function from value to GiryMonad (Kleisli arrow)
+
+        Returns:
+            New GiryMonad representing the composed probabilistic computation
+        """
         rho = kleisli_function
 
         return GiryMonad(
@@ -31,12 +92,37 @@ class GiryMonad[T](Monad[Measure[T]]):
         )
 
     def map[U](self, function: Callable[[T], U]) -> "GiryMonad[U]":  # pyright: ignore[reportIncompatibleMethodOverride] # fmt: skip # noqa: E501
+        """
+        Apply a function to the values in the measure (functor map).
+
+        Transforms the support of the measure by applying the given function.
+
+        Args:
+            function: Function to apply to values in the measure
+
+        Returns:
+            New GiryMonad with the function applied to the measure
+        """
         return GiryMonad(lambda f: integrate(lambda m: f(function(m)), self.value))
 
     def amap[S](self: 'GiryMonad[Callable[[S], T]]', monad_value: 'GiryMonad[S]') -> 'GiryMonad[T]':   # pyright: ignore[reportIncompatibleMethodOverride] # fmt: skip # noqa: E501
+        """
+        Applicative functor application for the Giry monad.
+
+        Apply a measure of functions to a measure of values, producing a measure of results.
+
+        Args:
+            monad_value: GiryMonad containing values to apply functions to
+
+        Returns:
+            New GiryMonad with functions applied to values
+        """
         g = self.value
         h = monad_value.value
         return GiryMonad(lambda f: g(lambda k: h(lambda x: f(k(x)))))
+
+    def __repr__(self):
+        return f"GiryMonad({self.value.__name__ if hasattr(self.value, '__name__') else '<measure>'})"
 
 
 # Convenience functions for creating common measures
@@ -83,6 +169,7 @@ def binomial(n: int, p: float) -> GiryMonad[int]:
     support = list(range(n + 1))
     return fromMassFunction(mass_function, support)
 
+
 # fromDensityFunction :: (Double -> Double) -> Measure Double
 # fromDensityFunction d = Measure $ \f ->
 #     quadratureTanhSinh (\x -> f x * d x)
@@ -123,6 +210,7 @@ def beta(a: float, b: float) -> GiryMonad[float]:
 
     return fromDensityFunction(density)
 
+
 # betaBinomial :: Int -> Double -> Double -> Measure Int
 # betaBinomial n a b = beta a b >>= binomial n
 def betaBinomial(n: int, a: float, b: float) -> GiryMonad[int]:
@@ -138,6 +226,7 @@ def betaBinomial(n: int, a: float, b: float) -> GiryMonad[int]:
     """
     return beta(a, b).bind(lambda p: binomial(n, p))
 
+
 # fromSample :: Foldable f => f a -> Measure a
 # fromSample = Measure . flip weightedAverage
 def fromSample[T](sample: List[T]) -> GiryMonad[T]:
@@ -149,6 +238,7 @@ def fromSample[T](sample: List[T]) -> GiryMonad[T]:
     Returns:
         A GiryMonad representing the sample.
     """
+
     def weighted_average(f: Callable[[T], float]) -> float:
         return sum(f(x) for x in sample) / len(sample)
 

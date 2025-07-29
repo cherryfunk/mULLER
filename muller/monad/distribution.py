@@ -125,6 +125,6 @@ def weighted(pairs: list[Tuple[Any, float]]) -> Prob:
     return Prob(dict(pairs))
 
 
-def bernoulli(p: float, true_val=True, false_val=False) -> Prob:
+def bernoulli[T](p: float, true_val: T = True, false_val: T = False) -> Prob[T]:
     """Create Bernoulli distribution."""
     return Prob({true_val: p, false_val: 1 - p})
