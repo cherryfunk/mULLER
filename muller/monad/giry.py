@@ -1,17 +1,15 @@
-import random
-from typing import Callable, List, Optional, Tuple, TypeVar, cast
+from typing import Callable, List, cast
 
 import numpy as np
 from pymonad.monad import Monad
-
-from scipy.special import comb, betaln
 from scipy.integrate import quad
+from scipy.special import betaln, comb
 
 type Measure[T] = Callable[[Callable[[T], float]], float]
 """
 Type alias for a measure.
 
-A measure is represented as a higher-order function that takes an integrable 
+A measure is represented as a higher-order function that takes an integrable
 function f: T -> float and returns the integral of f with respect to the measure.
 This representation allows for a uniform treatment of discrete and continuous
 probability distributions.
@@ -39,9 +37,9 @@ class GiryMonad[T](Monad[Measure[T]]):
     """
     Giry Monad for Probabilistic Computation with Measures
 
-    Represents probabilistic computations using measures (generalized probability distributions).
-    The Giry monad provides a mathematical foundation for probability theory that can handle
-    both discrete and continuous distributions uniformly.
+    Represents probabilistic computations using measures (generalized probability
+    distributions). The Giry monad provides a mathematical foundation for probability
+    theory that can handle both discrete and continuous distributions uniformly.
 
     A measure is represented as a higher-order function that takes an integrable function
     and returns the integral of that function with respect to the measure.
@@ -54,7 +52,8 @@ class GiryMonad[T](Monad[Measure[T]]):
         Initialize a Giry monad with a measure.
 
         Args:
-            value: A measure function that takes an integrable function and returns the integral
+            value: A measure function that takes an integrable function and returns
+                the integral
         """
         self.value = value
 
@@ -109,7 +108,8 @@ class GiryMonad[T](Monad[Measure[T]]):
         """
         Applicative functor application for the Giry monad.
 
-        Apply a measure of functions to a measure of values, producing a measure of results.
+        Apply a measure of functions to a measure of values, producing a measure of
+        results.
 
         Args:
             monad_value: GiryMonad containing values to apply functions to
@@ -122,7 +122,8 @@ class GiryMonad[T](Monad[Measure[T]]):
         return GiryMonad(lambda f: g(lambda k: h(lambda x: f(k(x)))))
 
     def __repr__(self):
-        return f"GiryMonad({self.value.__name__ if hasattr(self.value, '__name__') else '<measure>'})"
+        name = self.value.__name__ if hasattr(self.value, "__name__") else "<measure>"
+        return f"GiryMonad({name})"
 
 
 # Convenience functions for creating common measures

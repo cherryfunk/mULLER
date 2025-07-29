@@ -125,7 +125,9 @@ class TestTransformation(unittest.TestCase):
         self.assertEqual(nondet_interpretation.preds, prob_interpretation.preds)
 
         # Test regular functions still work
-        self.assertEqual(nondet_interpretation.functions["identity"](*["alice"]), "alice")
+        self.assertEqual(
+            nondet_interpretation.functions["identity"](*["alice"]), "alice"
+        )
         self.assertEqual(nondet_interpretation.functions["father"](*["alice"]), "bob")
 
         # Test regular predicates still work

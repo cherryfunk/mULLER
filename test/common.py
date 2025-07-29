@@ -16,7 +16,9 @@ traffic_light_model = Interpretation(
             else (
                 weighted([(True, 0.2), (False, 0.8)])
                 if x == "yellow"
-                else (weighted([(True, 0.9), (False, 0.1)]) if x == "green" else Prob({}))
+                else (
+                    weighted([(True, 0.9), (False, 0.1)]) if x == "green" else Prob({})
+                )
             )
         ),
     },
@@ -31,7 +33,9 @@ traffic_light_model = Interpretation(
             else (
                 weighted([(True, 0.2), (False, 0.8)])
                 if x == "yellow"
-                else (weighted([(True, 0.9), (False, 0.1)]) if x == "green" else Prob({}))
+                else (
+                    weighted([(True, 0.9), (False, 0.1)]) if x == "green" else Prob({})
+                )
             )
         )
     },

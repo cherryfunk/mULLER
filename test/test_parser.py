@@ -357,7 +357,9 @@ class ParserTestCase(TestCase):
     # Test string identifiers - now we support complex identifiers in single quotes
     def test_string_identifier(self):
         f = parse("'is greater than'(X, Y)")
-        self.assertEqual(f, Predicate("is greater than", [Variable("X"), Variable("Y")]))
+        self.assertEqual(
+            f, Predicate("is greater than", [Variable("X"), Variable("Y")])
+        )
 
     def test_complex_predicate_names(self):
         f = parse("'has property'(X)")
@@ -453,7 +455,9 @@ class ParserTestCase(TestCase):
     # Negative tests - verify grammar rejects invalid patterns
     def test_reject_lowercase_variable(self):
         # Variables must start with uppercase, lowercase should be parsed as constants
-        f = parse("human(person)")  # 'person' should be parsed as constant, not variable
+        f = parse(
+            "human(person)"
+        )  # 'person' should be parsed as constant, not variable
         expected = Predicate("human", [FunctionApplication("person", [])])
         self.assertEqual(f, expected)
 
@@ -620,7 +624,10 @@ class ParserTestCase(TestCase):
             "a",
             [],
             Computation(
-                "Y", "b", [Variable("X")], Predicate("p", [Variable("X"), Variable("Y")])
+                "Y",
+                "b",
+                [Variable("X")],
+                Predicate("p", [Variable("X"), Variable("Y")]),
             ),
         )
         self.assertEqual(f, expected)
@@ -633,7 +640,10 @@ class ParserTestCase(TestCase):
             "a",
             [],
             Computation(
-                "Y", "b", [Variable("X")], Predicate("p", [Variable("X"), Variable("Y")])
+                "Y",
+                "b",
+                [Variable("X")],
+                Predicate("p", [Variable("X"), Variable("Y")]),
             ),
         )
         self.assertEqual(f, expected)

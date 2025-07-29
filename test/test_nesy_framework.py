@@ -126,7 +126,9 @@ class TestNeSyFramework(unittest.TestCase):
         valuation = {}
 
         # Test universal quantification: forall X human(X)
-        forall_formula = UniversalQuantification("X", Predicate("human", [Variable("X")]))
+        forall_formula = UniversalQuantification(
+            "X", Predicate("human", [Variable("X")])
+        )
         result = forall_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertEqual(result.value[True], 1.0)  # All are human
