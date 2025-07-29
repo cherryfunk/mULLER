@@ -40,9 +40,9 @@ jobs:
 
     - name: Upload coverage
       if: matrix.python-version == '3.13'
-      uses: upload-artifact@v4
+      uses: actions/upload-artifact@v4
       with:
-        file: ./coverage.xml
+        path: coverage.xml
 
   lint:
     runs-on: ubuntu-latest
