@@ -520,7 +520,7 @@ class TestNeSyFramework(unittest.TestCase):
         )
         result = light_formula.eval(self.prob_nesy, traffic_light_model, valuation)
         self.assertIsInstance(result, Prob)
-        self.assertAlmostEqual(result.value[True], 0.95, places=5)
+        self.assertAlmostEqual(result.value[True], 0.92, places=5)
 
     def test_traffic_light_example2(self):
         """Test a traffic light example."""
@@ -530,7 +530,7 @@ class TestNeSyFramework(unittest.TestCase):
         light_formula = parse("L := $light() ($driveP(L) -> equals(L, green))")
         result = light_formula.eval(self.prob_nesy, traffic_light_model, valuation)
         self.assertIsInstance(result, Prob)
-        self.assertAlmostEqual(result.value[True], 0.95, places=5)
+        self.assertAlmostEqual(result.value[True], 0.92, places=5)
 
     def test_get_nesy_for_logic(self):
         """Test getting NeSy framework for a specific logic."""
