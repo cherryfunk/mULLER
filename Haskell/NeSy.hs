@@ -171,7 +171,7 @@ trafficModel =  Interpretation {
   universe = [Red, Yellow, Green, B False, B True],
   funcs = Map.fromList [("green",\_ -> Green)],
   mfuncs = Map.fromList [("light",\_ ->
-              Dist.fromFreqs [(Red, 0.3),(Green, 0.6),(Yellow, 0.1)]),
+              Dist.fromFreqs [(Red, 0.6),(Green, 0.3),(Yellow, 0.1)]),
               ("driveF",\[l] -> case l of
                   Red -> Dist.fromFreqs [(B True, 0.1),(B False, 0.9)]
                   Yellow -> Dist.fromFreqs [(B True, 0.2),(B False, 0.8)]
