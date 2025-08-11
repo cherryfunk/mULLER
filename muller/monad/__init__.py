@@ -10,6 +10,7 @@ from .giry import (
 )
 from .identity import Identity
 from .non_empty_powerset import NonEmptyPowerset, from_list, singleton
+from .base import ParametrizedMonad
 
 __all__ = [
     "Prob",
@@ -27,4 +28,5 @@ __all__ = [
     "fromSample",
     "fromMassFunction",
     "binomial",
+    "ParametrizedMonad",
 ]

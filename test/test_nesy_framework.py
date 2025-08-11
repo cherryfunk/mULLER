@@ -1,12 +1,13 @@
+from typing import Literal
 import unittest
 
 from common import traffic_light_model
-from pymonad.monad import Monad
 
 from muller.logics.aggr2sgrpblat import Aggr2SGrpBLat, NeSyLogicMeta
 from muller.logics.boolean import (
     NonDeterministicBooleanLogic,
 )
+from muller.monad.base import ParametrizedMonad
 from muller.monad.distribution import Prob, uniform
 from muller.monad.non_empty_powerset import NonEmptyPowerset, from_list, singleton
 from muller.nesy_framework import (
@@ -31,6 +32,8 @@ from muller.parser import parse
 
 class TestNeSyFramework(unittest.TestCase):
     """Test suite for different NeSy systems."""
+    
+    universe: list[Literal["alice", "bob", "charlie"]]
 
     def setUp(self):
         """Set up common test data."""
@@ -547,23 +550,23 @@ class TestNeSyFramework(unittest.TestCase):
         self.assertEqual(nesy_framework.M, MyMonad)
 
 
-class MyMonad[T](Monad[T]): ...
+class MyMonad[T](ParametrizedMonad[T]): ...
 
 
 class MyProbabilityLogic(Aggr2SGrpBLat[MyMonad[bool]], NeSyLogicMeta[bool]):
     """Custom logic for testing"""
 
     def top(self) -> MyMonad[bool]:
-        raise NotImplementedError
+        return MyMonad(True, None)
 
     def bottom(self) -> MyMonad[bool]:
-        raise NotImplementedError
+        return MyMonad(False, None)
 
     def conjunction(self, a: MyMonad[bool], b: MyMonad[bool]) -> MyMonad[bool]:
-        raise NotImplementedError
+        return MyMonad(a.value and b.value, None)
 
     def disjunction(self, a: MyMonad[bool], b: MyMonad[bool]) -> MyMonad[bool]:
-        raise NotImplementedError
+        return MyMonad(a.value or b.value, None)
 
 
 if __name__ == "__main__":

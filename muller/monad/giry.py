@@ -1,9 +1,11 @@
 from typing import Callable, List, cast
 
 import numpy as np
-from pymonad.monad import Monad
 from scipy.integrate import quad
 from scipy.special import betaln, comb
+
+
+from muller.monad.base import ParametrizedMonad
 
 type Measure[T] = Callable[[Callable[[T], float]], float]
 """
@@ -33,7 +35,7 @@ def integrate[T](f: Callable[[T], float], measure: Measure[T]) -> float:
     return measure(f)
 
 
-class GiryMonad[T](Monad[Measure[T]]):
+class GiryMonad[T](ParametrizedMonad[Measure[T]]):
     """
     Giry Monad for Probabilistic Computation with Measures
 

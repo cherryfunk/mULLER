@@ -1,10 +1,10 @@
 # pip install pymonad
 from typing import Callable
 
-from pymonad.monad import Monad
+from muller.monad.base import ParametrizedMonad
 
 
-class Identity[T](Monad[T]):
+class Identity[T](ParametrizedMonad[T]):
     """
     Identity Monad for Deterministic Side-Effect Free Computation
 

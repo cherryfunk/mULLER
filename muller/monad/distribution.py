@@ -2,11 +2,10 @@
 import random
 from collections import defaultdict
 from typing import Any, Callable, Dict, Tuple
+from muller.monad.base import ParametrizedMonad
 
-from pymonad.monad import Monad
 
-
-class Prob[T](Monad[T]):
+class Prob[T](ParametrizedMonad[T]):
     """
     Probability Distribution Monad
 
@@ -120,7 +119,7 @@ def uniform(values: list) -> Prob:
     return Prob({v: prob for v in values})
 
 
-def weighted(pairs: list[Tuple[Any, float]]) -> Prob:
+def weighted[T](pairs: list[Tuple[T, float]]) -> Prob[T]:
     """Create distribution from (value, weight) pairs."""
     return Prob(dict(pairs))
 

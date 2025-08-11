@@ -1,7 +1,7 @@
 # pip install pymonad
 from typing import Callable, FrozenSet, Set, Union
 
-from muller.monad.util import ParametrizedMonad
+from muller.monad.base import ParametrizedMonad
 
 
 class NonEmptyPowerset[T](ParametrizedMonad[T]):

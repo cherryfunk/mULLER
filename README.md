@@ -41,13 +41,30 @@ The package automatically installs the following dependencies:
 - `pymonad>=2.4.0` - for monadic operations
 - `scipy>=1.16.0` - for statistical distributions
 
-## Quick Start
+## Usage
 
-### Basic Probabilistic Example
+1. Choose a nesy framework based on your logic. The `nesy` function can create frameworks for different monads like `Prob`, `NonEmptyPowerset`, or `Identity`. Either provide it with a Monad type (T) and a truth value type (Ω, defaulting to `bool`), or instantiate a logic (an implementation of `Aggr2GrpBLat[Monad[O]]`) yourself and pass it to `nesy`. 
+2. Define an interpretation with a universe, functions, and predicates. Type checkers should infer the universe types, when you start with the `universe` parameter. Alternatively, specify the type of the universe explicitly e.g.:
+    ```python
+   Universe = Literal["alice", "bob"]
+   O = bool
+   interpretation = Interpretation[Universe, O](
+       universe=["alice", "bob"],
+       ...
+   )
+    ```
+3. Parse the uller formula using the `parse` function, which returns an abstract syntax tree (AST) representation of the formula.
+4. Evaluate the formula against the interpretation using the `eval` method, which returns a result in the specified Monad.
+
+### Examples
+
+More examples can be found in the `examples/` directory.
+
+#### Basic Probabilistic Example
 
 ```python
-from muller import nesy, parse, Prob, uniform, weighted
-from muller import NeSyFramework, Interpretation
+from muller import Prob, uniform, weighted
+from muller import nesy, parse, NeSyFramework, Interpretation
 from muller.transformation import argmax  # For transformations between frameworks
 
 # Create a probabilistic NeSy framework
@@ -63,19 +80,21 @@ interpretation = Interpretation(
 )
 
 # Parse and evaluate a dice formula: "roll a die and check if it's 6 and even"
-formula = parse("x := $die() (equals(x, 6) and even(x))")
+formula = parse("X := $die() (equals(X, 6) and even(X))")
 result = formula.eval(prob_framework, interpretation, {})
 
 print(f"Probability of rolling an even 6: {result.value[True]}")  # 1/6 ≈ 0.167
 ```
 
-### Non-Deterministic Example
+#### Non-Deterministic Example
 
 ```python
 from muller import NonEmptyPowerset, from_list, singleton
+from muller import nesy, parse, NeSyFramework, Interpretation
+from muller.logics import Priest
 
 # Create a non-deterministic NeSy framework
-nondet_framework = nesy(NonEmptyPowerset, bool)
+nondet_framework = nesy(NonEmptyPowerset, Priest)
 
 interpretation = Interpretation(
     universe=["alice", "bob"],
@@ -83,28 +102,33 @@ interpretation = Interpretation(
     mfunctions={"choose_person": lambda: from_list(["alice", "bob"])},
     preds={},
     mpreds={
-        "might_be_tall": lambda x: (
-            from_list([True, False]) if x == "alice" else singleton(False)
-        )
+        "might_be_tall": lambda x: {
+            "alice": singleton("Both"),
+            "bob": singleton(False) 
+        }.get(x, singleton(False))
     }
 )
 
 # Parse a non-deterministic formula
-formula = parse("x := $choose_person() ($might_be_tall(x))")
+formula = parse("X := $choose_person() ($might_be_tall(X))")
 result = formula.eval(nondet_framework, interpretation, {})
 
-print(f"Possible truth values: {result.value}")  # frozenset({True, False})
+print(f"Possible truth values: {result.value}")  # frozenset({"Both", False})
 ```
 
-### Traffic Light Example
+#### Traffic Light Example
 
 ```python
-# Probabilistic traffic light decision making
+from muller import Prob, weighted
+from muller import nesy, parse, Interpretation
+
+prob_framework = nesy(Prob, bool)
+
 interpretation = Interpretation(
     universe=["red", "green", "yellow", True, False],
     functions={"green": lambda: "green", "red": lambda: "red"},
     mfunctions={
-        "light": lambda: weighted([("red", 0.3), ("green", 0.6), ("yellow", 0.1)]),
+        "light": lambda: weighted([("red", 0.6), ("green", 0.3), ("yellow", 0.1)]),
         "driveF": lambda l: (
             weighted([(True, 0.1), (False, 0.9)]) if l == "red" else
             weighted([(True, 0.2), (False, 0.8)]) if l == "yellow" else
@@ -119,7 +143,7 @@ interpretation = Interpretation(
 formula = parse("L := $light()(D := $driveF(L) (eval(D) -> equals(L, green)))")
 result = formula.eval(prob_framework, interpretation, {})
 
-print(f"Safety probability: {result.value[True]}")  # ~0.95
+print(f"Safety probability: {result.value[True]}")  # ~0.92
 ```
 
 ## Formula Syntax
@@ -148,12 +172,32 @@ The parser supports standard first-order logic with computational extensions:
 Creates a NeSy framework instance from a logic.
 
 **Parameters:**
-- `logic`: An instance of `Aggr2SGrpBLat[Monad]` that defines the logical operations
+- `logic`: An instance of `Aggr2SGrpBLat[Monad[O]]` that defines the logical operations
 
 **Returns:** `NeSyFramework` instance
 
 #### `nesy(monad_type, omega=bool)`
 Creates a NeSy framework instance from a monad type.
+
+The function will search all loaded modules for a subclass of `Aggr2SGrpBLat` that matches the provided monad and truth value type and returns a corresponding `NeSyFramework`. To extend the built-in logics, you can create a new logic class that inherits from `Aggr2SGrpBLat` and implements the required methods. The search stops at the first matching logic class found and starts with the built-in logics. To overwrite a builtin implementation with a custom implementation, it has to be instantiated (second overload of `nesy` function).
+
+If no matching logic is found, it raises a `ValueError`.
+
+Example:
+```pythonfrom muller import nesy, Prob
+from pymonad import Prob
+from muller.logics import Aggr2SGrpBLat
+
+class MyLogicOverwrite(Aggr2SGrpBLat[Prob[bool]]):
+    ...
+    
+class MyCustomLogic(Aggr2SGrpBLat[Prob[str]]):
+    ...
+        
+nesy_framework = nesy(Prob, bool) # Uses `muller.logics.ProbabilisticBooleanLogic`
+nesy_framework = nesy(MyLogicOverwrite()) # Uses `MyLogic`
+nesy_framework = nesy(Prob, str) # Uses `MyCustomLogic`
+```
 
 **Parameters:**
 - `monad_type`: A monad type (`Prob`, `NonEmptyPowerset`, `Identity`)

@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 from functools import reduce
-from typing import Iterable, cast
+from typing import Generic, Iterable, cast, TypeVar
 
-from pymonad.monad import Monad
+from muller.monad.base import ParametrizedMonad
 
+T = TypeVar("T", bound=ParametrizedMonad)
 
-class Aggr2SGrpBLat[T](ABC):
+class Aggr2SGrpBLat(ABC, Generic[T]):
     @abstractmethod
     def top(self) -> T: ...
 
@@ -31,7 +32,7 @@ class Aggr2SGrpBLat[T](ABC):
         return reduce(lambda a, b: self.conjunction(a, b), s, self.top())
 
 
-class NeSyLogicMeta[T](ABC):
-    def as_base(self) -> "Aggr2SGrpBLat[Monad[T]]":
-        """Cast this instance to Aggr2SGrpBLat[Monad[T]]"""
-        return cast("Aggr2SGrpBLat[Monad[T]]", self)
+class NeSyLogicMeta[S](ABC):
+    def as_base(self) -> "Aggr2SGrpBLat[ParametrizedMonad[S]]":
+        """Cast this instance to Aggr2SGrpBLat[ParametrizedMonad[S]]"""
+        return cast("Aggr2SGrpBLat[ParametrizedMonad[S]]", self)

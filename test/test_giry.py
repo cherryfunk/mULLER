@@ -19,7 +19,6 @@ class TestGiryMonad(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.tolerance_places = 6
-        self.tolerance = 1 / 10**self.tolerance_places
 
     def assertAlmostEqualFloat(self, first: float, second: float, msg=None):
         """Helper method for comparing floats with tolerance."""

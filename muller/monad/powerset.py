@@ -1,12 +1,10 @@
 # pip install pymonad
 from typing import Callable, FrozenSet, Iterable
 
-from pymonad.monad import Monad
-
-ParametrizedMonad = Monad
+from muller.monad.base import ParametrizedMonad
 
 
-class Powerset[T](Monad[T]):
+class Powerset[T](ParametrizedMonad[T]):
     """
     Powerset Monad for Non-deterministic Computation
 

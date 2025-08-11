@@ -8,11 +8,12 @@ from .monad import (
     uniform,
     weighted,
 )
-from .nesy_framework import NeSyFramework, nesy
+from .nesy_framework import NeSyFramework, Interpretation, nesy
 from .parser import parse
 
 __all__ = [
     "NeSyFramework",
+    "Interpretation",
     "nesy",
     "parse",
     "Prob",

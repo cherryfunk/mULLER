@@ -3,7 +3,7 @@ from functools import lru_cache
 from itertools import chain
 from types import get_original_bases
 
-from pymonad.monad import Monad
+from muller.monad.base import ParametrizedMonad
 
 import muller.logics
 
@@ -17,13 +17,14 @@ from .priest import (
     ClassicalPriestLogic,
     NonDeterministicPriestLogic,
     ProbabilisticPriestLogic,
+    Priest,
 )
 
 
 @lru_cache(maxsize=128)
-def get_logic[T: Monad, O](
+def get_logic[T: ParametrizedMonad, O](
     monad_type: type[T], omega: type[O]
-) -> Aggr2SGrpBLat[Monad[O]]:
+) -> Aggr2SGrpBLat[ParametrizedMonad[O]]:
     """
     Get the logic for a specific monad and type.
     """
@@ -104,4 +105,5 @@ __all__ = [
     "NonDeterministicPriestLogic",
     "ProbabilisticPriestLogic",
     "ClassicalPriestLogic",
+    "Priest"
 ]
