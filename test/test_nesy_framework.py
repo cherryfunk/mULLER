@@ -1,5 +1,5 @@
-from typing import Literal
 import unittest
+from typing import Literal, Mapping
 
 from common import traffic_light_model
 
@@ -29,11 +29,11 @@ from muller.nesy_framework import (
 )
 from muller.parser import parse
 
-
+Universe = Literal["alice", "bob", "charlie"]
 class TestNeSyFramework(unittest.TestCase):
     """Test suite for different NeSy systems."""
-    
-    universe: list[Literal["alice", "bob", "charlie"]]
+
+    universe: list[Universe]
 
     def setUp(self):
         """Set up common test data."""
@@ -59,7 +59,7 @@ class TestNeSyFramework(unittest.TestCase):
             mpreds={},
         )
 
-        valuation = {"X": "alice", "Y": "bob"}
+        valuation: Mapping[str, Universe] = {"X": "alice", "Y": "bob"}
 
         # Test True formula
         true_formula = TrueFormula()
@@ -81,10 +81,10 @@ class TestNeSyFramework(unittest.TestCase):
 
     def test_probabilistic_complex_formulas(self):
         """Test complex formulas in probabilistic logic."""
-        interpretation = Interpretation(
+        interpretation: Interpretation[Universe, bool] = Interpretation(
             universe=self.universe,
             functions={
-                "father": lambda x: {"alice": "bob", "bob": "charlie"}.get(x, "charlie")
+                "father": lambda x: "bob" if x == "alice" else "charlie",
             },
             mfunctions={},
             preds={
@@ -94,7 +94,7 @@ class TestNeSyFramework(unittest.TestCase):
             mpreds={},
         )
 
-        valuation = {"X": "alice", "Y": "bob"}
+        valuation: Mapping[str, Universe] = {"X": "alice", "Y": "bob"}
 
         # Test conjunction: parent(Y, X) and male(Y)
         conj_formula = Conjunction(

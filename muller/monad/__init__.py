@@ -1,3 +1,4 @@
+from .base import ParametrizedMonad
 from .distribution import Prob, bernoulli, uniform, weighted
 from .giry import (
     GiryMonad,
@@ -10,7 +11,6 @@ from .giry import (
 )
 from .identity import Identity
 from .non_empty_powerset import NonEmptyPowerset, from_list, singleton
-from .base import ParametrizedMonad
 
 __all__ = [
     "Prob",

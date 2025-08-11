@@ -1,7 +1,7 @@
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, Type, cast, overload
+from typing import Any, Callable, Mapping, Type, cast, overload
 
 from muller.logics import Aggr2SGrpBLat, get_logic
 from muller.monad.base import ParametrizedMonad
@@ -86,14 +86,17 @@ class Interpretation[A, O]:
         return transformation(self)
 
 
-type Valuation[A] = dict[Ident, A]
+type Valuation[A] = Mapping[Ident, A]
 
 
 class NeSyFramework[_T: ParametrizedMonad, _O, _R: Aggr2SGrpBLat]:
     """
-    Class to represent a monadic NeSy framework consisting of a monad (T), a set Ω acting as truth basis (O), and an aggregated double semigroup bounded lettice (R).
+    Class to represent a monadic NeSy framework consisting of a monad (T),
+    a set Ω acting as truth basis (O),
+    and an aggregated double semigroup bounded lettice (R).
 
-    This class ensures the following runtime constraint which is not representable in Pythons type system:
+    This class ensures the following runtime constraint which is not
+    representable in Pythons type system:
     - _R: Aggr2SGrpBLat[_T[_O]]
 
 
@@ -112,7 +115,8 @@ class NeSyFramework[_T: ParametrizedMonad, _O, _R: Aggr2SGrpBLat]:
     @property
     def logic(self) -> Aggr2SGrpBLat[ParametrizedMonad[_O]]:
         """
-        Returns the logic used in this NeSy framework typed with the generic monad but specific truth basis.
+        Returns the logic used in this NeSy framework typed with the
+        generic monad but specific truth basis.
         """
 
         return self._logic
@@ -120,7 +124,8 @@ class NeSyFramework[_T: ParametrizedMonad, _O, _R: Aggr2SGrpBLat]:
     @property
     def logic_T(self) -> Aggr2SGrpBLat[_T]:
         """
-        Returns the logic used in this NeSy framework typed with the specific monad but generic truth basis.
+        Returns the logic used in this NeSy framework typed with the
+        specific monad but generic truth basis.
         """
 
         return self._logic
@@ -135,7 +140,7 @@ class NeSyFramework[_T: ParametrizedMonad, _O, _R: Aggr2SGrpBLat]:
         """
         self._monad = monad
 
-        if monad != type(logic.top()):
+        if logic.top() is monad:
             raise ValueError(
                 f"Monad type {monad} must match logic type {type(logic.top())}"
             )
@@ -143,7 +148,10 @@ class NeSyFramework[_T: ParametrizedMonad, _O, _R: Aggr2SGrpBLat]:
         self._logic = cast(_R, logic)
 
     def unitT(self, value: _O) -> _T:
-        """Returns the value 'value' in the monadic context of 'T' typed with the specific monad but generic truth basis."""
+        """
+        Returns the value 'value' in the monadic context of 'T' typed with the
+        specific monad but generic truth basis.
+        """
         return cast(_T, self.M.insert(value))
 
     @overload
@@ -514,7 +522,8 @@ def nesy_for_logic[T: ParametrizedMonad, O](
     """
     monad_type = type(logic.top())
 
-    # Check if the logic is compatible with the monad type is done in `NeSyFramework.__init__`
+    # Check if the logic is compatible with the monad type
+    # is done in `NeSyFramework.__init__`
     return NeSyFramework(monad_type, cast(Aggr2SGrpBLat[ParametrizedMonad[O]], logic))
 
 
@@ -522,7 +531,8 @@ def nesy_framework_for_monad[O](
     monad_type: Type[ParametrizedMonad], omega: Type[O] = Type[bool]
 ) -> NeSyFramework[ParametrizedMonad, Any, Aggr2SGrpBLat[ParametrizedMonad]]:
     """
-    Create a NeSyFramework instance with the given monad type and optional truth value type. See `nesy` for more details.
+    Create a NeSyFramework instance with the given monad type and optional
+    truth value type. See `nesy` for more details.
 
     Args:
         monad_type: The type of the monad to use.
@@ -559,7 +569,13 @@ def nesy[O](
     """
     Creates a NeSy framework instance from a monad type.
 
-    The function will search all loaded modules for a subclass of `Aggr2SGrpBLat` that matches the provided monad and truth value type and returns a corresponding `NeSyFramework`. To extend the built-in logics, you can create a new logic class that inherits from `Aggr2SGrpBLat` and implements the required methods. The search stops at the first matching logic class found and starts with the built-in logics. To overwrite a builtin implementation with a custom implementation, it has to be instantiated (second overload of `nesy` function).
+    The function will search all loaded modules for a subclass of `Aggr2SGrpBLat` that
+    matches the provided monad and truth value type and returns a corresponding
+    `NeSyFramework`. To extend the built-in logics, you can create a new logic class
+    that inherits from `Aggr2SGrpBLat` and implements the required methods. The search
+    stops at the first matching logic class found and starts with the built-in logics.
+    To overwrite a builtin implementation with a custom implementation, it has to be
+    instantiated (second overload of `nesy` function).
 
     Args:
         monad_type: monad type.
@@ -571,18 +587,16 @@ def nesy[O](
     Example:
         ::
 
-            from muller import nesy, Prob
-            from muller.logics import Aggr2SGrpBLat
-
             class MyLogicOverwrite(Aggr2SGrpBLat[Prob[bool]]):
                 ...
 
             class MyCustomLogic(Aggr2SGrpBLat[Prob[str]]):
                 ...
 
-            nesy_framework = nesy(Prob, bool) # Uses `muller.logics.ProbabilisticBooleanLogic`
-            nesy_framework = nesy(MyLogicOverwrite()) # Uses `MyLogicOverwrite`
-            nesy_framework = nesy(Prob, str) # Uses `MyCustomLogic`
+
+            nesy_framework = nesy(Prob, bool)  # Uses `ProbabilisticBooleanLogic`
+            nesy_framework = nesy(MyLogicOverwrite(), bool) # Uses `MyLogicOverwrite`
+            nesy_framework = nesy(Prob, str)  # Uses `MyCustomLogic`
     """
     ...
 

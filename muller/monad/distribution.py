@@ -1,7 +1,8 @@
 # pip install pymonad
 import random
 from collections import defaultdict
-from typing import Any, Callable, Dict, Tuple
+from typing import Callable, Dict, Tuple
+
 from muller.monad.base import ParametrizedMonad
 
 

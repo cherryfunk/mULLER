@@ -4,7 +4,6 @@ import numpy as np
 from scipy.integrate import quad
 from scipy.special import betaln, comb
 
-
 from muller.monad.base import ParametrizedMonad
 
 type Measure[T] = Callable[[Callable[[T], float]], float]

@@ -3,9 +3,8 @@ from functools import lru_cache
 from itertools import chain
 from types import get_original_bases
 
-from muller.monad.base import ParametrizedMonad
-
 import muller.logics
+from muller.monad.base import ParametrizedMonad
 
 from .aggr2sgrpblat import Aggr2SGrpBLat
 from .boolean import (
@@ -16,8 +15,8 @@ from .boolean import (
 from .priest import (
     ClassicalPriestLogic,
     NonDeterministicPriestLogic,
-    ProbabilisticPriestLogic,
     Priest,
+    ProbabilisticPriestLogic,
 )
 
 

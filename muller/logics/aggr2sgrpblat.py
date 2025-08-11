@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import reduce
-from typing import Generic, Iterable, cast, TypeVar
+from typing import Generic, Iterable, TypeVar, cast
 
 from muller.monad.base import ParametrizedMonad
 
