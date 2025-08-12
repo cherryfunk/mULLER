@@ -20,7 +20,7 @@ def _drive(light: TrafficLightUniverse) -> ParametrizedMonad[TrafficLightUnivers
 
 
 
-traffic_light_model = Interpretation[TrafficLightUniverse, bool](
+traffic_light_model: Interpretation[TrafficLightUniverse, bool] = Interpretation(
     universe=traffic_light_universe,
     functions={
         "green": lambda: "green",
@@ -33,7 +33,7 @@ traffic_light_model = Interpretation[TrafficLightUniverse, bool](
     },
     preds={
         "equals": lambda a, b: a == b,
-        "eval": lambda x: x is bool and x,
+        "eval": lambda x: isinstance(x, bool) and x,
     },
     mpreds={
         "driveP": cast(Callable[[TrafficLightUniverse], ParametrizedMonad[bool]], _drive)
