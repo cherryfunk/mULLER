@@ -1,0 +1,4 @@
+cradle:
+  cabal:
+    - path: "./Code/NeSy.hs"
+      component: "exe:muller" 

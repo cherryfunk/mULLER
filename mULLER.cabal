@@ -1,0 +1,19 @@
+cabal-version: 2.4
+name: mULLER
+version: 0.1.0.0
+synopsis: Neural-Symbolic Frameworks
+description: Implementation of Neural-Symbolic frameworks in Haskell
+license: MIT
+author: User
+maintainer: user@example.com
+
+executable muller
+  main-is: Code/NeSy.hs
+  build-depends: 
+    base >=4.16,
+    containers,
+    mtl,
+    set-monad,
+    probability,
+    random
+  default-language: Haskell2010 
