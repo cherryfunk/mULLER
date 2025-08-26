@@ -23,12 +23,9 @@ class TwoSGrpBLat a where
   a `implies` b = (neg a) `disj` b
 
 -- aggregation functions for quantifiers
-class TwoSGrpBLat a => Aggr2SGrpBLat s a where
-  -- for a structure on b, aggregate truth values a stemming from b's
-  aggrE, aggrA :: s b -> [(b,a)] -> a
-  -- default implementations
-  aggrE _ = foldr disj bot . map snd
-  aggrA _ = foldr conj top . map snd
+class (TwoSGrpBLat a) => Aggr2SGrpBLat s a where
+  -- for a structure on b and a predicate on b, aggregate truth values a 
+  aggrE, aggrA :: s b -> (b -> a) -> a
 
 -- NeSy frameworks provide an algebra on T Omega
 class (Monad t, Aggr2SGrpBLat s (t omega)) => NeSyFramework t s omega 
@@ -42,22 +39,21 @@ instance Monad t => TwoSGrpBLat (t Bool) where
   disj a b = do x<-a; y<-b; return $ x || y 
   --implies a b = do x<-a; y<-b; return $ ((not x) || y)
 
--- the case of no extra structure (beyond the universe)
-data NoStructure a = NoStructure
-
 -- the mainly used Aggr2SGrpBLat: no additional stucture + Booleans
-instance Monad t => Aggr2SGrpBLat NoStructure (t Bool)
+instance Monad t => Aggr2SGrpBLat [] (t Bool) where
+  aggrE s f = foldr disj bot $ map f s
+  aggrA s f = foldr conj top $ map f s
   
 -- Classical instance using identity monad, Omega is Bool
-instance NeSyFramework Identity NoStructure Bool 
+instance NeSyFramework Identity [] Bool 
   
 -- Distribution instance, Omega is Bool
-instance Num prob => NeSyFramework (Dist.T prob) NoStructure Bool 
+instance Num prob => NeSyFramework (Dist.T prob) [] Bool 
 
 -- Non-empty powerset instance (non-determinism)
 -- there is no standard non-empty set monad in Haskell
 -- so we use the set monad instead. Omega is Bool
-instance NeSyFramework SM.Set NoStructure Bool 
+instance NeSyFramework SM.Set [] Bool 
 
 -------------------------- Syntax ------------------------------
          
@@ -80,8 +76,7 @@ data Formula = T | F
 -------------------------- Semantics ------------------------------
                
 data Interpretation t s omega a =
-     Interpretation { universe :: [a],
-                      structure :: s a,
+     Interpretation { universe :: s a,
                       funcs :: Map.Map Ident ([a] -> a),
                       mfuncs :: Map.Map Ident ([a] -> t a),
                       preds :: Map.Map Ident ([a] -> omega),
@@ -101,10 +96,9 @@ maximalValues dist = SM.fromList maxVals
     maxVals = map fst $ filter ((== maxProb) . snd) $ Map.toList probMap
 
 argmax ::  (Num prob, Ord prob, Eq prob) =>
-           NeSyFrameworkTransformation (Dist.T prob) NoStructure Bool
-                                       SM.Set NoStructure Bool
+           NeSyFrameworkTransformation (Dist.T prob) [] Bool
+                                       SM.Set [] Bool
 argmax i = Interpretation { universe = universe i,
-             structure = structure i,               
              funcs = funcs i,
              mfuncs = Map.map (maximalValues .) $ mfuncs i,
              preds = preds i,
@@ -137,10 +131,10 @@ evalF i val (Not f) = neg $ evalF i val f
 evalF i val (And f1 f2) = conj (evalF i val f1) (evalF i val f2)
 evalF i val (Or f1 f2) = disj (evalF i val f1) (evalF i val f2)
 evalF i val (Implies f1 f2) = implies (evalF i val f1) (evalF i val f2)
-evalF i val (Forall var f) = aggrA (structure i) (map evalAux $ universe i)
-      where evalAux a = (a,evalF i (Map.insert var a val) f)
-evalF i val (Exists var f) = aggrE (structure i) (map evalAux $ universe i)
-      where evalAux a = (a,evalF i (Map.insert var a val) f)
+evalF i val (Forall var f) = aggrA (universe i) predicate 
+      where predicate a = evalF i (Map.insert var a val) f
+evalF i val (Exists var f) = aggrE (universe i) predicate 
+      where predicate a = evalF i (Map.insert var a val) f
 evalF i val (Comp var m ts f) = -- var:=m(ts)(f)
       do a <- m_sem $ map (evalT i val) ts
          evalF i (Map.insert var a val) f
@@ -149,9 +143,8 @@ evalF i val (Comp var m ts f) = -- var:=m(ts)(f)
 -------------------------- Dice example ------------------------------
               
 -- interpretation for dice example
-dieModel :: Interpretation (Dist.T Double) NoStructure Bool Integer
-dieModel =  Interpretation { universe = [1..6],
-               structure = NoStructure,              
+dieModel :: Interpretation (Dist.T Double) [] Bool Integer
+dieModel =  Interpretation { universe = [1..6],              
                funcs = Map.fromList $ map (\x -> (show x,\_ -> x)) [1..6],
                mfuncs = Map.fromList [("die",\_ -> Dist.uniform [1..6])],
                preds = Map.fromList[("==",\[x,y] -> x==y),
@@ -181,10 +174,9 @@ d2C = evalF dieModelC Map.empty dieSen2
               
 -- interpretation for traffic light example
 data Universe = Red | Yellow | Green | B Bool deriving (Eq, Ord, Show)
-trafficModel :: Interpretation (Dist.T Double) NoStructure Bool Universe
+trafficModel :: Interpretation (Dist.T Double) [] Bool Universe
 trafficModel =  Interpretation {
   universe = [Red, Yellow, Green, B False, B True],
-  structure = NoStructure,
   funcs = Map.fromList [("green",\_ -> Green)],
   mfuncs = Map.fromList [("light",\_ ->
               Dist.fromFreqs [(Red, 0.6),(Green, 0.3),(Yellow, 0.1)]),
