@@ -15,5 +15,6 @@ executable muller
     mtl,
     set-monad,
     probability,
-    random
+    random,
+    monad-bayes
   default-language: Haskell2010 

@@ -9,6 +9,8 @@ import Data.Maybe
 import Control.Monad.Identity
 import qualified Data.Set.Monad as SM
 import qualified Numeric.Probability.Distribution as Dist
+import Control.Monad.Bayes.Class (MonadSample(..))
+import Control.Monad.Bayes.Sampler (SamplerIO)
 -- for sampling
 import System.Random
 
@@ -54,6 +56,23 @@ instance Num prob => NeSyFramework (Dist.T prob) [] Bool
 -- there is no standard non-empty set monad in Haskell
 -- so we use the set monad instead. Omega is Bool
 instance NeSyFramework SM.Set [] Bool 
+
+-- Giry monad instance, using monad-bayes for both aggregation and the monad
+no_samples = 1000
+instance Aggr2SGrpBLat SamplerIO (SamplerIO Bool) where
+  -- Expectation-style aggregation over a distribution
+  -- Here we approximate via Monte Carlo with n samples
+  -- aggrE :: SamplerIO a -> (a -> SamplerIO Bool) -> SamplerIO Bool
+  aggrE dist f = do
+    samples <- sequence (replicate no_samples dist)
+    vals    <- mapM f samples
+    return (or vals)
+  -- aggrA :: SamplerIO a -> (a -> SamplerIO Bool) -> SamplerIO Bool
+  aggrA dist f = do
+    samples <- sequence (replicate no_samples dist)
+    vals    <- mapM f samples
+    return (and vals)
+instance NeSyFramework SamplerIO SamplerIO Bool
 
 -------------------------- Syntax ------------------------------
          
