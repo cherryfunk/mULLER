@@ -18,6 +18,8 @@ from .priest import (
     Priest,
     ProbabilisticPriestLogic,
 )
+from .product_algebra import ProductAlgebraLogic
+from .giry_product_algebra import GiryProductAlgebraLogic
 
 
 @lru_cache(maxsize=128)
@@ -104,5 +106,7 @@ __all__ = [
     "NonDeterministicPriestLogic",
     "ProbabilisticPriestLogic",
     "ClassicalPriestLogic",
-    "Priest"
+    "Priest",
+    "ProductAlgebraLogic",
+    "GiryProductAlgebraLogic",
 ]
