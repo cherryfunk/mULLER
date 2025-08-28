@@ -58,21 +58,18 @@ instance Num prob => NeSyFramework (Dist.T prob) [] Bool
 -- so we use the set monad instead. Omega is Bool
 instance NeSyFramework SM.Set [] Bool 
 
--- Giry monad instance, using monad-bayes for both aggregation and the monad
+-- Expectation-style aggregation over a distribution
+-- Here we approximate via Monte Carlo with no_samples samples
 no_samples = 1000
+aggregation :: Monad m => ([a] -> a) -> m b -> (b -> m a) -> m a
+aggregation connective dist f = do
+  samples <- sequence (replicate no_samples dist)
+  vals    <- mapM f samples
+  return (connective vals)
 instance Aggr2SGrpBLat SamplerIO (SamplerIO Bool) where
-  -- Expectation-style aggregation over a distribution
-  -- Here we approximate via Monte Carlo with no_samples samples
-  -- aggrE :: SamplerIO a -> (a -> SamplerIO Bool) -> SamplerIO Bool
-  aggrE dist f = do
-    samples <- sequence (replicate no_samples dist)
-    vals    <- mapM f samples
-    return (or vals)
-  -- aggrA :: SamplerIO a -> (a -> SamplerIO Bool) -> SamplerIO Bool
-  aggrA dist f = do
-    samples <- sequence (replicate no_samples dist)
-    vals    <- mapM f samples
-    return (and vals)
+  aggrE = aggregation or
+  aggrA = aggregation and
+-- Giry monad instance, using monad-bayes for both aggregation and the monad
 instance NeSyFramework SamplerIO SamplerIO Bool
 
 -------------------------- Syntax ------------------------------
