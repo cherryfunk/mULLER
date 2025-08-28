@@ -8,7 +8,7 @@ author: User
 maintainer: user@example.com
 
 executable muller
-  main-is: Code/NeSy.hs
+  main-is: Haskell/NeSy.hs
   build-depends: 
     base >=4.16,
     containers,
@@ -16,5 +16,6 @@ executable muller
     set-monad,
     probability,
     random,
-    monad-bayes
+    monad-bayes,
+    vector
   default-language: Haskell2010 
