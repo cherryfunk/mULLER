@@ -9,7 +9,9 @@ import Data.Maybe
 import Control.Monad.Identity
 import qualified Data.Set.Monad as SM
 import qualified Numeric.Probability.Distribution as Dist
-import Control.Monad.Bayes.Sampler (SamplerIO)
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Sampler (SamplerIO, sampleIO)
+import qualified Data.Vector as V
 -- for sampling
 import System.Random
 
@@ -254,4 +256,75 @@ main = do
   let values = [("d1C",d1C),("d2C",d2C),("t1C",t1C),("t2C",t2C)]
   mapM_ sample values
 
+-------------------------- Wheather example ------------------------------
 
+-- Toy stubs for predictors:
+humid_detector :: Int -> Double
+humid_detector d = if d `mod` 2 == 0 then 0.7 else 0.2
+-- "probability it's humid"
+
+temperature_predictor :: Int -> (Double,Double)
+temperature_predictor d = (fromIntegral (10 + d),fromIntegral d)
+-- mean temperature and variance for data poin
+
+-- interpretation 
+data UniverseW = Int Int | Double Double | Pair (Double,Double)
+                 deriving (Eq, Ord, Show)
+b2UW :: Bool -> UniverseW
+b2UW b = Int (if b then 1 else 0)
+d2UW :: Double -> UniverseW
+d2UW d = Double d
+
+-- continuous distribution over UniverseW
+uniformUniverseW :: SamplerIO UniverseW
+uniformUniverseW = do
+  choice <- categorical $ V.fromList [1.0,1.0,1.0]
+  case choice of
+    0 -> do
+      -- sample an integer uniformly from [-10..10]
+      i <- categorical $ V.fromList $ replicate 21 1
+      return (Int (i-10))
+    1 -> do
+      x <- uniform 0 1       -- x ~ U(0,1)
+      return (Double x)
+    2 -> do
+      x <- uniform (-1) 1      -- Pair (x,y), each U(-1,1)
+      y <- uniform (-1) 1
+      return (Pair (x, y))
+
+weatherModel :: Interpretation SamplerIO SamplerIO Bool UniverseW
+weatherModel =  Interpretation {
+  universe = uniformUniverseW,
+  funcs = Map.fromList [("humid_detector",\[Int d] ->
+                            Double (humid_detector d)),
+                        ("temperature_predictor",\[Int d] ->
+                            Pair (temperature_predictor d))],
+  mfuncs = Map.fromList [("bernoulli",\[Double d] -> fmap b2UW $ bernoulli d),
+                         ("normal",\[Pair(d1,d2)] -> fmap d2UW $ normal d1 d2)
+                        ],
+  preds = Map.fromList[
+             ("==",\[x,y] -> x==y),
+             ("<",\[x,y] -> x<y),
+             (">",\[x,y] -> x>y)],
+  mpreds = Map.fromList[]}
+
+-- [h := bernoulli(humid_detector(data1))]
+--   [t := normal(temperature_predictor(data1))]
+--     (h = 1 ∧ t < 0) ∨ (h = 0 ∧ t > 15)
+weatherSen1 :: Formula  
+weatherSen1 = Comp "h" "bernoulli" [Appl "humid_detector" [Appl "data1" []]]
+                (Comp "t" "driveF" [Appl "temperature_predictor" [Appl "data1" []]]
+                   (Or (And (Pred "==" [Var "h", Appl "1" []])
+                            (Pred "<" [Var "t",Appl "0" []]))
+                       (And (Pred "==" [Var "h", Appl "0" []])
+                            (Pred ">" [Var "t",Appl "15" []]))
+                   ))
+
+w1 :: SamplerIO Bool
+w1 = evalF weatherModel Map.empty weatherSen1
+
+mainW :: IO ()
+mainW = do
+  results <- sampleIO $ sequence (replicate 10 w1)
+  putStrLn "10 samples of the weather example truth value:"
+  print results
