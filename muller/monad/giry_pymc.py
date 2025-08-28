@@ -1,5 +1,5 @@
-
-from typing import Callable, Union, Any
+from typing import Callable, Union, Any, Sequence
+import numpy as np
 import pymc as pm
 import pytensor.tensor as pt
 from pytensor.tensor.variable import TensorVariable
@@ -107,7 +107,7 @@ def constant(value: Union[float, int]) -> GiryMonadPyMC:
     return GiryMonadPyMC.unit(tensor_var)
 
 
-def normal(mu: Union[float, int, TensorVariable] = 0.0, 
+def normal(mu: int = 0, 
            sigma: Union[float, int, TensorVariable] = 1.0) -> GiryMonadPyMC:
     """
     Create a GiryMonadPyMC with a normal distribution.
@@ -119,12 +119,12 @@ def normal(mu: Union[float, int, TensorVariable] = 0.0,
     Returns:
         GiryMonadPyMC wrapping a normal distribution
     """
-    dist = pm.Normal.dist(mu=mu, sigma=sigma)  # type: ignore
+    dist = pm.Normal.dist(mu=mu, sigma=sigma)
     return GiryMonadPyMC(dist)
 
 
-def uniform(lower: Union[float, int, TensorVariable] = 0.0,
-            upper: Union[float, int, TensorVariable] = 1.0) -> GiryMonadPyMC:
+def uniform(lower: int = 0,
+            upper: int = 1) -> GiryMonadPyMC:
     """
     Create a GiryMonadPyMC with a uniform distribution.
 
@@ -135,7 +135,7 @@ def uniform(lower: Union[float, int, TensorVariable] = 0.0,
     Returns:
         GiryMonadPyMC wrapping a uniform distribution
     """
-    dist = pm.Uniform.dist(lower=lower, upper=upper)  # type: ignore
+    dist = pm.Uniform.dist(lower=lower, upper=upper)
     return GiryMonadPyMC(dist)
 
 
@@ -151,7 +151,7 @@ def beta(alpha: Union[float, int, TensorVariable],
     Returns:
         GiryMonadPyMC wrapping a beta distribution
     """
-    dist = pm.Beta.dist(alpha=alpha, beta=beta_param)  # type: ignore
+    dist = pm.Beta.dist(alpha=alpha, beta=beta_param)
     return GiryMonadPyMC(dist)
 
 
@@ -167,5 +167,20 @@ def binomial(n: Union[int, TensorVariable],
     Returns:
         GiryMonadPyMC wrapping a binomial distribution
     """
-    dist = pm.Binomial.dist(n=n, p=p)  # type: ignore
+    dist = pm.Binomial.dist(n=n, p=p)
+    return GiryMonadPyMC(dist)
+
+def betaBinomial(n: int, a: float, b: float) -> GiryMonadPyMC:
+    """
+    Create a GiryMonadPyMC with a beta-binomial distribution.
+
+    Args:
+        n: Number of trials
+        a: Alpha parameter of the beta distribution
+        b: Beta parameter of the beta distribution
+
+    Returns:
+        GiryMonadPyMC wrapping a beta-binomial distribution
+    """
+    dist = pm.BetaBinomial.dist(n=n, alpha=a, beta=b)
     return GiryMonadPyMC(dist)
