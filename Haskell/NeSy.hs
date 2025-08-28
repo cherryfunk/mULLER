@@ -264,7 +264,7 @@ humid_detector d = if d `mod` 2 == 0 then 0.7 else 0.2
 -- "probability it's humid"
 
 temperature_predictor :: Int -> (Double,Double)
-temperature_predictor d = (fromIntegral (10 + d),fromIntegral d)
+temperature_predictor d = (fromIntegral (10 + d),fromIntegral (11 + d)/5.0)
 -- mean temperature and variance for data poin
 
 -- interpretation 
@@ -278,7 +278,7 @@ d2UW d = Double d
 -- continuous distribution over UniverseW
 uniformUniverseW :: SamplerIO UniverseW
 uniformUniverseW = do
-  choice <- categorical $ V.fromList [1.0,1.0,1.0]
+  choice <- categorical $ V.fromList [1,1,1]
   case choice of
     0 -> do
       -- sample an integer uniformly from [-10..10]
@@ -288,8 +288,8 @@ uniformUniverseW = do
       x <- uniform 0 1       -- x ~ U(0,1)
       return (Double x)
     2 -> do
-      x <- uniform (-1) 1      -- Pair (x,y), each U(-1,1)
-      y <- uniform (-1) 1
+      x <- uniform (-5) 20      -- Pair (x,y), each U(-1,1)
+      y <- uniform 0 5
       return (Pair (x, y))
 
 weatherModel :: Interpretation SamplerIO SamplerIO Bool UniverseW
@@ -318,19 +318,52 @@ weatherModel =  Interpretation {
 --   [t := normal(temperature_predictor(data1))]
 --     (h = 1 ∧ t < 0) ∨ (h = 0 ∧ t > 15)
 weatherSen1 :: Formula  
-weatherSen1 = Comp "h" "bernoulli" [Appl "humid_detector" [Appl "data1" []]]
-                (Comp "t" "normal" [Appl "temperature_predictor" [Appl "data1" []]]
+weatherSen1 =
+  Comp "h" "bernoulli" [Appl "humid_detector" [Appl "data1" []]]
+       (Comp "t" "normal" [Appl "temperature_predictor" [Appl "data1" []]]
                    (Or (And (Pred "==" [Var "h", Appl "1" []])
                             (Pred "<" [Var "t",Appl "0.0" []]))
                        (And (Pred "==" [Var "h", Appl "0" []])
                             (Pred ">" [Var "t",Appl "15.0" []]))
                    ))
+weatherBody :: Formula
+weatherBody = Comp "h" "bernoulli" [Appl "humid_detector" [Var "d"]]
+                (Comp "t" "normal" [Appl "temperature_predictor" [Var "d"]]
+                   (Or (And (Pred "==" [Var "h", Appl "1" []])
+                            (Pred "<" [Var "t",Appl "0.0" []]))
+                       (And (Pred "==" [Var "h", Appl "0" []])
+                            (Pred ">" [Var "t",Appl "15.0" []]))
+                   ))
+-- forall d : [h := bernoulli(humid_detector(d))]
+--               [t := normal(temperature_predictor(d))]
+--                  (h = 1 ∧ t < 0) ∨ (h = 0 ∧ t > 15)
+weatherSen2 :: Formula  
+weatherSen2 = Forall "d" weatherBody
+-- exists d : [h := bernoulli(humid_detector(d))]
+--               [t := normal(temperature_predictor(d))]
+--                  (h = 1 ∧ t < 0) ∨ (h = 0 ∧ t > 15)
+weatherSen3 :: Formula  
+weatherSen3 = Exists "d" weatherBody
 
 w1 :: SamplerIO Bool
 w1 = evalF weatherModel Map.empty weatherSen1
+w2 :: SamplerIO Bool
+w2 = evalF weatherModel Map.empty weatherSen2
+w3 :: SamplerIO Bool
+w3 = evalF weatherModel Map.empty weatherSen3
+
+-- compute the probability of True by sampling
+no_samples2 = 1000
+evaluate :: SamplerIO Bool -> IO Double
+evaluate sampler = do
+  results <- sampleIO $ sequence $ replicate no_samples2 sampler
+  let (trues, total) =
+        foldr (\b (t, n) -> (if b then t + 1 else t, n + 1)) (0, 0) results
+  return $ if total == 0 then 0 else fromIntegral trues / fromIntegral total
 
 mainW :: IO ()
 mainW = do
-  results <- sampleIO $ sequence (replicate 10 w1)
-  putStrLn "10 samples of the weather example truth value:"
-  print results
+  putStrLn "frequency of True for each weather example:"
+  (evaluate w1) >>= print
+  (evaluate w2) >>= print
+  (evaluate w3) >>= print
