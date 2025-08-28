@@ -298,7 +298,13 @@ weatherModel =  Interpretation {
   funcs = Map.fromList [("humid_detector",\[Int d] ->
                             Double (humid_detector d)),
                         ("temperature_predictor",\[Int d] ->
-                            Pair (temperature_predictor d))],
+                            Pair (temperature_predictor d)),
+                        ("data1",\_ -> Int 1),
+                        ("0",\_ -> Int 0),
+                        ("1",\_ -> Int 1),
+                        ("0.0",\_ -> Double 0.0),
+                        ("15.0",\_ -> Double 15.0)
+                        ],
   mfuncs = Map.fromList [("bernoulli",\[Double d] -> fmap b2UW $ bernoulli d),
                          ("normal",\[Pair(d1,d2)] -> fmap d2UW $ normal d1 d2)
                         ],
@@ -313,11 +319,11 @@ weatherModel =  Interpretation {
 --     (h = 1 ∧ t < 0) ∨ (h = 0 ∧ t > 15)
 weatherSen1 :: Formula  
 weatherSen1 = Comp "h" "bernoulli" [Appl "humid_detector" [Appl "data1" []]]
-                (Comp "t" "driveF" [Appl "temperature_predictor" [Appl "data1" []]]
+                (Comp "t" "normal" [Appl "temperature_predictor" [Appl "data1" []]]
                    (Or (And (Pred "==" [Var "h", Appl "1" []])
-                            (Pred "<" [Var "t",Appl "0" []]))
+                            (Pred "<" [Var "t",Appl "0.0" []]))
                        (And (Pred "==" [Var "h", Appl "0" []])
-                            (Pred ">" [Var "t",Appl "15" []]))
+                            (Pred ">" [Var "t",Appl "15.0" []]))
                    ))
 
 w1 :: SamplerIO Bool
