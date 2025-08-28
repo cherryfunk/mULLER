@@ -36,7 +36,7 @@ uv pip install git+https://github.com/cherryfunk/mULLER.git
 ### Dependencies
 
 The package automatically installs the following dependencies:
-- `lark>=1.2.2` - for parsing first-order logic formulas
+- `lark>=1.2.2` - for parsing ULLER formulas
 - `numpy>=2.3.2` - for numerical computations
 - `pymonad>=2.4.0` - for monadic operations
 - `scipy>=1.16.0` - for statistical distributions
@@ -53,7 +53,7 @@ The package automatically installs the following dependencies:
        ...
    )
     ```
-3. Parse the uller formula using the `parse` function, which returns an abstract syntax tree (AST) representation of the formula.
+3. Parse the ULLER formula using the `parse` function, which returns an abstract syntax tree (AST) representation of the formula.
 4. Evaluate the formula against the interpretation using the `eval` method, which returns a result in the specified Monad.
 
 ### Examples
@@ -184,7 +184,8 @@ The function will search all loaded modules for a subclass of `Aggr2SGrpBLat` th
 If no matching logic is found, it raises a `ValueError`.
 
 Example:
-```pythonfrom muller import nesy, Prob
+```python
+from muller import nesy, Prob
 from pymonad import Prob
 from muller.logics import Aggr2SGrpBLat
 
@@ -195,7 +196,7 @@ class MyCustomLogic(Aggr2SGrpBLat[Prob[str]]):
     ...
         
 nesy_framework = nesy(Prob, bool) # Uses `muller.logics.ProbabilisticBooleanLogic`
-nesy_framework = nesy(MyLogicOverwrite()) # Uses `MyLogic`
+nesy_framework = nesy(MyLogicOverwrite()) # Uses `MyLogicOverwrite`
 nesy_framework = nesy(Prob, str) # Uses `MyCustomLogic`
 ```
 
@@ -206,7 +207,7 @@ nesy_framework = nesy(Prob, str) # Uses `MyCustomLogic`
 **Returns:** `NeSyFramework` instance
 
 #### `parse(formula_string)`
-Parses a first-order logic formula string into an AST.
+Parses a ULLER formula string into an AST.
 
 **Parameters:**
 - `formula_string`: String representation of the formula
