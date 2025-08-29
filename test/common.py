@@ -20,7 +20,7 @@ def _drive(light: TrafficLightUniverse) -> ParametrizedMonad[TrafficLightUnivers
 
 
 
-traffic_light_model: Interpretation[TrafficLightUniverse, bool] = Interpretation(
+traffic_light_model: Interpretation[TrafficLightUniverse, bool, list[TrafficLightUniverse]] = Interpretation(
     universe=traffic_light_universe,
     functions={
         "green": lambda: "green",

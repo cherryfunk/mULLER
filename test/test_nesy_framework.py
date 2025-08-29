@@ -1,11 +1,12 @@
 import unittest
-from typing import Literal, Mapping
+from typing import Callable, Literal, Mapping
 
 from common import traffic_light_model
 
 from muller.logics.aggr2sgrpblat import Aggr2SGrpBLat, NeSyLogicMeta
 from muller.logics.boolean import (
     NonDeterministicBooleanLogic,
+    NonDeterministicBooleanLogicList,
 )
 from muller.monad.base import ParametrizedMonad
 from muller.monad.distribution import Prob, uniform
@@ -81,7 +82,7 @@ class TestNeSyFramework(unittest.TestCase):
 
     def test_probabilistic_complex_formulas(self):
         """Test complex formulas in probabilistic logic."""
-        interpretation: Interpretation[Universe, bool] = Interpretation(
+        interpretation: Interpretation[Universe, bool, list[Universe]] = Interpretation(
             universe=self.universe,
             functions={
                 "father": lambda x: "bob" if x == "alice" else "charlie",
@@ -537,7 +538,7 @@ class TestNeSyFramework(unittest.TestCase):
 
     def test_get_nesy_for_logic(self):
         """Test getting NeSy framework for a specific logic."""
-        logic = NonDeterministicBooleanLogic().as_base()
+        logic = NonDeterministicBooleanLogicList()
         nesy_framework = nesy(logic)
         self.assertIsInstance(nesy_framework, NeSyFramework)
         self.assertEqual(nesy_framework.M, NonEmptyPowerset)
@@ -553,7 +554,7 @@ class TestNeSyFramework(unittest.TestCase):
 class MyMonad[T](ParametrizedMonad[T]): ...
 
 
-class MyProbabilityLogic(Aggr2SGrpBLat[MyMonad[bool]], NeSyLogicMeta[bool]):
+class MyProbabilityLogic(Aggr2SGrpBLat[list, MyMonad[bool]], NeSyLogicMeta[bool]):
     """Custom logic for testing"""
 
     def top(self) -> MyMonad[bool]:
@@ -567,6 +568,12 @@ class MyProbabilityLogic(Aggr2SGrpBLat[MyMonad[bool]], NeSyLogicMeta[bool]):
 
     def disjunction(self, a: MyMonad[bool], b: MyMonad[bool]) -> MyMonad[bool]:
         return MyMonad(a.value or b.value, None)
+    
+    def aggrA[A](self, structure: list, f: Callable[[A], MyMonad[bool]]) -> MyMonad[bool]:
+        return MyMonad(all(f(x).value for x in structure), None)
+    
+    def aggrE[A](self, structure: list, f: Callable[[A], MyMonad[bool]]) -> MyMonad[bool]:
+        return MyMonad(any(f(x).value for x in structure), None)
 
 
 if __name__ == "__main__":

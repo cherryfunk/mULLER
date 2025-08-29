@@ -47,7 +47,7 @@ type SingleArgumentTypeFunction[I, O] = (
 )
 
 
-class NeSyTransformer[A, O1, O2](ABC):
+class NeSyTransformer[A, S1, O1, S2, O2](ABC):
     """
     Base class for transformations in the NeSy framework.
     Transformations can be applied to interpretations to produce new interpretations.
@@ -55,8 +55,8 @@ class NeSyTransformer[A, O1, O2](ABC):
 
     @abstractmethod
     def __call__(
-        self, interpretation: "Interpretation[A, O1]"
-    ) -> "Interpretation[A, O2]":
+        self, interpretation: "Interpretation[A, S1, O1]"
+    ) -> "Interpretation[A, S2, O2]":
         """
         Apply the transformation to the given interpretation.
 
@@ -73,23 +73,23 @@ NeSyTransformation = NeSyTransformer
 
 
 @dataclass
-class Interpretation[A, O]:
-    universe: list[A]
+class Interpretation[A, O, S]:
+    universe: S
     functions: dict[Ident, SingleArgumentTypeFunction[A, A]]
     mfunctions: dict[Ident, SingleArgumentTypeFunction[A, ParametrizedMonad[A]]]
     preds: dict[Ident, SingleArgumentTypeFunction[A, O]]
     mpreds: dict[Ident, SingleArgumentTypeFunction[A, ParametrizedMonad[O]]]
 
-    def transform[P](
-        self, transformation: NeSyTransformation[A, O, P]
-    ) -> "Interpretation[A, P]":
+    def transform[O2, S2](
+        self, transformation: NeSyTransformation[A, O, S, O2, S2]
+    ) -> "Interpretation[A, O2, S2]":
         return transformation(self)
 
 
 type Valuation[A] = Mapping[Ident, A]
 
 
-class NeSyFramework[_T: ParametrizedMonad, _O, _R: Aggr2SGrpBLat]:
+class NeSyFramework[_T: ParametrizedMonad, _O, _R: Aggr2SGrpBLat, _S]:
     """
     Class to represent a monadic NeSy framework consisting of a monad (T),
     a set Ω acting as truth basis (O),
@@ -113,7 +113,7 @@ class NeSyFramework[_T: ParametrizedMonad, _O, _R: Aggr2SGrpBLat]:
         return self._monad
 
     @property
-    def logic(self) -> Aggr2SGrpBLat[ParametrizedMonad[_O]]:
+    def logic(self) -> Aggr2SGrpBLat[_S, ParametrizedMonad[_O]]:
         """
         Returns the logic used in this NeSy framework typed with the
         generic monad but specific truth basis.
@@ -122,7 +122,7 @@ class NeSyFramework[_T: ParametrizedMonad, _O, _R: Aggr2SGrpBLat]:
         return self._logic
 
     @property
-    def logic_T(self) -> Aggr2SGrpBLat[_T]:
+    def logic_T(self) -> Aggr2SGrpBLat[_S, _T]:
         """
         Returns the logic used in this NeSy framework typed with the
         specific monad but generic truth basis.
@@ -133,7 +133,7 @@ class NeSyFramework[_T: ParametrizedMonad, _O, _R: Aggr2SGrpBLat]:
     def __init__(
         self,
         monad: type[_T],
-        logic: Aggr2SGrpBLat[ParametrizedMonad[_O]],
+        logic: Aggr2SGrpBLat[_S, ParametrizedMonad[_O]],
     ) -> None:
         """
         Initialize the NeSy framework with a monad, truth basis, and logic.
@@ -175,10 +175,10 @@ class Term(ABC):
     Terms can be variables or applications of functions to arguments.
     """
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> A:
         raise NotImplementedError()
@@ -188,10 +188,10 @@ class Term(ABC):
 class Variable(Term):
     ident: Ident
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> A:
         return valuation[self.ident]
@@ -205,10 +205,10 @@ class FunctionApplication(Term):
     function: Ident
     arguments: list[Term]
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> A:
         f = interpretation.functions[self.function]
@@ -229,10 +229,10 @@ class Formula(ABC):
     """
 
     @abstractmethod
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> T:
         raise NotImplementedError()
@@ -247,10 +247,10 @@ class TrueFormula(Formula):
     def __repr__(self):
         return "True"
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> T:
         return nesy.logic_T.top()
@@ -265,10 +265,10 @@ class FalseFormula(Formula):
     def __repr__(self):
         return "False"
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> T:
         return nesy.logic_T.bottom()
@@ -297,10 +297,10 @@ class Predicate(Formula):
             return formatted_name
         return f"{formatted_name}({args_str})"
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> T:
         p = interpretation.preds[self.name]
@@ -324,10 +324,10 @@ class MonadicPredicate(Formula):
             return formatted_name
         return f"{formatted_name}({args_str})"
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> T:
         p = interpretation.mpreds[self.name]
@@ -346,10 +346,10 @@ class Negation(Formula):
     def __repr__(self):
         return f"¬{self.formula}"
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> T:
         return nesy.logic_T.neg(self.formula.eval(nesy, interpretation, valuation))
@@ -367,10 +367,10 @@ class Conjunction(Formula):
     def __repr__(self):
         return f"({self.left} ∧ {self.right})"
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> T:
         result_left = self.left.eval(nesy, interpretation, valuation)
@@ -390,10 +390,10 @@ class Disjunction(Formula):
     def __repr__(self):
         return f"({self.left} ∨ {self.right})"
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> T:
         result_left = self.left.eval(nesy, interpretation, valuation)
@@ -413,10 +413,10 @@ class Implication(Formula):
     def __repr__(self):
         return f"({self.antecedent} -> {self.consequent})"
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> T:
         result_left = self.antecedent.eval(nesy, interpretation, valuation)
@@ -436,18 +436,19 @@ class UniversalQuantification(Formula):
     def __repr__(self):
         return f"∀{self.variable} ({self.formula})"
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> T:
         universe = interpretation.universe
-        results = (
-            self.formula.eval(nesy, interpretation, {**valuation, self.variable: a})
-            for a in universe
+        return nesy.logic_T.aggrA(
+            universe,
+            lambda x: self.formula.eval(
+                nesy, interpretation, {**valuation, self.variable: cast(A, x)}
+            ),
         )
-        return nesy.logic_T.aggrA(results)
 
 
 @dataclass
@@ -462,18 +463,17 @@ class ExistentialQuantification(Formula):
     def __repr__(self):
         return f"∃{self.variable} ({self.formula})"
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> T:
         universe = interpretation.universe
-        results = (
-            self.formula.eval(nesy, interpretation, {**valuation, self.variable: a})
-            for a in universe
+        return nesy.logic_T.aggrE(
+            universe,
+            lambda x: self.formula.eval(nesy, interpretation, {**valuation, self.variable: cast(A, x)})
         )
-        return nesy.logic_T.aggrE(results)
 
 
 @dataclass
@@ -488,10 +488,10 @@ class Computation(Formula):
         formatted_function = _format_function_ident(self.function)
         return f"{self.variable} := {formatted_function}({args_str})({self.formula})"
 
-    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A](
+    def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
-        nesy: "NeSyFramework[T, O, R]",
-        interpretation: "Interpretation[A, O]",
+        nesy: "NeSyFramework[T, O, R, S]",
+        interpretation: "Interpretation[A, O, S]",
         valuation: "Valuation[A]",
     ) -> T:
         f = interpretation.mfunctions[self.function]
@@ -508,9 +508,9 @@ class Computation(Formula):
         return nesy.castT(x)
 
 
-def nesy_for_logic[T: ParametrizedMonad, O](
-    logic: Aggr2SGrpBLat[T],
-) -> NeSyFramework[ParametrizedMonad[O], O, Aggr2SGrpBLat[ParametrizedMonad[O]]]:
+def nesy_for_logic[T: ParametrizedMonad, O, S](
+    logic: Aggr2SGrpBLat[S, T],
+) -> NeSyFramework[ParametrizedMonad[O], O, Aggr2SGrpBLat[S, ParametrizedMonad[O]], S]:
     """
     Create a NeSyFramework instance for the given logic. See `nesy` for more details.
 
@@ -524,12 +524,12 @@ def nesy_for_logic[T: ParametrizedMonad, O](
 
     # Check if the logic is compatible with the monad type
     # is done in `NeSyFramework.__init__`
-    return NeSyFramework(monad_type, cast(Aggr2SGrpBLat[ParametrizedMonad[O]], logic))
+    return NeSyFramework(monad_type, cast(Aggr2SGrpBLat[S, ParametrizedMonad[O]], logic))
 
 
-def nesy_framework_for_monad[O](
-    monad_type: Type[ParametrizedMonad], omega: Type[O] = Type[bool]
-) -> NeSyFramework[ParametrizedMonad, Any, Aggr2SGrpBLat[ParametrizedMonad]]:
+def nesy_framework_for_monad[O, S](
+    monad_type: Type[ParametrizedMonad], omega: Type[O] = Type[bool], structure: Type[S] = Type[list[Any]]
+) -> NeSyFramework[ParametrizedMonad, Any, Aggr2SGrpBLat[S, ParametrizedMonad], S]:
     """
     Create a NeSyFramework instance with the given monad type and optional
     truth value type. See `nesy` for more details.
@@ -542,14 +542,13 @@ def nesy_framework_for_monad[O](
         An instance of NeSyFramework with the specified monad and truth value types.
     """
 
-    return NeSyFramework(monad_type, get_logic(monad_type, omega))
+    return NeSyFramework(monad_type, get_logic(monad_type, omega, structure))
 
 
 @overload
-def nesy[T: ParametrizedMonad, O](
-    logic: Aggr2SGrpBLat[T],
-    omega: Type[O] = Type[bool]
-) -> NeSyFramework[ParametrizedMonad[O], O, Aggr2SGrpBLat[ParametrizedMonad[O]]]:
+def nesy[S, T: ParametrizedMonad, O](
+    logic: Aggr2SGrpBLat[S, T], omega: Type[O] = Type[bool], structure: Type[S] = list[Any]
+) -> NeSyFramework[ParametrizedMonad[O], O, Aggr2SGrpBLat[S, ParametrizedMonad[O]], S]:
     """
     Create a NeSyFramework instance for the given logic.
 
@@ -563,9 +562,9 @@ def nesy[T: ParametrizedMonad, O](
 
 
 @overload
-def nesy[O](
-    monad_type: Type[ParametrizedMonad], omega: Type[O] = Type[bool]
-) -> NeSyFramework[ParametrizedMonad[O], O, Aggr2SGrpBLat[ParametrizedMonad[O]]]:
+def nesy[O, S](
+    monad_type: Type[ParametrizedMonad], omega: Type[O] = Type[bool], structure: Type[S] = list[Any]
+) -> NeSyFramework[ParametrizedMonad[O], O, Aggr2SGrpBLat[S, ParametrizedMonad[O]], S]:
     """
     Creates a NeSy framework instance from a monad type.
 
@@ -601,10 +600,11 @@ def nesy[O](
     ...
 
 
-def nesy[O](  # pyright: ignore[reportInconsistentOverload]
-    arg1: Aggr2SGrpBLat[ParametrizedMonad[O]] | Type[ParametrizedMonad],
+def nesy[O, S](  # pyright: ignore[reportInconsistentOverload]
+    arg1: Aggr2SGrpBLat[S, ParametrizedMonad[O]] | Type[ParametrizedMonad],
     omega: Type[O] = Type[bool],
-) -> NeSyFramework[ParametrizedMonad[O], O, Aggr2SGrpBLat[ParametrizedMonad[O]]]:
+    structure: Type[S] = list[Any]
+) -> NeSyFramework[ParametrizedMonad[O], O, Aggr2SGrpBLat[S, ParametrizedMonad[O]], S]:
     """
     Create a NeSyFramework instance based on the provided argument.
 
@@ -618,4 +618,4 @@ def nesy[O](  # pyright: ignore[reportInconsistentOverload]
     if isinstance(arg1, Aggr2SGrpBLat):
         return nesy_for_logic(arg1)
     else:
-        return nesy_framework_for_monad(arg1, omega)
+        return nesy_framework_for_monad(arg1, omega, structure)

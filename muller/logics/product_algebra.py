@@ -3,7 +3,7 @@ from muller.monad.identity import Identity
 from typing import Iterable
 
 
-class ProductAlgebraLogic(Aggr2SGrpBLat[Identity[float]], NeSyLogicMeta[float]):
+class ProductAlgebraLogic(Aggr2SGrpBLat[list, Identity[float]], NeSyLogicMeta[float]):
     """
     Product algebra on [0, 1] with:
     - Conjunction: a · b

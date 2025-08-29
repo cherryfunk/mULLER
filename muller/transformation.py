@@ -12,10 +12,10 @@ def maximal_values[T](prob_dist: Prob[T]) -> NonEmptyPowerset[T]:
     return NonEmptyPowerset(max_vals)
 
 
-class argmax[A](NeSyTransformer[A, bool, bool]):
+class argmax[A](NeSyTransformer[A, bool, list[A], bool, list[A]]):
     def __call__(
-        self, interpretation: Interpretation[A, bool]
-    ) -> Interpretation[A, bool]:
+        self, interpretation: Interpretation[A, bool, list[A]]
+    ) -> Interpretation[A, bool, list[A]]:
         # Transform monadic functions
         transformed_mfunctions = {}
         for name, func in interpretation.mfunctions.items():

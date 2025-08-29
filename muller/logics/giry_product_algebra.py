@@ -2,7 +2,7 @@ from muller.logics.aggr2sgrpblat import Aggr2SGrpBLat, NeSyLogicMeta
 from muller.monad.giry import GiryMonad
 
 
-class GiryProductAlgebraLogic(Aggr2SGrpBLat[GiryMonad[float]], NeSyLogicMeta[float]):
+class GiryProductAlgebraLogic(Aggr2SGrpBLat[list, GiryMonad[float]], NeSyLogicMeta[float]):
     """
     Product algebra on truth values in [0, 1] carried by the Giry monad.
 
