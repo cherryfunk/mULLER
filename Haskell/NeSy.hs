@@ -10,10 +10,10 @@ import Control.Monad.Identity
 import qualified Data.Set.Monad as SM
 import qualified Numeric.Probability.Distribution as Dist
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Sampler (SamplerIO, sampleIO)
+import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIO)
 import qualified Data.Vector as V
 -- for sampling
-import System.Random
+import System.Random (randomRIO)
 
 -------------------------- NeSy Frameworks ------------------------------
 -- algebra of truth values
