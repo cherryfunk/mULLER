@@ -50,8 +50,8 @@ class ClassicalPriestLogic(DblSGrpBLat[Identity[Priest]]):
         return Identity.insert(priest_disjunction(a.value, b.value))
     
 
-ClassicalPriestLogicList = with_list_structure(ClassicalPriestLogic, Identity, Priest)
-ClassicalPriestLogicProb = with_prob_structure(ClassicalPriestLogic, Identity, Priest)
+ClassicalPriestLogicList = with_list_structure(Identity, Priest)(ClassicalPriestLogic)
+ClassicalPriestLogicProb = with_prob_structure(Identity, Priest)(ClassicalPriestLogic)
 
 
 class NonDeterministicPriestLogic(DblSGrpBLat[NonEmptyPowerset[Priest]]):
@@ -74,8 +74,8 @@ class NonDeterministicPriestLogic(DblSGrpBLat[NonEmptyPowerset[Priest]]):
     ) -> NonEmptyPowerset[Priest]:
         return from_list([priest_disjunction(x, y) for x in a.value for y in b.value])
 
-NonDeterministicPriestLogicList = with_list_structure(NonDeterministicPriestLogic, NonEmptyPowerset, type(Priest))
-NonDeterministicPriestLogicProb = with_prob_structure(NonDeterministicPriestLogic, NonEmptyPowerset, Priest)
+NonDeterministicPriestLogicList = with_list_structure(NonEmptyPowerset, Priest)(NonDeterministicPriestLogic)
+NonDeterministicPriestLogicProb = with_prob_structure(NonEmptyPowerset, Priest)(NonDeterministicPriestLogic)
 
 
 class ProbabilisticPriestLogic(DblSGrpBLat[NonEmptyPowerset[Priest]]):
@@ -99,5 +99,5 @@ class ProbabilisticPriestLogic(DblSGrpBLat[NonEmptyPowerset[Priest]]):
         return from_list([priest_disjunction(x, y) for x in a.value for y in b.value])
 
 
-ProbabilisticPriestLogicList = with_list_structure(ProbabilisticPriestLogic, NonEmptyPowerset, Priest)
-ProbabilisticPriestLogicProb = with_prob_structure(ProbabilisticPriestLogic, NonEmptyPowerset, Priest)
+ProbabilisticPriestLogicList = with_list_structure(NonEmptyPowerset, Priest)(ProbabilisticPriestLogic)
+ProbabilisticPriestLogicProb = with_prob_structure(NonEmptyPowerset, Priest)(ProbabilisticPriestLogic)

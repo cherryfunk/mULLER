@@ -1,21 +1,24 @@
 import math
 import unittest
 
-from muller.monad.giry_pymc import (
-    GiryMonadPyMC,
+from muller.monad.giry_np import (
+    GiryNP,
     beta,
     binomial,
-    betaBinomial
+    normal,
+    uniform,
+    categorical,
+    geometric
 )
 
-def sample(value: GiryMonadPyMC) -> float:
+def sample(value: GiryNP) -> float:
     """Numerically integrate a function over the support of the distribution."""
     # For simplicity, we'll use a basic rectangle method for integration
     # In a real implementation, you'd want to use a more robust numerical integration method
     return value.mean(10000)
 
 
-class TestGiryMonad(unittest.TestCase):
+class TestGiryNP(unittest.TestCase):
     """Test cases for the Giry monad implementation."""
 
     def setUp(self):
@@ -29,7 +32,7 @@ class TestGiryMonad(unittest.TestCase):
     def test_insert_creation(self):
         """Test that.insert creates a point mass measure."""
         # Create a point mass at value 5
-        point_mass = GiryMonadPyMC.insert(5)
+        point_mass = GiryNP.insert(5)
 
         # Test that integrating identity function gives the value
         result = sample(point_mass)
@@ -38,7 +41,7 @@ class TestGiryMonad(unittest.TestCase):
     def test_map_operation(self):
         """Test the map operation (functor law)."""
         # Create a point mass at 3
-        monad = GiryMonadPyMC.insert(3)
+        monad = GiryNP.insert(3)
 
         # Map with a function that doubles the value
         mapped = monad.map(lambda x: x * 2)
@@ -50,10 +53,10 @@ class TestGiryMonad(unittest.TestCase):
     def test_bind_operation(self):
         """Test the bind operation (monad law)."""
         # Create a point mass at 2
-        monad = GiryMonadPyMC.insert(2)
+        monad = GiryNP.insert(2)
 
         # Bind with a function that creates a point mass at double the value
-        bound = monad.bind(lambda x: GiryMonadPyMC.insert(x * 3))
+        bound = monad.bind(lambda x: GiryNP.insert(x * 3))
 
         # Integrate identity to get the result
         result = sample(bound)
@@ -65,9 +68,9 @@ class TestGiryMonad(unittest.TestCase):
         a = 5
 
         def f(x):
-            return GiryMonadPyMC.insert(x + 1)
+            return GiryNP.insert(x + 1)
 
-        left = GiryMonadPyMC.insert(a).bind(f)
+        left = GiryNP.insert(a).bind(f)
         right = f(a)
 
         left_result = sample(left)
@@ -75,8 +78,8 @@ class TestGiryMonad(unittest.TestCase):
         self.assertAlmostEqualFloat(left_result, right_result)
 
         # Right identity: m.bind.insert) == m
-        m = GiryMonadPyMC.insert(7)
-        bound = m.bind(GiryMonadPyMC.insert)
+        m = GiryNP.insert(7)
+        bound = m.bind(GiryNP.insert)
 
         left_result = sample(m)
         right_result = sample(bound)
@@ -115,25 +118,34 @@ class TestGiryMonad(unittest.TestCase):
         theoretical_mean = a / (a + b)
         self.assertAlmostEqual(expected_value, theoretical_mean, places=2)
 
-    def test_betaBinomial_distribution(self):
-        """Test the beta-binomial distribution implementation."""
-        n = 10
-        a, b = 2.0, 3.0
-        monad = betaBinomial(n, a, b)
+    def test_uniform_distribution(self):
+        """Test the uniform distribution implementation."""
+        low, high = 0.0, 1.0
+        monad = uniform(low, high)
 
-        # Test that the expected value is approximately n * a/(a+b)
+        # Test expected value ((low + high) / 2 for uniform distribution)
         expected_value = sample(monad)
-        theoretical_mean = n * a / (a + b)
-        self.assertAlmostEqual(expected_value, theoretical_mean, places=1)
+        theoretical_mean = (low + high) / 2
+        self.assertAlmostEqual(expected_value, theoretical_mean, places=2)
+
+    def test_normal_distribution(self):
+        """Test the normal distribution implementation."""
+        mu, sigma = 0.0, 1.0
+        monad = normal(mu, sigma)
+
+        # Test expected value (mu for normal distribution)
+        expected_value = sample(monad)
+        theoretical_mean = mu
+        self.assertAlmostEqual(expected_value, theoretical_mean, places=2)
 
     def test_complex_composition(self):
         """Test complex monadic compositions."""
         # Create a chain of operations
-        initial = GiryMonadPyMC.insert(1)
+        initial = GiryNP.insert(1)
 
         # Chain multiple bind operations
         result = (
-            initial.bind(lambda x: GiryMonadPyMC.insert(x + 1))  # 1 -> 2
+            initial.bind(lambda x: GiryNP.insert(x + 1))  # 1 -> 2
             .bind(lambda x: binomial(x, 0.5))  # 2 -> binomial(2, 0.5)
             .map(lambda x: x * 2)
         )  # double each outcome

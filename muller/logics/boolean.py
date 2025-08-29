@@ -23,8 +23,8 @@ class ClassicalBooleanLogic(DblSGrpBLat[Identity[bool]], NeSyLogicMeta[bool]):
     def disjunction(self, a: Identity[bool], b: Identity[bool]) -> Identity[bool]:
         return Identity.insert(a.value or b.value)
 
-ClassicalBooleanLogicList = with_list_structure(ClassicalBooleanLogic, Identity, bool)
-ClassicalBooleanLogicProb = with_prob_structure(ClassicalBooleanLogic, Identity, bool)
+ClassicalBooleanLogicList = with_list_structure(Identity, bool)(ClassicalBooleanLogic)
+ClassicalBooleanLogicProb = with_prob_structure(Identity, bool)(ClassicalBooleanLogic)
 
 
 class NonDeterministicBooleanLogic(
@@ -49,8 +49,8 @@ class NonDeterministicBooleanLogic(
     ) -> NonEmptyPowerset[bool]:
         return from_list([x or y for x in a.value for y in b.value])
 
-NonDeterministicBooleanLogicList = with_list_structure(NonDeterministicBooleanLogic, NonEmptyPowerset, bool)
-NonDeterministicBooleanLogicProb = with_prob_structure(NonDeterministicBooleanLogic, NonEmptyPowerset, bool)
+NonDeterministicBooleanLogicList = with_list_structure(NonEmptyPowerset, bool)(NonDeterministicBooleanLogic)
+NonDeterministicBooleanLogicProb = with_prob_structure(NonEmptyPowerset, bool)(NonDeterministicBooleanLogic)
 
 
 class ProbabilisticBooleanLogic(DblSGrpBLat[Prob[bool]], NeSyLogicMeta[bool]):
@@ -69,5 +69,5 @@ class ProbabilisticBooleanLogic(DblSGrpBLat[Prob[bool]], NeSyLogicMeta[bool]):
     def disjunction(self, a: Prob[bool], b: Prob[bool]) -> Prob[bool]:
         return bind_T(a, a, lambda x: fmap_T(b, b, lambda y: x or y))
 
-ProbabilisticBooleanLogicList = with_list_structure(ProbabilisticBooleanLogic, Prob, bool)
-ProbabilisticBooleanLogicProb = with_prob_structure(ProbabilisticBooleanLogic, Prob, bool)
+ProbabilisticBooleanLogicList = with_list_structure(Prob, bool)(ProbabilisticBooleanLogic)
+ProbabilisticBooleanLogicProb = with_prob_structure(Prob, bool)(ProbabilisticBooleanLogic)

@@ -1,6 +1,16 @@
 from abc import ABC, abstractmethod
 from functools import reduce
-from typing import Annotated, Any, Callable, Generic, Iterable, List, Type, TypeVar, cast
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Generic,
+    Iterable,
+    List,
+    Type,
+    TypeVar,
+    cast,
+)
 import typing
 import types
 
@@ -46,67 +56,46 @@ class NeSyLogicMeta[S](ABC):
 
 
 def with_list_structure[T: ParametrizedMonad, O](
-    cls: Type[DblSGrpBLat[T]], t: Type[T], o: Type[O], name=None
-) -> Type[Aggr2SGrpBLat[list[Any], T]]:
-    if name is None:
-        name = f"{cls.__name__}List"
+    t: Type[T], o: Type[O]
+) -> Callable[[Type[DblSGrpBLat[T]]], Type[Aggr2SGrpBLat[list[Any], T]]]:
+    def fn(cls: Type[DblSGrpBLat[T]]) -> Type[Aggr2SGrpBLat[list[Any], T]]:
+        class _Aggr2SGrpBLatList(Aggr2SGrpBLat[list[Any], T], cls):
+            __annotations__ = {"S": List[Any], "T": t, "O": o}
+            
+            def aggrE[A](self, structure: list[A], f: Callable[[A], T]) -> T:
+                return reduce(
+                    lambda a, b: self.disjunction(a, b), map(f, structure), self.bottom()
+                )
 
-    def aggrE[A](
-        self, structure: list[A], f: Callable[[A], T]
-    ) -> T:
-        return reduce(
-            lambda a, b: self.disjunction(a, b), map(f, structure), self.bottom()
-        )
+            def aggrA[A](self, structure: list[A], f: Callable[[A], T]) -> T:
+                return reduce(
+                    lambda a, b: self.conjunction(a, b), map(f, structure), self.top()
+                )
 
-    def aggrA[A](
-        self, structure: list[A], f: Callable[[A], T]
-    ) -> T:
-        return reduce(
-            lambda a, b: self.conjunction(a, b), map(f, structure), self.top()
-        )
+        return _Aggr2SGrpBLatList
 
-    new_class = types.new_class(
-        name,
-        (cls, Aggr2SGrpBLat[list, T]),
-        {},
-        lambda ns: ns.update({"aggrE": aggrE, "aggrA": aggrA}),
-    )
-    
-    new_class.__annotations__ = {"S": List[Any], "T": t, "O": o}
-
-    return new_class
+    return fn
 
 
 def with_prob_structure[T: ParametrizedMonad, O](
-    cls: Type[DblSGrpBLat[T]], 
-    t: Type[T],
-    o: Type[O],
-    name=None
-) -> Type[Aggr2SGrpBLat[GiryMonadPyMC, T]]:
-    if name is None:
-        name = f"{cls.__name__}Prob"
+    t: Type[T], o: Type[O]
+) -> Callable[[Type[DblSGrpBLat[T]]], Type[Aggr2SGrpBLat[GiryMonadPyMC, T]]]:
+    def fn(cls: Type[DblSGrpBLat[T]]) -> Type[Aggr2SGrpBLat[GiryMonadPyMC, T]]:
+        class _Aggr2SGrpBLatProb(Aggr2SGrpBLat[GiryMonadPyMC, T], cls):
+            __annotations__ = {"S": GiryMonadPyMC, "T": t, "O": o}
 
-    def aggrE[A](
-        self, structure: GiryMonadPyMC, f: Callable[[A], T]
-    ) -> T:
-        samples = structure.sample(1000)
-        return reduce(
-            lambda a, b: self.disjunction(a, b), map(f, samples), self.bottom()
-        )
+            def aggrE[A](self, structure: GiryMonadPyMC, f: Callable[[A], T]) -> T:
+                samples = structure.sample(1000)
+                return reduce(
+                    lambda a, b: self.disjunction(a, b), map(f, samples), self.bottom()
+                )
 
-    def aggrA[A](
-        self, structure: GiryMonadPyMC, f: Callable[[A], T]
-    ) -> T:
-        samples = structure.sample(1000)
-        return reduce(lambda a, b: self.conjunction(a, b), map(f, samples), self.top())
+            def aggrA[A](self, structure: GiryMonadPyMC, f: Callable[[A], T]) -> T:
+                samples = structure.sample(1000)
+                return reduce(
+                    lambda a, b: self.conjunction(a, b), map(f, samples), self.top()
+                )
 
-    new_class = types.new_class(
-        name,
-        (cls, Aggr2SGrpBLat[GiryMonadPyMC, T]),
-        {},
-        lambda ns: ns.update({"aggrE": aggrE, "aggrA": aggrA}),
-    )
+        return _Aggr2SGrpBLatProb
 
-    new_class.__annotations__ = {"S": GiryMonadPyMC, "T": t, "O": o}
-
-    return new_class
+    return fn
