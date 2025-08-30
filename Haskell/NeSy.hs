@@ -75,8 +75,9 @@ instance NeSyFramework SamplerIO SamplerIO Bool
 
 --aggr :: Integrator b -> (b -> Integrator Bool) -> Integrator Bool
 instance Aggr2SGrpBLat Integrator (Integrator Bool) where
-  aggrA dist f =
-    integrator $ \meas_fun -> runIntegrator (runIntegrator meas_fun . f) dist
+  aggrA dist f = do
+    x <- dist
+    f x
   aggrE dist f =
     neg (aggrA dist (neg . f))
 instance NeSyFramework Integrator Integrator Bool
