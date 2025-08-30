@@ -43,7 +43,7 @@ instance Monad t => TwoMonBLat (t Bool) where
   disj a b = do x<-a; y<-b; return $ x || y 
   --implies a b = do x<-a; y<-b; return $ ((not x) || y)
 
--- the mainly used Aggr2MonBLat: no additional stucture + Booleans
+-- the mainly used Aggr2MonBLat: no additional stucture  (just lists) + Booleans
 instance Monad t => Aggr2MonBLat [] (t Bool) where
   aggrE s f = foldr disj bot $ map f s
   aggrA s f = foldr conj top $ map f s
