@@ -11,6 +11,7 @@ import qualified Data.Set.Monad as SM
 import qualified Numeric.Probability.Distribution as Dist
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIO)
+import Control.Monad.Bayes.Integrator (Integrator, runIntegrator, integrator)
 import qualified Data.Vector as V
 -- for sampling
 import System.Random (randomRIO)
@@ -71,6 +72,14 @@ instance Aggr2SGrpBLat SamplerIO (SamplerIO Bool) where
   aggrA = aggregation and
 -- Giry monad instance, using monad-bayes for both aggregation and the monad
 instance NeSyFramework SamplerIO SamplerIO Bool
+
+--aggr :: Integrator b -> (b -> Integrator Bool) -> Integrator Bool
+instance Aggr2SGrpBLat Integrator (Integrator Bool) where
+  aggrA dist f =
+    integrator $ \meas_fun -> runIntegrator (runIntegrator meas_fun . f) dist
+  aggrE dist f =
+    neg (aggrA dist (neg . f))
+instance NeSyFramework Integrator Integrator Bool
 
 -------------------------- Syntax ------------------------------
          
