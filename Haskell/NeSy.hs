@@ -27,15 +27,15 @@ class TwoSGrpBLat a where
   a `implies` b = (neg a) `disj` b
 
 -- aggregation functions for quantifiers
-class (TwoSGrpBLat a) => Aggr2SGrpBLat s a where
+class (TwoMonBLat a) => Aggr2MonBLat s a where
   -- for a structure on b and a predicate on b, aggregate truth values a 
   aggrE, aggrA :: s b -> (b -> a) -> a
 
 -- NeSy frameworks provide an algebra on T Omega
-class (Monad t, Aggr2SGrpBLat s (t omega)) => NeSyFramework t s omega 
+class (Monad t, Aggr2MonBLat s (t omega)) => NeSyFramework t s omega 
 
--- generic Aggr2SGrpBLat instance for any monad
-instance Monad t => TwoSGrpBLat (t Bool) where
+-- generic Aggr2MonBLat instance for any monad
+instance Monad t => TwoMonBLat (t Bool) where
   top = return True
   bot = return False
   neg a = do x<-a; return $ not x
@@ -43,8 +43,8 @@ instance Monad t => TwoSGrpBLat (t Bool) where
   disj a b = do x<-a; y<-b; return $ x || y 
   --implies a b = do x<-a; y<-b; return $ ((not x) || y)
 
--- the mainly used Aggr2SGrpBLat: no additional stucture + Booleans
-instance Monad t => Aggr2SGrpBLat [] (t Bool) where
+-- the mainly used Aggr2MonBLat: no additional stucture + Booleans
+instance Monad t => Aggr2MonBLat [] (t Bool) where
   aggrE s f = foldr disj bot $ map f s
   aggrA s f = foldr conj top $ map f s
   
@@ -67,13 +67,13 @@ aggregation connective dist f = do
   samples <- sequence (replicate no_samples dist)
   vals    <- mapM f samples
   return (connective vals)
-instance Aggr2SGrpBLat SamplerIO (SamplerIO Bool) where
+instance Aggr2MonBLat SamplerIO (SamplerIO Bool) where
   aggrE = aggregation or
   aggrA = aggregation and
 -- Giry monad instance, using SamplerIO for both aggregation and the monad
 instance NeSyFramework SamplerIO SamplerIO Bool
 
-instance Aggr2SGrpBLat Integrator (Integrator Bool) where
+instance Aggr2MonBLat Integrator (Integrator Bool) where
   aggrA meas f =
     integrator $ \meas_fun ->
         exp $ runIntegrator (runIntegrator (log . meas_fun) . f) meas
