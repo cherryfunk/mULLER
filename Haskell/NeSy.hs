@@ -70,16 +70,16 @@ aggregation connective dist f = do
 instance Aggr2SGrpBLat SamplerIO (SamplerIO Bool) where
   aggrE = aggregation or
   aggrA = aggregation and
--- Giry monad instance, using monad-bayes for both aggregation and the monad
+-- Giry monad instance, using SamplerIO for both aggregation and the monad
 instance NeSyFramework SamplerIO SamplerIO Bool
 
---aggr :: Integrator b -> (b -> Integrator Bool) -> Integrator Bool
 instance Aggr2SGrpBLat Integrator (Integrator Bool) where
   aggrA dist f = do
     x <- dist
     f x
   aggrE dist f =
     neg (aggrA dist (neg . f))
+-- Giry monad instance, using Integrator for both aggregation and the monad
 instance NeSyFramework Integrator Integrator Bool
 
 -------------------------- Syntax ------------------------------
