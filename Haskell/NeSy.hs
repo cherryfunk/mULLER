@@ -74,11 +74,11 @@ instance Aggr2SGrpBLat SamplerIO (SamplerIO Bool) where
 instance NeSyFramework SamplerIO SamplerIO Bool
 
 instance Aggr2SGrpBLat Integrator (Integrator Bool) where
-  aggrA dist f =
+  aggrA meas f =
     integrator $ \meas_fun ->
-        exp $ runIntegrator (runIntegrator (log . meas_fun) . f) dist
-  aggrE dist f =
-    neg (aggrA dist (neg . f))
+        exp $ runIntegrator (runIntegrator (log . meas_fun) . f) meas
+  aggrE meas f =
+    neg (aggrA meas (neg . f))
 -- Giry monad instance, using Integrator for both aggregation and the monad
 instance NeSyFramework Integrator Integrator Bool
 
