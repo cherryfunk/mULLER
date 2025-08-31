@@ -97,6 +97,7 @@ data Formula =
   | Implies Formula Formula
   | Forall Ident Formula
   | Exists Ident Formula
+  | Comp Ident Ident [Term] Formula
   deriving (Show)
 
 -- Interpretation specialized to Double
@@ -104,7 +105,26 @@ data Interpretation = Interpretation
   { domain     :: Domain Double
   , functions  :: Map.Map Ident ([Double] -> Double)
   , predicates :: Map.Map Ident ([Double] -> Double)
+  , mfunctions :: Map.Map Ident ([Double] -> Distribution)
   }
+
+-- Distributions over [0,1] (or intervals)
+data Distribution =
+    Discrete [(Double, Double)]               -- pairs (value, probability)
+  | Continuous (Double -> Double) Double Double  -- pdf, lower, upper
+
+-- Expectation of g under a distribution (auto-normalizes)
+expectation :: Distribution -> (Double -> Double) -> Double
+expectation (Discrete ws) g =
+  let total = sum (map snd ws)
+      norm = if total == 0 then 1 else total
+  in sum [ (p / norm) * g x | (x,p) <- ws ]
+expectation (Continuous pdf a b) g =
+  let zRes = quadTrapezoid defQuad (a,b) pdf
+      numRes = quadTrapezoid defQuad (a,b) (\x -> pdf x * g x)
+  in case (quadRes zRes, quadRes numRes) of
+       (Just z, Just num) -> if z == 0 then 0.0/0.0 else num / z
+       _ -> 0.0/0.0
 
 -- Valuation (variable assignment)
 type Valuation = Map.Map Ident Double
@@ -141,6 +161,13 @@ evalFormula interp val (Forall var f) =
   aggrA (domain interp) $ \x -> evalFormula interp (Map.insert var x val) f
 evalFormula interp val (Exists var f) =
   aggrE (domain interp) $ \x -> evalFormula interp (Map.insert var x val) f
+evalFormula interp val (Comp var m ts f) =
+  let mfun = case Map.lookup m (mfunctions interp) of
+               Just mf -> mf
+               Nothing -> error ("Monadic function " ++ m ++ " not found")
+      args = map (evalTerm interp val) ts
+      dist = mfun args
+  in expectation dist (\a -> evalFormula interp (Map.insert var a val) f)
 
 -- Helpers producing fuzzy degrees in (0,1)
 sigmoid :: Double -> Double -> Double
@@ -240,6 +267,93 @@ naturalsInterp = Interpretation
       ]
   }
 
+-------------------------- Weather example (Worlds, distributions on [0,1]) ------------------------------
+
+-- Truncated Normal density on [0,1]
+normalPdf :: Double -> Double -> Double -> Double
+normalPdf mu sigma x =
+  let s2 = sigma * sigma
+  in (1 / (sqrt (2 * pi) * sigma)) * exp ( - (x - mu) * (x - mu) / (2 * s2) )
+
+-- Normalization constant over [0,1]
+normalZ01 :: Double -> Double -> Double
+normalZ01 mu sigma =
+  let res = quadTrapezoid defQuad (0.0, 1.0) (normalPdf mu sigma)
+  in case quadRes res of
+       Just val -> val
+       Nothing  -> 0.0/0.0
+
+-- Truncated CDF over [0,1]
+cdfTrunc01 :: Double -> Double -> Double -> Double
+cdfTrunc01 mu sigma x =
+  let clampedX = max 0.0 (min 1.0 x)
+      z = normalZ01 mu sigma
+      res = quadTrapezoid defQuad (0.0, clampedX) (normalPdf mu sigma)
+  in case quadRes res of
+       Just val -> if z == 0 then 0.0/0.0 else val / z
+       Nothing  -> 0.0/0.0
+
+-- Worlds domain: we model three worlds 0,1,2
+worldsInterp :: Interpretation
+worldsInterp = Interpretation
+  { domain = Finite [0.0, 1.0, 2.0]
+  , functions = Map.fromList
+      [ ("w0", \_ -> 0.0)
+      , ("w1", \_ -> 1.0)
+      , ("w2", \_ -> 2.0)
+      ]
+  , predicates = Map.fromList
+      [ ("good_weather_p", \[w] -> probGoodWeather w)
+      , ("==", \[x,y] -> if abs (x - y) < 1e-12 then 1 else 0)
+      , ("<",  \[x,y] -> if x < y then 1 else 0)
+      , (">",  \[x,y] -> if x > y then 1 else 0)
+      ]
+  , mfunctions = Map.fromList
+      [ ("normal_temp", \[w] ->
+                                  let (mu,sigma) = tempParams w; n = 800 :: Int; xs = [fromIntegral i / fromIntegral n | i <- [0..n]]; ws = [(x, normalPdf mu sigma x) | x <- xs]
+                                  in Discrete ws)
+      , ("bernoulli_humid", \[w] -> let p = humidProb w
+                                      in Discrete [(1.0,p),(0.0,1-p)])
+      ]
+  }
+
+-- World-specific parameters
+humidProb :: Double -> Double
+humidProb w
+  | w == 0.0  = 0.7
+  | w == 1.0  = 0.4
+  | otherwise = 0.2
+
+tempParams :: Double -> (Double, Double)
+tempParams w
+  | w == 0.0  = (0.3, 0.10)
+  | w == 1.0  = (0.5, 0.07)
+  | otherwise = (0.8, 0.10)
+
+-- Thresholds on [0,1]
+tLow, tHigh :: Double
+tLow = 0.3
+tHigh = 0.7
+
+-- Probability of good weather per world following the described formula
+-- p * P(T < tLow) + (1-p) * P(T > tHigh), with T ~ Normal(mu, sigma) truncated to [0,1]
+probGoodWeather :: Double -> Double
+probGoodWeather w =
+  let p = humidProb w
+      (mu, sigma) = tempParams w
+      pLow  = cdfTrunc01 mu sigma tLow
+      pHigh = 1 - cdfTrunc01 mu sigma tHigh
+  in p * pLow + (1 - p) * pHigh
+
+-- Monadic formula version of good_weather for a given world identifier term
+goodWeatherF :: Term -> Formula
+goodWeatherF wTerm =
+  Comp "h" "bernoulli_humid" [wTerm]
+    (Or (And (Pred "==" [Var "h", Const 1.0])
+             (Comp "t" "normal_temp" [wTerm] (Pred "<" [Var "t", Const tLow])))
+        (And (Pred "==" [Var "h", Const 0.0])
+             (Comp "t" "normal_temp" [wTerm] (Pred ">" [Var "t", Const tHigh]))))
+
 -- Test formulas on naturals
 natFormula1 :: Formula
 natFormula1 = Exists "x" (Pred "even" [Var "x"])  -- ∃x ∈ ℕ. even(x)
@@ -287,6 +401,19 @@ main = do
 
   let natResult3 = evalFormula naturalsInterp Map.empty natFormula3
   putStrLn $ "∃x ∈ ℕ. x = 100 ≈ " ++ show natResult3
+
+  -- Worlds weather examples
+  putStrLn "\nWorlds weather (probabilities in [0,1]):"
+  let gw0 = evalFormula worldsInterp Map.empty (goodWeatherF (Appl "w0" []))
+  let gw1 = evalFormula worldsInterp Map.empty (goodWeatherF (Appl "w1" []))
+  let gw2 = evalFormula worldsInterp Map.empty (goodWeatherF (Appl "w2" []))
+  putStrLn $ "good_weather(world0) ≈ " ++ show gw0
+  putStrLn $ "good_weather(world1) ≈ " ++ show gw1
+  putStrLn $ "good_weather(world2) ≈ " ++ show gw2
+
+  -- Aggregate over all worlds (geometric mean semantics for ∀)
+  let gwAll = evalFormula worldsInterp Map.empty (Forall "w" (goodWeatherF (Var "w")))
+  putStrLn $ "∀w ∈ Worlds. good_weather(w) ≈ " ++ show gwAll
 
   return ()
 
