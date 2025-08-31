@@ -22,3 +22,12 @@ executable muller
     GaussQuadIntegration,
     numeric-tools
   default-language: Haskell2010 
+
+executable density-giry
+  main-is: density_giry.hs
+  hs-source-dirs: Haskell
+  build-depends:
+    base >=4.16,
+    containers,
+    numeric-tools
+  default-language: Haskell2010
