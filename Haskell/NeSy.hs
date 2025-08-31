@@ -14,6 +14,7 @@ import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIO)
 import Control.Monad.Bayes.Integrator (Integrator, runIntegrator, integrator, expectation)
 import Math.GaussianQuadratureIntegration (nIntegrate256)
 import qualified Data.Vector as V
+import Numeric.Tools.Integration (quadTrapezoid, quadSimpson, quadRomberg, defQuad, quadRes, quadPrecEst, quadNIter)
 -- for sampling
 import System.Random (randomRIO)
 
@@ -384,42 +385,32 @@ integrationComparison = do
   putStrLn "\n=== Integration Methods Comparison ==="
 
   -- Method 1: Using monad-bayes Integrator (what we showed earlier)
-  putStrLn "\n1. Monad-Bayes Integrator (Probabilistic Programming):"
-  putStrLn "   Structure: integrator (\\f -> (f 0.2 + f 0.4 + f 0.6 + f 0.8) / 4)"
-  putStrLn "   This creates a uniform measure over 4 points: [0.2, 0.4, 0.6, 0.8]"
-
-  let uniformMeasure = integrator (\f -> (f 0.2 + f 0.4 + f 0.6 + f 0.8) / 4)
-  let integral1 = runIntegrator (\x -> x*x) uniformMeasure
-  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show integral1
-
-  -- Better version with more points
-  putStrLn "\n1b. Improved Monad-Bayes Integrator (more points):"
+  putStrLn "\n1. Monad-Bayes Integrator (more points?):"
   let points = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
   let betterUniform = integrator (\f -> sum (map f points) / fromIntegral (length points))
   let integral1b = runIntegrator (\x -> x*x) betterUniform
   putStrLn $ "   Using " ++ show (length points) ++ " points: ∫ x² dx from 0 to 1 ≈ " ++ show integral1b
 
-  -- Method 2: Trapezoidal rule (common numerical method)
-  putStrLn "\n2. Trapezoidal Rule (Traditional Numerical Integration):"
-  let trapezoidal f a b n =
-        let h = (b - a) / fromIntegral n
-            points = [a + fromIntegral i * h | i <- [0..n]]
-            values = map f points
-        in h * ((head values + last values) / 2 + sum (init (tail values)))
-  let integral2 = trapezoidal (\x -> x*x) 0 1 1000
-  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show integral2
+  -- Method 2: Trapezoidal rule via numeric-tools
+  putStrLn "\n2. Trapezoidal Rule (numeric-tools):"
+  let resTrap = quadTrapezoid defQuad (0.0, 1.0) (\x -> x*x)
+  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show (quadRes resTrap)
+           ++ ", prec≈ " ++ show (quadPrecEst resTrap)
+           ++ ", iters= " ++ show (quadNIter resTrap)
 
-  -- Method 3: Simpson's rule (more accurate)
-  putStrLn "\n3. Simpson's Rule (Higher-order numerical integration):"
-  let simpson f a b n =
-        let h = (b - a) / fromIntegral n
-            points = [a + fromIntegral i * h | i <- [0..n]]
-            values = map f points
-            odds = sum [values !! i | i <- [1,3..n-1]]
-            evens = sum [values !! i | i <- [2,4..n-2]]
-        in (h/3) * (head values + last values + 4*odds + 2*evens)
-  let integral3 = simpson (\x -> x*x) 0 1 1000
-  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show integral3
+  -- Method 3: Simpson's rule via numeric-tools
+  putStrLn "\n3. Simpson's Rule (numeric-tools):"
+  let resSimp = quadSimpson defQuad (0.0, 1.0) (\x -> x*x)
+  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show (quadRes resSimp)
+           ++ ", prec≈ " ++ show (quadPrecEst resSimp)
+           ++ ", iters= " ++ show (quadNIter resSimp)
+
+  -- Method 3b: Romberg via numeric-tools
+  putStrLn "\n3b. Romberg (numeric-tools):"
+  let resRomb = quadRomberg defQuad (0.0, 1.0) (\x -> x*x)
+  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show (quadRes resRomb)
+           ++ ", prec≈ " ++ show (quadPrecEst resRomb)
+           ++ ", iters= " ++ show (quadNIter resRomb)
 
   -- Method 4: Analytical (when possible)
   putStrLn "\n4. Analytical Solution (Exact):"
@@ -441,6 +432,28 @@ integrationComparison = do
   let integral6 = nIntegrate256 (\x -> x*x) 0.0 1.0
   putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show integral6
 
+  -- Demonstrate different integration domains
+  putStrLn "\n=== Integration Domain Capabilities ==="
+
+  putStrLn "\nGaussQuadIntegration Capabilities:"
+  putStrLn "✅ 1D intervals: [a,b]"
+  putStrLn "✅ High precision (up to 1024 points)"
+  putStrLn "✅ Arbitrary precision types (Fixed, etc.)"
+  putStrLn "❌ Multi-dimensional domains"
+  putStrLn "❌ Non-rectangular regions"
+  putStrLn "❌ Complex geometries"
+
+  -- Example: Different 1D intervals
+  putStrLn $ "\nDifferent 1D examples with GaussQuadIntegration:"
+  let int1 = nIntegrate256 (\x -> sin x) 0.0 pi
+  putStrLn $ "∫ sin(x) dx from 0 to π = " ++ show int1 ++ " (exact: 2.0)"
+
+  let int2 = nIntegrate256 (\x -> exp (-x*x)) (-1.0) 1.0
+  putStrLn $ "∫ e^(-x²) dx from -1 to 1 ≈ " ++ show int2
+
+  let int3 = nIntegrate256 (\x -> 1/sqrt(2*pi) * exp(-x*x/2)) (-3.0) 3.0
+  putStrLn $ "∫ φ(x) dx from -3 to 3 (normal CDF) ≈ " ++ show int3 ++ " (should be ~1.0)"
+
   putStrLn "\n=== How Monad-Bayes Integrator Works ==="
   putStrLn "• integrator :: ((a -> Double) -> Double) -> Integrator a"
   putStrLn "• runIntegrator :: (a -> Double) -> Integrator a -> Double"
@@ -448,9 +461,24 @@ integrationComparison = do
   putStrLn "• The kernel (a->Double)->Double defines how to integrate any function"
   putStrLn "• Our example: uniform on [0,1] using discrete point evaluation"
 
+  putStrLn "\n=== Alternatives for Complex Domains ==="
+  putStrLn "For multi-dimensional and complex geometries:"
+  putStrLn "• adaptive-cubature: Multi-dimensional adaptive integration"
+  putStrLn "• scubature: Integration over simplices (triangles/tetrahedrons)"
+  putStrLn "• Monte Carlo methods: For very high-dimensional problems"
+  putStrLn "• Domain decomposition: Break complex regions into simple pieces"
+
+  putStrLn "\nExample complex domain approaches:"
+  putStrLn "• 2D circle: Use polar coordinates + 1D integration"
+  putStrLn "• 3D sphere: Use spherical coordinates + 2D integration"
+  putStrLn "• Irregular regions: Use adaptive quadrature or triangulation"
+  putStrLn "• Complex boundaries: Use Green's theorem or change of variables"
+
   putStrLn "\n=== Summary ==="
   putStrLn "• For exact results: Use analytical methods when possible"
-  putStrLn "• For numerical integration: Use specialized libraries like GaussQuadIntegration ⭐"
+  putStrLn "• For 1D intervals: GaussQuadIntegration ⭐ (fast, accurate)"
+  putStrLn "• For multi-D: adaptive-cubature or scubature"
+  putStrLn "• For complex geometries: Monte Carlo or domain decomposition"
   putStrLn "• For probabilistic programming: Use monad-bayes Integrator"
   putStrLn "• For general scientific computing: Use hmatrix ecosystem"
   putStrLn "• For simple cases: Implement trapezoidal/Simpson's rule directly"

@@ -19,5 +19,6 @@ executable muller
     random,
     monad-bayes,
     vector,
-    GaussQuadIntegration
+    GaussQuadIntegration,
+    numeric-tools
   default-language: Haskell2010 
