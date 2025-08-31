@@ -288,7 +288,7 @@ d2UW :: Double -> UniverseW
 d2UW d = Double d
 
 -- continuous distribution over UniverseW
-uniformUniverseW :: SamplerIO UniverseW
+uniformUniverseW :: MonadDistribution m => m UniverseW
 uniformUniverseW = do
   choice <- categorical $ V.fromList [1,1,1]
   case choice of
