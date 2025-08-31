@@ -11,7 +11,8 @@ import qualified Data.Set.Monad as SM
 import qualified Numeric.Probability.Distribution as Dist
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIO)
-import Control.Monad.Bayes.Integrator (Integrator, runIntegrator, integrator)
+import Control.Monad.Bayes.Integrator (Integrator, runIntegrator, integrator, expectation)
+import Math.GaussianQuadratureIntegration (nIntegrate256)
 import qualified Data.Vector as V
 -- for sampling
 import System.Random (randomRIO)
@@ -262,6 +263,8 @@ main :: IO()
 main = do
   let values = [("d1C",d1C),("d2C",d2C),("t1C",t1C),("t2C",t2C)]
   mapM_ sample values
+  integrationComparison
+  testInfiniteLists
 
 -------------------------- Wheather example ------------------------------
 
@@ -374,3 +377,125 @@ mainW = do
   (evaluate w1) >>= print
   (evaluate w2) >>= print
   (evaluate w3) >>= print
+
+-- Different approaches to integration in Haskell
+integrationComparison :: IO ()
+integrationComparison = do
+  putStrLn "\n=== Integration Methods Comparison ==="
+
+  -- Method 1: Using monad-bayes Integrator (what we showed earlier)
+  putStrLn "\n1. Monad-Bayes Integrator (Probabilistic Programming):"
+  putStrLn "   Structure: integrator (\\f -> (f 0.2 + f 0.4 + f 0.6 + f 0.8) / 4)"
+  putStrLn "   This creates a uniform measure over 4 points: [0.2, 0.4, 0.6, 0.8]"
+
+  let uniformMeasure = integrator (\f -> (f 0.2 + f 0.4 + f 0.6 + f 0.8) / 4)
+  let integral1 = runIntegrator (\x -> x*x) uniformMeasure
+  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show integral1
+
+  -- Better version with more points
+  putStrLn "\n1b. Improved Monad-Bayes Integrator (more points):"
+  let points = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  let betterUniform = integrator (\f -> sum (map f points) / fromIntegral (length points))
+  let integral1b = runIntegrator (\x -> x*x) betterUniform
+  putStrLn $ "   Using " ++ show (length points) ++ " points: ∫ x² dx from 0 to 1 ≈ " ++ show integral1b
+
+  -- Method 2: Trapezoidal rule (common numerical method)
+  putStrLn "\n2. Trapezoidal Rule (Traditional Numerical Integration):"
+  let trapezoidal f a b n =
+        let h = (b - a) / fromIntegral n
+            points = [a + fromIntegral i * h | i <- [0..n]]
+            values = map f points
+        in h * ((head values + last values) / 2 + sum (init (tail values)))
+  let integral2 = trapezoidal (\x -> x*x) 0 1 1000
+  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show integral2
+
+  -- Method 3: Simpson's rule (more accurate)
+  putStrLn "\n3. Simpson's Rule (Higher-order numerical integration):"
+  let simpson f a b n =
+        let h = (b - a) / fromIntegral n
+            points = [a + fromIntegral i * h | i <- [0..n]]
+            values = map f points
+            odds = sum [values !! i | i <- [1,3..n-1]]
+            evens = sum [values !! i | i <- [2,4..n-2]]
+        in (h/3) * (head values + last values + 4*odds + 2*evens)
+  let integral3 = simpson (\x -> x*x) 0 1 1000
+  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show integral3
+
+  -- Method 4: Analytical (when possible)
+  putStrLn "\n4. Analytical Solution (Exact):"
+  let analytical = 1/3 :: Double
+  putStrLn $ "   ∫ x² dx from 0 to 1 = " ++ show analytical
+
+  -- Method 5: Monte Carlo (simple implementation)
+  putStrLn "\n5. Monte Carlo Integration:"
+  let monteCarlo :: (Double -> Double) -> Double -> Double -> Int -> IO Double
+      monteCarlo f a b n = do
+        points <- sequence (replicate n (randomRIO (a, b)))
+        let values = map f points
+        return $ ((b - a) / fromIntegral n) * sum values
+  integral5 <- monteCarlo (\x -> x*x) 0.0 1.0 10000
+  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show integral5
+
+  -- Method 6: GaussQuadIntegration (professional numerical library)
+  putStrLn "\n6. GaussQuadIntegration (Professional Library):"
+  let integral6 = nIntegrate256 (\x -> x*x) 0.0 1.0
+  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show integral6
+
+  putStrLn "\n=== How Monad-Bayes Integrator Works ==="
+  putStrLn "• integrator :: ((a -> Double) -> Double) -> Integrator a"
+  putStrLn "• runIntegrator :: (a -> Double) -> Integrator a -> Double"
+  putStrLn "• The 'integrator' function creates a measure from an integration kernel"
+  putStrLn "• The kernel (a->Double)->Double defines how to integrate any function"
+  putStrLn "• Our example: uniform on [0,1] using discrete point evaluation"
+
+  putStrLn "\n=== Summary ==="
+  putStrLn "• For exact results: Use analytical methods when possible"
+  putStrLn "• For numerical integration: Use specialized libraries like GaussQuadIntegration ⭐"
+  putStrLn "• For probabilistic programming: Use monad-bayes Integrator"
+  putStrLn "• For general scientific computing: Use hmatrix ecosystem"
+  putStrLn "• For simple cases: Implement trapezoidal/Simpson's rule directly"
+  putStrLn "• For custom measures: Build your own integration kernel with Integrator"
+
+-- Testing infinite lists in NeSy. Is it not supposed to handle infinite lists?
+testInfiniteLists :: IO ()
+testInfiniteLists = do
+  putStrLn "\n=== Testing Infinite Lists in NeSy ==="
+
+  -- Create an infinite list
+  let infiniteDomain = [0.0, 0.1 ..] :: [Double]  -- Infinite: [0.0, 0.1, 0.2, ...]
+  putStrLn $ "Infinite domain created: [0.0, 0.1, 0.2, ...] (lazy)"
+
+  -- Test with finite prefix (safe)
+  let finitePrefix = take 5 infiniteDomain
+  putStrLn $ "Finite prefix: " ++ show finitePrefix
+
+  -- Test quantifiers with finite prefix
+  let testPred x = x > 0.5
+  putStrLn $ "∃x ∈ finitePrefix: x > 0.5 = " ++ show (any testPred finitePrefix)
+  putStrLn $ "∀x ∈ finitePrefix: x > 0.5 = " ++ show (all testPred finitePrefix)
+
+  -- Now try with larger finite prefix
+  let largerPrefix = take 20 infiniteDomain
+  putStrLn $ "\nWith 20 elements:"
+  putStrLn $ "∃x ∈ largerPrefix: x > 0.5 = " ++ show (any testPred largerPrefix)
+  putStrLn $ "∀x ∈ largerPrefix: x > 0.5 = " ++ show (all testPred largerPrefix)
+
+  -- Show what happens with very large prefix (approaches infinite behavior)
+  let bigPrefix = take 100 infiniteDomain
+  putStrLn $ "\nWith 100 elements (approximating infinite):"
+  putStrLn $ "∃x ∈ bigPrefix: x > 0.5 = " ++ show (any testPred bigPrefix)
+  putStrLn $ "∀x ∈ bigPrefix: x > 0.5 = " ++ show (all testPred bigPrefix)
+
+  -- Demonstrate the problem: what happens if we try to use infinite directly?
+  putStrLn $ "\n=== The Problem with True Infinite Lists ==="
+  putStrLn "If we tried: foldr disj bot $ map testPred infiniteDomain"
+  putStrLn "This would: 1) Never terminate, 2) Use infinite memory, 3) Loop forever"
+  putStrLn "Because foldr would keep evaluating elements forever!"
+
+  -- Show lazy evaluation to the rescue
+  putStrLn $ "\n=== Lazy Evaluation Solution ==="
+  let lazyExists pred list = any pred (take 1000 list)  -- Limit to 1000 elements
+  let lazyForall pred list = all pred (take 1000 list)  -- Limit to 1000 elements
+
+  putStrLn $ "Lazy ∃x: x > 0.5 (first 1000 elements) = " ++ show (lazyExists testPred infiniteDomain)
+  putStrLn $ "Lazy ∀x: x > 0.5 (first 1000 elements) = " ++ show (lazyForall testPred infiniteDomain)

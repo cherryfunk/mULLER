@@ -18,5 +18,6 @@ executable muller
     probability,
     random,
     monad-bayes,
-    vector
+    vector,
+    GaussQuadIntegration
   default-language: Haskell2010 
