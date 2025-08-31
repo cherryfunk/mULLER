@@ -2,7 +2,7 @@ import sys
 from functools import lru_cache
 from itertools import chain
 from types import get_original_bases
-from typing_extensions import get_origin
+from typing import get_origin
 
 import muller.logics
 from muller.monad.base import ParametrizedMonad

@@ -17,6 +17,7 @@ import qualified Data.Vector as V
 import Numeric.Tools.Integration (quadTrapezoid, quadSimpson, quadRomberg, defQuad, quadRes, quadPrecEst, quadNIter)
 -- for sampling
 import System.Random (randomRIO)
+import Debug.Trace
 
 -------------------------- NeSy Frameworks ------------------------------
 -- algebra of truth values
@@ -260,8 +261,8 @@ sample (label,set) =
   do sample <- sampleUniform $ SM.toList set
      putStrLn $ label ++ ": "++ show sample
 
-main :: IO()
-main = do
+mainM :: IO()
+mainM = do
   let values = [("d1C",d1C),("d2C",d2C),("t1C",t1C),("t2C",t2C)]
   mapM_ sample values
   integrationComparison
@@ -271,11 +272,11 @@ main = do
 
 -- Toy stubs for predictors:
 humid_detector :: Int -> Double
-humid_detector d = if d `mod` 2 == 0 then 0.7 else 0.2
+humid_detector d = 0.5
 -- "probability it's humid"
 
 temperature_predictor :: Int -> (Double,Double)
-temperature_predictor d = (fromIntegral (10 + d),fromIntegral (11 + d)/5.0)
+temperature_predictor d = (0,2)
 -- mean temperature and variance for data poin
 
 -- interpretation 
@@ -364,7 +365,7 @@ w3 :: SamplerIO Bool
 w3 = evalF weatherModel Map.empty weatherSen3
 
 -- compute the probability of True by sampling
-no_samples2 = 1000
+no_samples2 = 1000000
 evaluate :: SamplerIO Bool -> IO Double
 evaluate sampler = do
   results <- sampleIO $ sequence $ replicate no_samples2 sampler
@@ -372,8 +373,8 @@ evaluate sampler = do
         foldr (\b (t, n) -> (if b then t + 1 else t, n + 1)) (0, 0) results
   return $ if total == 0 then 0 else fromIntegral trues / fromIntegral total
 
-mainW :: IO ()
-mainW = do
+main :: IO ()
+main = do
   putStrLn "frequency of True for each weather example:"
   (evaluate w1) >>= print
   (evaluate w2) >>= print
