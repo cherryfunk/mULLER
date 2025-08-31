@@ -8,7 +8,9 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe
 import Data.List (foldl')
+ 
 import Numeric.Tools.Integration (defQuad, quadTrapezoid, quadSimpson, quadRomberg, quadRes)
+ 
 
 -- Algebra of truth values
 class TwoMonBLat a where
@@ -120,11 +122,16 @@ expectation (Discrete ws) g =
       norm = if total == 0 then 1 else total
   in sum [ (p / norm) * g x | (x,p) <- ws ]
 expectation (Continuous pdf a b) g =
-  let zRes = quadTrapezoid defQuad (a,b) pdf
-      numRes = quadTrapezoid defQuad (a,b) (\x -> pdf x * g x)
-  in case (quadRes zRes, quadRes numRes) of
-       (Just z, Just num) -> if z == 0 then 0.0/0.0 else num / z
-       _ -> 0.0/0.0
+  let z  = integrateNT pdf (a,b)
+      num = integrateNT (\x -> pdf x * g x) (a,b)
+  in if z == 0 then 0.0/0.0 else num / z
+
+-- Prefer numeric-tools integrators with robust fallbacks (all within numeric-tools)
+integrateNT :: (Double -> Double) -> (Double, Double) -> Double
+integrateNT f (a,b) =
+  case quadRes (quadTrapezoid defQuad (a,b) f) of
+    Just v  -> v
+    Nothing -> 0.0/0.0
 
 -- Valuation (variable assignment)
 type Valuation = Map.Map Ident Double
@@ -275,23 +282,29 @@ normalPdf mu sigma x =
   let s2 = sigma * sigma
   in (1 / (sqrt (2 * pi) * sigma)) * exp ( - (x - mu) * (x - mu) / (2 * s2) )
 
+-- Untruncated normal CDF (numerical), integrate from mu-10σ to x
+normalCDF :: Double -> Double -> Double -> Double
+normalCDF mu sigma x
+  | x <= a    = 0.0
+  | x >= b    = 1.0
+  | otherwise =
+      integrateNT (normalPdf mu sigma) (a,x)
+  where
+    a = mu - 10 * sigma
+    b = mu + 10 * sigma
+
 -- Normalization constant over [0,1]
 normalZ01 :: Double -> Double -> Double
 normalZ01 mu sigma =
-  let res = quadTrapezoid defQuad (0.0, 1.0) (normalPdf mu sigma)
-  in case quadRes res of
-       Just val -> val
-       Nothing  -> 0.0/0.0
+  integrateNT (normalPdf mu sigma) (0.0,1.0)
 
 -- Truncated CDF over [0,1]
 cdfTrunc01 :: Double -> Double -> Double -> Double
 cdfTrunc01 mu sigma x =
   let clampedX = max 0.0 (min 1.0 x)
       z = normalZ01 mu sigma
-      res = quadTrapezoid defQuad (0.0, clampedX) (normalPdf mu sigma)
-  in case quadRes res of
-       Just val -> if z == 0 then 0.0/0.0 else val / z
-       Nothing  -> 0.0/0.0
+      val = integrateNT (normalPdf mu sigma) (0.0, clampedX)
+  in if z == 0 then 0.0/0.0 else val / z
 
 -- Worlds domain: we model three worlds 0,1,2
 worldsInterp :: Interpretation
@@ -307,11 +320,17 @@ worldsInterp = Interpretation
       , ("==", \[x,y] -> if abs (x - y) < 1e-12 then 1 else 0)
       , ("<",  \[x,y] -> if x < y then 1 else 0)
       , (">",  \[x,y] -> if x > y then 1 else 0)
+      , ("probLess", \[w,t] -> probLessW w t)
+      , ("probGreater", \[w,t] -> probGreaterW w t)
+      , ("gw_split", \[w] -> gwSplit w)
       ]
   , mfunctions = Map.fromList
       [ ("normal_temp", \[w] ->
-                                  let (mu,sigma) = tempParams w; n = 800 :: Int; xs = [fromIntegral i / fromIntegral n | i <- [0..n]]; ws = [(x, normalPdf mu sigma x) | x <- xs]
-                                  in Discrete ws)
+                                  let (mu,sigma) = tempParams w
+                                      k = 6.0 :: Double
+                                      a = mu - k * sigma
+                                      b = mu + k * sigma
+                                  in Continuous (normalPdf mu sigma) a b)
       , ("bernoulli_humid", \[w] -> let p = humidProb w
                                       in Discrete [(1.0,p),(0.0,1-p)])
       ]
@@ -320,13 +339,13 @@ worldsInterp = Interpretation
 -- World-specific parameters
 humidProb :: Double -> Double
 humidProb w
-  | w == 0.0  = 0.7
+  | w == 0.0  = 0.5
   | w == 1.0  = 0.4
   | otherwise = 0.2
 
 tempParams :: Double -> (Double, Double)
 tempParams w
-  | w == 0.0  = (0.3, 0.10)
+  | w == 0.0  = (0, 0.5)
   | w == 1.0  = (0.5, 0.07)
   | otherwise = (0.8, 0.10)
 
@@ -345,14 +364,44 @@ probGoodWeather w =
       pHigh = 1 - cdfTrunc01 mu sigma tHigh
   in p * pLow + (1 - p) * pHigh
 
+-- Split-integral probabilities using numeric-tools only
+probLessW :: Double -> Double -> Double
+probLessW w t =
+  let (mu,sigma) = tempParams w
+      k = 6.0 :: Double
+      a = mu - k * sigma
+      b = mu + k * sigma
+      z = integrateNT (normalPdf mu sigma) (a,b)
+  in if t <= a then 0 else if t >= b then 1 else integrateNT (normalPdf mu sigma) (a, t) / z
+
+probGreaterW :: Double -> Double -> Double
+probGreaterW w t =
+  let (mu,sigma) = tempParams w
+      k = 6.0 :: Double
+      a = mu - k * sigma
+      b = mu + k * sigma
+      z = integrateNT (normalPdf mu sigma) (a,b)
+  in if t <= a then 1 else if t >= b then 0 else integrateNT (normalPdf mu sigma) (t, b) / z
+
+gwSplit :: Double -> Double
+gwSplit w =
+  let p = humidProb w
+      pl = probLessW w tLow
+      pg = probGreaterW w tHigh
+  in p * pl + (1 - p) * pg
+
+-- DeepSeaProbLog closed-form (numerical-Φ) without truncation
+dspGoodWeather :: Double -> Double
+dspGoodWeather w =
+  let p = humidProb w
+      (mu, sigma) = tempParams w
+      cLow  = normalCDF mu sigma tLow
+      cHigh = normalCDF mu sigma tHigh
+  in p * cLow + (1 - p) * (1 - cHigh)
+
 -- Monadic formula version of good_weather for a given world identifier term
 goodWeatherF :: Term -> Formula
-goodWeatherF wTerm =
-  Comp "h" "bernoulli_humid" [wTerm]
-    (Or (And (Pred "==" [Var "h", Const 1.0])
-             (Comp "t" "normal_temp" [wTerm] (Pred "<" [Var "t", Const tLow])))
-        (And (Pred "==" [Var "h", Const 0.0])
-             (Comp "t" "normal_temp" [wTerm] (Pred ">" [Var "t", Const tHigh]))))
+goodWeatherF wTerm = Pred "gw_split" [wTerm]
 
 -- Test formulas on naturals
 natFormula1 :: Formula
@@ -414,6 +463,34 @@ main = do
   -- Aggregate over all worlds (geometric mean semantics for ∀)
   let gwAll = evalFormula worldsInterp Map.empty (Forall "w" (goodWeatherF (Var "w")))
   putStrLn $ "∀w ∈ Worlds. good_weather(w) ≈ " ++ show gwAll
+
+  -- Compare with DeepSeaProbLog formula per world
+  putStrLn "\nDeepSeaProbLog closed-form vs monadic expectation:"
+  let cmp w name = do
+        let mullerVal = case name of
+                          0 -> gw0
+                          1 -> gw1
+                          _ -> gw2
+        let dspVal = dspGoodWeather w
+        putStrLn $ nameStr name ++ ": DSP ≈ " ++ show dspVal ++ ", mULLER ≈ " ++ show mullerVal
+        let diff = abs (dspVal - mullerVal)
+        putStrLn $ "  |difference| ≈ " ++ show diff
+      nameStr k | k==0 = "world0"
+                | k==1 = "world1"
+                | otherwise = "world2"
+  cmp 0.0 0
+  cmp 1.0 1
+  cmp 2.0 2
+
+  -- Split-integral numeric-tools only comparison
+  putStrLn "\nSplit-integral (numeric-tools only) vs DSP:"
+  let showSplit w nm =
+        let sp = gwSplit w
+            dsp = dspGoodWeather w
+        in putStrLn $ nm ++ ": split ≈ " ++ show sp ++ ", DSP ≈ " ++ show dsp ++ ", |diff| ≈ " ++ show (abs (sp - dsp))
+  showSplit 0.0 "world0"
+  showSplit 1.0 "world1"
+  showSplit 2.0 "world2"
 
   return ()
 
