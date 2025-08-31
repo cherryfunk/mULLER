@@ -8,8 +8,9 @@ author: User
 maintainer: user@example.com
 
 executable muller
-  main-is: Haskell/NeSy.hs
-  build-depends: 
+  main-is: NeSy.hs
+  hs-source-dirs: Haskell
+  build-depends:
     base >=4.16,
     containers,
     mtl,

@@ -18,7 +18,7 @@ import System.Random (randomRIO)
 
 -------------------------- NeSy Frameworks ------------------------------
 -- algebra of truth values
-class TwoSGrpBLat a where
+class TwoMonBLat a where
   top, bot :: a
   neg :: a -> a
   conj, disj, implies :: a -> a -> a
