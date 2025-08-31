@@ -11,10 +11,10 @@ import qualified Data.Set.Monad as SM
 import qualified Numeric.Probability.Distribution as Dist
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIO)
-import Control.Monad.Bayes.Integrator (Integrator, runIntegrator, integrator, expectation)
-import Math.GaussianQuadratureIntegration (nIntegrate256)
+import Control.Monad.Bayes.Integrator 
+import Control.Monad.Bayes.Weighted as W
+import Control.Monad.Trans.Class (lift)
 import qualified Data.Vector as V
-import Numeric.Tools.Integration (quadTrapezoid, quadSimpson, quadRomberg, defQuad, quadRes, quadPrecEst, quadNIter)
 -- for sampling
 import System.Random (randomRIO)
 import Debug.Trace
@@ -76,14 +76,29 @@ instance Aggr2MonBLat SamplerIO (SamplerIO Bool) where
 -- Giry monad instance, using SamplerIO for both aggregation and the monad
 instance NeSyFramework SamplerIO SamplerIO Bool
 
-instance Aggr2MonBLat Integrator (Integrator Bool) where
+-- Giry monad as submonad of Integrator monad
+newtype Prob a = Prob { runProb :: Integrator a }
+fromIntegrator :: Integrator a -> Prob a
+fromIntegrator m = Prob $ normalize $ lift m
+
+instance Functor Prob where
+  fmap f (Prob m) = fromIntegrator $ fmap f m
+instance Applicative Prob where
+  pure x = Prob (pure x)   -- unit: δ_x
+  (<*>) = ap
+instance Monad Prob where
+  (Prob m) >>= f = fromIntegrator (m >>= (runProb . f))
+instance MonadDistribution Prob where
+  random = Prob random
+    
+instance Aggr2MonBLat Integrator (Prob Bool) where
   aggrA meas f =
-    integrator $ \meas_fun ->
-        exp $ runIntegrator (runIntegrator (log . meas_fun) . f) meas
+    Prob $ integrator $ \meas_fun ->
+        exp $ runIntegrator (runIntegrator (log . meas_fun) . runProb . f) meas
   aggrE meas f =
     neg (aggrA meas (neg . f))
--- Giry monad instance, using Integrator for both aggregation and the monad
-instance NeSyFramework Integrator Integrator Bool
+-- Giry monad instance, using Integrator for aggregation and Prob for the monad
+instance NeSyFramework Prob Integrator Bool
 
 -------------------------- Syntax ------------------------------
          
@@ -265,8 +280,6 @@ mainM :: IO()
 mainM = do
   let values = [("d1C",d1C),("d2C",d2C),("t1C",t1C),("t2C",t2C)]
   mapM_ sample values
-  integrationComparison
-  testInfiniteLists
 
 -------------------------- Wheather example ------------------------------
 
@@ -304,7 +317,7 @@ uniformUniverseW = do
       y <- uniform 0 5
       return (Pair (x, y))
 
-weatherModel :: Interpretation SamplerIO SamplerIO Bool UniverseW
+weatherModel :: (MonadDistribution m1, MonadDistribution m2) => Interpretation m1 m2 Bool UniverseW
 weatherModel =  Interpretation {
   universe = uniformUniverseW,
   funcs = Map.fromList [("humid_detector",\[Int d] ->
@@ -358,11 +371,11 @@ weatherSen3 :: Formula
 weatherSen3 = Exists "d" weatherBody
 
 w1 :: SamplerIO Bool
-w1 = evalF weatherModel Map.empty weatherSen1
+w1 = evalF (weatherModel::Interpretation SamplerIO SamplerIO Bool UniverseW) Map.empty weatherSen1
 w2 :: SamplerIO Bool
-w2 = evalF weatherModel Map.empty weatherSen2
+w2 = evalF (weatherModel::Interpretation SamplerIO SamplerIO Bool UniverseW) Map.empty weatherSen2
 w3 :: SamplerIO Bool
-w3 = evalF weatherModel Map.empty weatherSen3
+w3 = evalF (weatherModel::Interpretation SamplerIO SamplerIO Bool UniverseW) Map.empty weatherSen3
 
 -- compute the probability of True by sampling
 no_samples2 = 1000000
@@ -379,3 +392,16 @@ main = do
   (evaluate w1) >>= print
   (evaluate w2) >>= print
   (evaluate w3) >>= print
+
+
+
+wi1 :: Prob Bool
+wi1 = evalF (weatherModel::Interpretation Prob Integrator Bool UniverseW) Map.empty weatherSen1
+wi2 :: Prob Bool
+wi2 = evalF (weatherModel::Interpretation Prob Integrator Bool UniverseW) Map.empty weatherSen2
+wi3 :: Prob Bool
+wi3 = evalF (weatherModel::Interpretation Prob Integrator Bool UniverseW) Map.empty weatherSen3
+
+prob1 = runIntegrator (\x -> if x then 1 else 0) $ runProb wi1
+prob2 = runIntegrator (\x -> if x then 1 else 0) $ runProb wi2
+prob3 = runIntegrator (\x -> if x then 1 else 0) $ runProb wi3
