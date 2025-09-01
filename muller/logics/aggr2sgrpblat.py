@@ -1,22 +1,15 @@
 from abc import ABC, abstractmethod
 from functools import reduce
 from typing import (
-    Annotated,
     Any,
     Callable,
-    Generic,
-    Iterable,
     List,
     Type,
-    TypeVar,
     cast,
 )
-import typing
-import types
 
 from muller.monad.base import ParametrizedMonad
 from muller.monad.giry_sampling import GirySampling
-from muller.monad.identity import Identity
 
 
 class DblSGrpBLat[T: ParametrizedMonad](ABC):
@@ -61,7 +54,7 @@ def with_list_structure[T: ParametrizedMonad, O](
     def fn(cls: Type[DblSGrpBLat[T]]) -> Type[Aggr2SGrpBLat[list[Any], T]]:
         class _Aggr2SGrpBLatList(Aggr2SGrpBLat[list[Any], T], cls):
             __annotations__ = {"S": List[Any], "T": t, "O": o}
-            
+
             def aggrE[A](self, structure: list[A], f: Callable[[A], T]) -> T:
                 return reduce(
                     lambda a, b: self.disjunction(a, b), map(f, structure), self.bottom()

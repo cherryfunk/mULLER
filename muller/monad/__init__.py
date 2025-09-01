@@ -1,19 +1,37 @@
 from .base import ParametrizedMonad
 from .distribution import Prob, bernoulli, uniform, weighted
+from .giry import Giry
 from .giry_sampling import (
     GirySampling,
-    bernoulli as giry_bernoulli,
-    beta as giry_beta,
-    binomial as giry_binomial,
-    categorical as giry_categorical,
     from_sampler_fn,
+)
+from .giry_sampling import (
+    bernoulli as giry_bernoulli,
+)
+from .giry_sampling import (
+    beta as giry_beta,
+)
+from .giry_sampling import (
+    binomial as giry_binomial,
+)
+from .giry_sampling import (
+    categorical as giry_categorical,
+)
+from .giry_sampling import (
     geometric as giry_geometric,
+)
+from .giry_sampling import (
     negative_binomial as giry_negative_binomial,
+)
+from .giry_sampling import (
     normal as giry_normal,
+)
+from .giry_sampling import (
     poisson as giry_poisson,
+)
+from .giry_sampling import (
     uniform as giry_uniform,
 )
-from .giry import Giry
 from .identity import Identity
 from .non_empty_powerset import NonEmptyPowerset, from_list, singleton
 

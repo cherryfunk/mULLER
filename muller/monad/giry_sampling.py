@@ -1,5 +1,7 @@
-import numpy as np
 from typing import Callable, List, Union
+
+import numpy as np
+
 from muller.monad.base import ParametrizedMonad
 
 
@@ -64,7 +66,7 @@ class GirySampling[T](ParametrizedMonad[T]):
         try:
             numeric_samples = np.array(samples)
             return float(np.mean(numeric_samples))
-        except:
+        except: # noqa: E722
             # If conversion fails, try to compute mean of numeric values only
             numeric_values = [s for s in samples if isinstance(s, (int, float))]
             if numeric_values:

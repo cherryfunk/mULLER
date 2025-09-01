@@ -1,13 +1,13 @@
-from typing import Callable, Literal, cast, get_args
+from typing import Callable, Literal, cast
 
 from muller.monad.base import ParametrizedMonad
 from muller.monad.distribution import Prob, weighted
 from muller.nesy_framework import Interpretation
 
-TrafficLightUniverse = Literal["red", "green", "yellow", False, True]
-traffic_light_universe = list(get_args(TrafficLightUniverse))
+Universe = Literal["red", "green", "yellow", False, True]
+universe: list[Universe] = ["red", "green", "yellow", False, True]
 
-def _drive(light: TrafficLightUniverse) -> ParametrizedMonad[TrafficLightUniverse]:
+def _drive(light: Universe) -> ParametrizedMonad[Universe]:
     """Drive function based on traffic light color."""
     if light == "red":
         return weighted([(True, 0.1), (False, 0.9)])
@@ -20,8 +20,8 @@ def _drive(light: TrafficLightUniverse) -> ParametrizedMonad[TrafficLightUnivers
 
 
 
-traffic_light_model: Interpretation[TrafficLightUniverse, bool, list[TrafficLightUniverse]] = Interpretation(
-    universe=traffic_light_universe,
+traffic_light_model = Interpretation[Universe, bool, list[Universe]](
+    universe=universe,
     functions={
         "green": lambda: "green",
         "red": lambda: "red",
@@ -36,6 +36,6 @@ traffic_light_model: Interpretation[TrafficLightUniverse, bool, list[TrafficLigh
         "eval": lambda x: isinstance(x, bool) and x,
     },
     mpreds={
-        "driveP": cast(Callable[[TrafficLightUniverse], ParametrizedMonad[bool]], _drive)
+        "driveP": cast(Callable[[Universe], ParametrizedMonad[bool]], _drive)
     },
 )

@@ -1,12 +1,18 @@
-from functools import reduce
-from typing import Callable, Type, cast
-from muller.logics.aggr2sgrpblat import Aggr2SGrpBLat, DblSGrpBLat, NeSyLogicMeta, with_list_structure, with_prob_structure
+from typing import Type, cast
+
+from muller.logics.aggr2sgrpblat import (
+    DblSGrpBLat,
+    NeSyLogicMeta,
+    with_list_structure,
+    with_prob_structure,
+)
 from muller.monad.base import ParametrizedMonad
 from muller.monad.distribution import Prob
 from muller.monad.giry_sampling import GirySampling
 from muller.monad.identity import Identity
-from muller.monad.non_empty_powerset import NonEmptyPowerset, from_list, singleton
-from muller.monad.util import bind_T, fmap, fmap_T
+from muller.monad.non_empty_powerset import NonEmptyPowerset
+from muller.monad.util import bind_T, fmap_T
+
 
 def boolean_logic[T: ParametrizedMonad[bool]](monad: Type[T]) -> Type[DblSGrpBLat[T]]:
     class _BooleanLogic(DblSGrpBLat[T], NeSyLogicMeta[bool]):
@@ -32,8 +38,8 @@ ClassicalBooleanLogicList = with_list_structure(Identity, bool)(ClassicalBoolean
 ClassicalBooleanLogicProb = with_prob_structure(Identity, bool)(ClassicalBooleanLogic)
 
 NonDeterministicBooleanLogic = boolean_logic(NonEmptyPowerset[bool])
-NonDeterministicBooleanLogicList = with_list_structure(NonEmptyPowerset, bool)(NonDeterministicBooleanLogic)
-NonDeterministicBooleanLogicProb = with_prob_structure(NonEmptyPowerset, bool)(NonDeterministicBooleanLogic)
+NonDeterministicBooleanLogicList = with_list_structure(NonEmptyPowerset, bool)(NonDeterministicBooleanLogic) # noqa: E501
+NonDeterministicBooleanLogicProb = with_prob_structure(NonEmptyPowerset, bool)(NonDeterministicBooleanLogic) # noqa: E501
 
 ProbabilisticBooleanLogic = boolean_logic(Prob[bool])
 ProbabilisticBooleanLogicList = with_list_structure(Prob, bool)(ProbabilisticBooleanLogic)

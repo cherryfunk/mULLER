@@ -472,7 +472,9 @@ class ExistentialQuantification(Formula):
         universe = interpretation.universe
         return nesy.logic_T.aggrE(
             universe,
-            lambda x: self.formula.eval(nesy, interpretation, {**valuation, self.variable: cast(A, x)})
+            lambda x: self.formula.eval(
+                nesy, interpretation, {**valuation, self.variable: cast(A, x)}
+            ),
         )
 
 
@@ -524,11 +526,15 @@ def nesy_for_logic[T: ParametrizedMonad, O, S](
 
     # Check if the logic is compatible with the monad type
     # is done in `NeSyFramework.__init__`
-    return NeSyFramework(monad_type, cast(Aggr2SGrpBLat[S, ParametrizedMonad[O]], logic))
+    return NeSyFramework(
+        monad_type, cast(Aggr2SGrpBLat[S, ParametrizedMonad[O]], logic)
+    )
 
 
 def nesy_framework_for_monad[T: ParametrizedMonad, O, S](
-    monad_type: Type[T], omega: Type[O] = Type[bool], structure: Type[S] = Type[list[Any]]
+    monad_type: Type[T],
+    omega: Type[O] = Type[bool],
+    structure: Type[S] = Type[list[Any]],
 ) -> NeSyFramework[T, Any, Aggr2SGrpBLat[S, ParametrizedMonad[O]], S]:
     """
     Create a NeSyFramework instance with the given monad type and optional
@@ -547,7 +553,9 @@ def nesy_framework_for_monad[T: ParametrizedMonad, O, S](
 
 @overload
 def nesy[S, T: ParametrizedMonad, O](
-    logic: Aggr2SGrpBLat[S, T], omega: Type[O] = Type[bool], structure: Type[S] = list[Any]
+    logic: Aggr2SGrpBLat[S, T],
+    omega: Type[O] = Type[bool],
+    structure: Type[S] = list[Any],
 ) -> NeSyFramework[T, O, Aggr2SGrpBLat[S, ParametrizedMonad[O]], S]:
     """
     Create a NeSyFramework instance for the given logic.
@@ -603,7 +611,7 @@ def nesy[S, T: ParametrizedMonad, O](
 def nesy[S, T: ParametrizedMonad, O](  # pyright: ignore[reportInconsistentOverload]
     arg1: Aggr2SGrpBLat[S, T] | Type[T],
     omega: Type[O] = Type[bool],
-    structure: Type[S] = list[Any]
+    structure: Type[S] = list[Any],
 ) -> NeSyFramework[T, O, Aggr2SGrpBLat[S, ParametrizedMonad[O]], S]:
     """
     Create a NeSyFramework instance based on the provided argument.

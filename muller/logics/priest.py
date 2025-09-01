@@ -1,9 +1,13 @@
 from typing import Literal, Type, cast
 
-from muller.logics.aggr2sgrpblat import Aggr2SGrpBLat, DblSGrpBLat, with_list_structure, with_prob_structure
+from muller.logics.aggr2sgrpblat import (
+    DblSGrpBLat,
+    with_list_structure,
+    with_prob_structure,
+)
 from muller.monad.base import ParametrizedMonad
 from muller.monad.identity import Identity
-from muller.monad.non_empty_powerset import NonEmptyPowerset, from_list, singleton
+from muller.monad.non_empty_powerset import NonEmptyPowerset
 from muller.monad.util import bind_T
 
 Priest = Literal[True, False, "Both"]
@@ -34,6 +38,7 @@ def priest_implication(a: Priest, b: Priest) -> Priest:
         return "Both"
     return not a or b
 
+
 def priest_logic[T: ParametrizedMonad[Priest]](monad: Type[T]) -> Type[DblSGrpBLat[T]]:
     class _PriestLogic(DblSGrpBLat[T]):
         def top(self) -> T:
@@ -46,12 +51,13 @@ def priest_logic[T: ParametrizedMonad[Priest]](monad: Type[T]) -> Type[DblSGrpBL
             return bind_T(a, a, lambda x: monad.insert(priest_negation(x)))
 
         def conjunction(self, a: T, b: T) -> T:
-            return bind_T(a, a, lambda x: a if x != True else b)
+            return bind_T(a, a, lambda x: a if x != True else b)  # noqa: E712
 
         def disjunction(self, a: T, b: T) -> T:
-            return bind_T(a, a, lambda x: a if x != False else b)
+            return bind_T(a, a, lambda x: a if x != False else b)  # noqa: E712
 
     return _PriestLogic
+
 
 ClassicalPriestLogic = priest_logic(Identity[Priest])
 ClassicalPriestLogicList = with_list_structure(Identity, Priest)(ClassicalPriestLogic)
@@ -59,10 +65,18 @@ ClassicalPriestLogicProb = with_prob_structure(Identity, Priest)(ClassicalPriest
 
 
 NonDeterministicPriestLogic = priest_logic(NonEmptyPowerset[Priest])
-NonDeterministicPriestLogicList = with_list_structure(NonEmptyPowerset, Priest)(NonDeterministicPriestLogic)
-NonDeterministicPriestLogicProb = with_prob_structure(NonEmptyPowerset, Priest)(NonDeterministicPriestLogic)
+NonDeterministicPriestLogicList = with_list_structure(NonEmptyPowerset, Priest)(
+    NonDeterministicPriestLogic
+)
+NonDeterministicPriestLogicProb = with_prob_structure(NonEmptyPowerset, Priest)(
+    NonDeterministicPriestLogic
+)
 
 
 ProbabilisticPriestLogic = priest_logic(NonEmptyPowerset[Priest])
-ProbabilisticPriestLogicList = with_list_structure(NonEmptyPowerset, Priest)(ProbabilisticPriestLogic)
-ProbabilisticPriestLogicProb = with_prob_structure(NonEmptyPowerset, Priest)(ProbabilisticPriestLogic)
+ProbabilisticPriestLogicList = with_list_structure(NonEmptyPowerset, Priest)(
+    ProbabilisticPriestLogic
+)
+ProbabilisticPriestLogicProb = with_prob_structure(NonEmptyPowerset, Priest)(
+    ProbabilisticPriestLogic
+)

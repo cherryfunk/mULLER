@@ -1,20 +1,9 @@
-import math
 import unittest
 
-from muller.monad.giry_sampling import (
-    GirySampling,
-    beta,
-    binomial,
-    normal,
-    uniform,
-    categorical,
-    geometric
-)
+from muller.monad.giry_sampling import GirySampling, beta, binomial, normal, uniform
+
 
 def sample(value: GirySampling) -> float:
-    """Numerically integrate a function over the support of the distribution."""
-    # For simplicity, we'll use a basic rectangle method for integration
-    # In a real implementation, you'd want to use a more robust numerical integration method
     return value.mean(100_000)
 
 

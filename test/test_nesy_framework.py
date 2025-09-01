@@ -5,7 +5,6 @@ from common import traffic_light_model
 
 from muller.logics.aggr2sgrpblat import Aggr2SGrpBLat, NeSyLogicMeta
 from muller.logics.boolean import (
-    NonDeterministicBooleanLogic,
     NonDeterministicBooleanLogicList,
 )
 from muller.monad.base import ParametrizedMonad
@@ -568,10 +567,10 @@ class MyProbabilityLogic(Aggr2SGrpBLat[list, MyMonad[bool]], NeSyLogicMeta[bool]
 
     def disjunction(self, a: MyMonad[bool], b: MyMonad[bool]) -> MyMonad[bool]:
         return MyMonad(a.value or b.value, None)
-    
+
     def aggrA[A](self, structure: list, f: Callable[[A], MyMonad[bool]]) -> MyMonad[bool]:
         return MyMonad(all(f(x).value for x in structure), None)
-    
+
     def aggrE[A](self, structure: list, f: Callable[[A], MyMonad[bool]]) -> MyMonad[bool]:
         return MyMonad(any(f(x).value for x in structure), None)
 

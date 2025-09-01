@@ -1,8 +1,9 @@
 import sys
 from functools import lru_cache
 from itertools import chain
-from types import get_original_bases
 from typing import get_origin
+from types import ModuleType, get_original_bases
+
 
 import muller.logics
 from muller.monad.base import ParametrizedMonad
@@ -17,35 +18,37 @@ from .boolean import (
     NonDeterministicBooleanLogicProb,
     ProbabilisticBooleanLogic,
     ProbabilisticBooleanLogicList,
-    ProbabilisticBooleanLogicProb
+    ProbabilisticBooleanLogicProb,
 )
+from .giry_product_algebra import GiryProductAlgebraLogic
 from .priest import (
-    Priest,
     ClassicalPriestLogic,
     ClassicalPriestLogicList,
     ClassicalPriestLogicProb,
     NonDeterministicPriestLogic,
     NonDeterministicPriestLogicList,
     NonDeterministicPriestLogicProb,
+    Priest,
     ProbabilisticPriestLogic,
     ProbabilisticPriestLogicList,
     ProbabilisticPriestLogicProb,
-    
 )
 from .product_algebra import ProductAlgebraLogic
-from .giry_product_algebra import GiryProductAlgebraLogic
 
-def _get_module_member(module: type, name: str) -> str | None:
+
+def _get_module_member(module: ModuleType, name: str) -> str | None:
     """
     Get the module name for a given class.
     """
     try:
         return getattr(module, name, None)
-    except:
+    except: # noqa e722
         return None
-    
+
+
 def _type_eq(a, b) -> bool:
     return a is b or a == b or (get_origin(a) or a) == (get_origin(b) or b)
+
 
 @lru_cache(maxsize=128)
 def get_logic[T: ParametrizedMonad, O, S](
@@ -55,7 +58,9 @@ def get_logic[T: ParametrizedMonad, O, S](
     Get the logic for a specific monad and type.
     """
     modules = list(sys.modules.values())
-    members = (_get_module_member(module, name) for module in modules for name in dir(module))
+    members = (
+        _get_module_member(module, name) for module in modules for name in dir(module)
+    )
     members = chain(
         muller.logics.__dict__.values(), members
     )  # Ensure we start with our own logics for efficiency
@@ -85,12 +90,18 @@ def get_logic[T: ParametrizedMonad, O, S](
                 if (generic_base_class := find_aggr2sgrpblat_base(val)) is not None:
                     val = generic_base_class
 
-                if (annotations := getattr(val, "__annotations__", None)) is not None and type(annotations) is dict:
+                if (
+                    annotations := getattr(val, "__annotations__", None)
+                ) is not None and type(annotations) is dict:
                     structure_arg = annotations.get("S", None)
                     monad_arg = annotations.get("T", None)
                     omega_arg = annotations.get("O", None)
 
-                    if _type_eq(structure, structure_arg) and _type_eq(monad_arg, monad_type) and _type_eq(omega_arg, omega):
+                    if (
+                        _type_eq(structure, structure_arg)
+                        and _type_eq(monad_arg, monad_type)
+                        and _type_eq(omega_arg, omega)
+                    ):
                         # Return an instance of the matching class
                         return val()
 
@@ -128,7 +139,8 @@ def get_logic[T: ParametrizedMonad, O, S](
 
     # If no matching class is found, raise an exception
     raise ValueError(
-        f"No logic class found for monad type {monad_type} with omega type {omega} and structure {structure}."
+        f"No logic class found for monad type {monad_type} with omega type {omega} "
+        f"and structure {structure}."
     )
 
 

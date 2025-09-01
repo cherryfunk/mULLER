@@ -1,6 +1,7 @@
+from typing import Iterable
+
 from muller.logics.aggr2sgrpblat import Aggr2SGrpBLat, NeSyLogicMeta
 from muller.monad.identity import Identity
-from typing import Iterable
 
 
 class ProductAlgebraLogic(Aggr2SGrpBLat[list, Identity[float]], NeSyLogicMeta[float]):

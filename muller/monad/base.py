@@ -1,4 +1,5 @@
 from typing import Callable, TypeVar, cast
+
 from pymonad.monad import Monad
 
 S = TypeVar("S", contravariant=True)
