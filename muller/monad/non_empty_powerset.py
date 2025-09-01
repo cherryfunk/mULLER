@@ -36,7 +36,7 @@ class NonEmptyPowerset[T](ParametrizedMonad[T]):
         super().__init__(value, None)
 
     @classmethod
-    def unit(cls, value: T) -> "NonEmptyPowerset[T]":
+    def insert(cls, value: T) -> "NonEmptyPowerset[T]":
         """
         Create a non-empty powerset with a single value (deterministic computation).
         Implements ηX(x) = {x}
@@ -69,7 +69,7 @@ def join[T](monad: NonEmptyPowerset[NonEmptyPowerset[T]]) -> NonEmptyPowerset[T]
 
 def singleton[T](value: T) -> NonEmptyPowerset[T]:
     """Create a non-empty powerset with a single value."""
-    return NonEmptyPowerset.unit(value)
+    return NonEmptyPowerset.insert(value)
 
 
 def from_list[T](values: list[T]) -> NonEmptyPowerset[T]:

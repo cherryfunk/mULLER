@@ -1,8 +1,8 @@
 from muller.logics.aggr2sgrpblat import Aggr2SGrpBLat, NeSyLogicMeta
-from muller.monad.giry import GiryMonad
+from muller.monad.giry import Giry
 
 
-class GiryProductAlgebraLogic(Aggr2SGrpBLat[list, GiryMonad[float]], NeSyLogicMeta[float]):
+class GiryProductAlgebraLogic(Aggr2SGrpBLat[list, Giry[float]], NeSyLogicMeta[float]):
     """
     Product algebra on truth values in [0, 1] carried by the Giry monad.
 
@@ -16,25 +16,25 @@ class GiryProductAlgebraLogic(Aggr2SGrpBLat[list, GiryMonad[float]], NeSyLogicMe
     """
 
     # Lattice bounds ---------------------------------------------------------
-    def top(self) -> GiryMonad[float]:
-        return GiryMonad.unit(1.0)
+    def top(self) -> Giry[float]:
+        return Giry.insert(1.0)
 
-    def bottom(self) -> GiryMonad[float]:
-        return GiryMonad.unit(0.0)
+    def bottom(self) -> Giry[float]:
+        return Giry.insert(0.0)
 
     # Connectives ------------------------------------------------------------
-    def neg(self, a: GiryMonad[float]) -> GiryMonad[float]:
+    def neg(self, a: Giry[float]) -> Giry[float]:
         return a.map(lambda x: 1.0 - x)
 
-    def conjunction(self, a: GiryMonad[float], b: GiryMonad[float]) -> GiryMonad[float]:
+    def conjunction(self, a: Giry[float], b: Giry[float]) -> Giry[float]:
         # (lifted) product under independence
         return a.bind(lambda x: b.map(lambda y: x * y))
 
-    def disjunction(self, a: GiryMonad[float], b: GiryMonad[float]) -> GiryMonad[float]:
+    def disjunction(self, a: Giry[float], b: Giry[float]) -> Giry[float]:
         # probabilistic sum a + b - a*b (lifted)
         return a.bind(lambda x: b.map(lambda y: x + y - x * y))
 
-    def implies(self, a: GiryMonad[float], b: GiryMonad[float]) -> GiryMonad[float]:
+    def implies(self, a: Giry[float], b: Giry[float]) -> Giry[float]:
         # residuum of product (lifted)
         def residuum(x: float, y: float) -> float:
             if x == 0.0 or x <= y:

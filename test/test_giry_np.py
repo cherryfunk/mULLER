@@ -2,7 +2,7 @@ import math
 import unittest
 
 from muller.monad.giry_sampling import (
-    GiryNP,
+    GirySampling,
     beta,
     binomial,
     normal,
@@ -11,14 +11,14 @@ from muller.monad.giry_sampling import (
     geometric
 )
 
-def sample(value: GiryNP) -> float:
+def sample(value: GirySampling) -> float:
     """Numerically integrate a function over the support of the distribution."""
     # For simplicity, we'll use a basic rectangle method for integration
     # In a real implementation, you'd want to use a more robust numerical integration method
-    return value.mean(10000)
+    return value.mean(100_000)
 
 
-class TestGiryNP(unittest.TestCase):
+class TestGirySampling(unittest.TestCase):
     """Test cases for the Giry monad implementation."""
 
     def setUp(self):
@@ -32,7 +32,7 @@ class TestGiryNP(unittest.TestCase):
     def test_insert_creation(self):
         """Test that.insert creates a point mass measure."""
         # Create a point mass at value 5
-        point_mass = GiryNP.insert(5)
+        point_mass = GirySampling.insert(5)
 
         # Test that integrating identity function gives the value
         result = sample(point_mass)
@@ -41,7 +41,7 @@ class TestGiryNP(unittest.TestCase):
     def test_map_operation(self):
         """Test the map operation (functor law)."""
         # Create a point mass at 3
-        monad = GiryNP.insert(3)
+        monad = GirySampling.insert(3)
 
         # Map with a function that doubles the value
         mapped = monad.map(lambda x: x * 2)
@@ -53,10 +53,10 @@ class TestGiryNP(unittest.TestCase):
     def test_bind_operation(self):
         """Test the bind operation (monad law)."""
         # Create a point mass at 2
-        monad = GiryNP.insert(2)
+        monad = GirySampling.insert(2)
 
         # Bind with a function that creates a point mass at double the value
-        bound = monad.bind(lambda x: GiryNP.insert(x * 3))
+        bound = monad.bind(lambda x: GirySampling.insert(x * 3))
 
         # Integrate identity to get the result
         result = sample(bound)
@@ -68,9 +68,9 @@ class TestGiryNP(unittest.TestCase):
         a = 5
 
         def f(x):
-            return GiryNP.insert(x + 1)
+            return GirySampling.insert(x + 1)
 
-        left = GiryNP.insert(a).bind(f)
+        left = GirySampling.insert(a).bind(f)
         right = f(a)
 
         left_result = sample(left)
@@ -78,8 +78,8 @@ class TestGiryNP(unittest.TestCase):
         self.assertAlmostEqualFloat(left_result, right_result)
 
         # Right identity: m.bind.insert) == m
-        m = GiryNP.insert(7)
-        bound = m.bind(GiryNP.insert)
+        m = GirySampling.insert(7)
+        bound = m.bind(GirySampling.insert)
 
         left_result = sample(m)
         right_result = sample(bound)
@@ -141,11 +141,11 @@ class TestGiryNP(unittest.TestCase):
     def test_complex_composition(self):
         """Test complex monadic compositions."""
         # Create a chain of operations
-        initial = GiryNP.insert(1)
+        initial = GirySampling.insert(1)
 
         # Chain multiple bind operations
         result = (
-            initial.bind(lambda x: GiryNP.insert(x + 1))  # 1 -> 2
+            initial.bind(lambda x: GirySampling.insert(x + 1))  # 1 -> 2
             .bind(lambda x: binomial(x, 0.5))  # 2 -> binomial(2, 0.5)
             .map(lambda x: x * 2)
         )  # double each outcome

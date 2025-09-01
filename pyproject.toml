@@ -23,7 +23,6 @@ include = ["muller*"]
 [dependency-groups]
 dev = [
     "coverage>=7.10.1",
-    "matplotlib>=3.10.5",
     "pytest>=8.0.0",
     "ruff>=0.8.0",
 ]

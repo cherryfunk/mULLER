@@ -15,7 +15,6 @@ import typing
 import types
 
 from muller.monad.base import ParametrizedMonad
-from muller.monad.giry_pymc import GiryMonadPyMC
 from muller.monad.giry_sampling import GirySampling
 from muller.monad.identity import Identity
 

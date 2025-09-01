@@ -42,10 +42,10 @@ class TestNeSyFramework(unittest.TestCase):
         self.universe = ["alice", "bob", "charlie"]
 
         # Probabilistic NeSy system
-        self.prob_nesy = nesy(Prob, bool)
+        self.prob_nesy = nesy(Prob[bool], bool)
 
         # Non-deterministic NeSy system
-        self.nondet_nesy = nesy(NonEmptyPowerset, bool)
+        self.nondet_nesy = nesy(NonEmptyPowerset[bool], bool)
 
     def test_probabilistic_basic_formulas(self):
         """Test basic formulas in probabilistic logic."""
@@ -290,13 +290,13 @@ class TestNeSyFramework(unittest.TestCase):
         valuation = {}
 
         # Test universal quantification
-        formula = parse("forall X (human(X) -> mortal(X))")
+        formula = parse("![X]: (human(X) -> mortal(X))")
         result = formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertEqual(result.value[True], 1.0)
 
         # Test existential quantification
-        formula = parse("exists X human(X)")
+        formula = parse("?[X]: human(X)")
         result = formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)
         self.assertEqual(result.value[True], 1.0)
@@ -499,13 +499,13 @@ class TestNeSyFramework(unittest.TestCase):
             universe=list(range(7)),
             functions={str(i): lambda i=i: i for i in range(1, 7)},
             mfunctions={"die": lambda: uniform(list(range(1, 7)))},
-            preds={"equals": lambda x, y: x == y, "even": lambda x: x % 2 == 0},
+            preds={"==": lambda x, y: x == y, "even": lambda x: x % 2 == 0},
             mpreds={},
         )
 
         valuation = {}
 
-        dice_formula = parse("X := $die() (equals(X, 6)) and X := $die() (even(X))")
+        dice_formula = parse("X := $die() (X == 6) & X := $die() (even(X))")
 
         result = dice_formula.eval(self.prob_nesy, interpretation, valuation)
         self.assertIsInstance(result, Prob)

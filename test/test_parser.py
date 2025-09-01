@@ -178,19 +178,19 @@ class ParserTestCase(TestCase):
 
     # Test quantifiers
     def test_universal_quantification(self):
-        f = parse("forall X human(X)")
+        f = parse("![X]: human(X)")
         self.assertEqual(
             f, UniversalQuantification("X", Predicate("human", [Variable("X")]))
         )
 
     def test_existential_quantification(self):
-        f = parse("exists X human(X)")
+        f = parse("?[X]: human(X)")
         self.assertEqual(
             f, ExistentialQuantification("X", Predicate("human", [Variable("X")]))
         )
 
     def test_nested_quantifiers(self):
-        f = parse("forall X exists Y likes(X, Y)")
+        f = parse("![X]: ?[Y]: likes(X, Y)")
         expected = UniversalQuantification(
             "X",
             ExistentialQuantification(
@@ -265,7 +265,7 @@ class ParserTestCase(TestCase):
 
     # Test complex nested expressions
     def test_complex_nested_expression(self):
-        f = parse("forall X (human(X) -> exists Y (parent(X, Y) and loves(Y)))")
+        f = parse("![X]: (human(X) -> ?[Y]: (parent(X, Y) and loves(Y)))")
         expected = UniversalQuantification(
             "X",
             Implication(
@@ -282,7 +282,7 @@ class ParserTestCase(TestCase):
         self.assertEqual(f, expected)
 
     def test_computation_in_quantifier(self):
-        f = parse("exists X (X := $transform(Y) (valid(X)))")
+        f = parse("?[X]: (X := $transform(Y) (valid(X)))")
         expected = ExistentialQuantification(
             "X",
             Computation(
@@ -429,7 +429,7 @@ class ParserTestCase(TestCase):
 
     def test_mixed_operators(self):
         # Test: forall X (p(X) -> (q(X) and not r(X)))
-        f = parse("forall X (p(X) -> q(X) and not r(X))")
+        f = parse("![X]: (p(X) -> q(X) and not r(X))")
         expected = UniversalQuantification(
             "X",
             Implication(

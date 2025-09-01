@@ -50,7 +50,7 @@ class TestNonEmptyPowersetMonad(unittest.TestCase):
     def test_unit_operation(self):
         """Test the unit operation."""
         value = "single"
-        ps = NonEmptyPowerset.unit(value)
+        ps = NonEmptyPowerset.insert(value)
 
         # Should contain only the single value
         self.assertEqual(ps.value, frozenset({"single"}))
@@ -126,13 +126,13 @@ class TestNonEmptyPowersetMonad(unittest.TestCase):
         def f(x):
             return NonEmptyPowerset([x, x + 1])
 
-        left = NonEmptyPowerset.unit(a).bind(f)
+        left = NonEmptyPowerset.insert(a).bind(f)
         right = f(a)
         self.assertNonEmptyPowersetEqual(left, right)
 
         # Right identity: m.bind(unit) == m
         m = NonEmptyPowerset([1, 2, 3])
-        bound = m.bind(NonEmptyPowerset.unit)
+        bound = m.bind(NonEmptyPowerset.insert)
         self.assertNonEmptyPowersetEqual(m, bound)
 
         # Associativity: (m.bind(f)).bind(g) == m.bind(lambda x: f(x).bind(g))

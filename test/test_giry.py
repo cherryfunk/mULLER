@@ -2,7 +2,7 @@ import math
 import unittest
 
 from muller.monad.giry import (
-    GiryMonad,
+    Giry,
     beta,
     betaBinomial,
     binomial,
@@ -27,7 +27,7 @@ class TestGiryMonad(unittest.TestCase):
     def test_unit_creation(self):
         """Test that unit creates a point mass measure."""
         # Create a point mass at value 5
-        point_mass = GiryMonad.unit(5)
+        point_mass = Giry.insert(5)
 
         # Test that integrating identity function gives the value
         result = integrate(lambda x: x, point_mass.value)
@@ -40,7 +40,7 @@ class TestGiryMonad(unittest.TestCase):
     def test_map_operation(self):
         """Test the map operation (functor law)."""
         # Create a point mass at 3
-        monad = GiryMonad.unit(3)
+        monad = Giry.insert(3)
 
         # Map with a function that doubles the value
         mapped = monad.map(lambda x: x * 2)
@@ -52,10 +52,10 @@ class TestGiryMonad(unittest.TestCase):
     def test_bind_operation(self):
         """Test the bind operation (monad law)."""
         # Create a point mass at 2
-        monad = GiryMonad.unit(2)
+        monad = Giry.insert(2)
 
         # Bind with a function that creates a point mass at double the value
-        bound = monad.bind(lambda x: GiryMonad.unit(x * 3))
+        bound = monad.bind(lambda x: Giry.insert(x * 3))
 
         # Integrate identity to get the result
         result = integrate(lambda x: x, bound.value)
@@ -67,9 +67,9 @@ class TestGiryMonad(unittest.TestCase):
         a = 5
 
         def f(x):
-            return GiryMonad.unit(x + 1)
+            return Giry.insert(x + 1)
 
-        left = GiryMonad.unit(a).bind(f)
+        left = Giry.insert(a).bind(f)
         right = f(a)
 
         def test_function(x):
@@ -80,8 +80,8 @@ class TestGiryMonad(unittest.TestCase):
         self.assertAlmostEqualFloat(left_result, right_result)
 
         # Right identity: m.bind(unit) == m
-        m = GiryMonad.unit(7)
-        bound = m.bind(GiryMonad.unit)
+        m = Giry.insert(7)
+        bound = m.bind(Giry.insert)
 
         left_result = integrate(test_function, m.value)
         right_result = integrate(test_function, bound.value)
@@ -206,10 +206,10 @@ class TestGiryMonad(unittest.TestCase):
     def test_amap_operation(self):
         """Test the applicative map operation."""
         # Create a monad containing a function
-        func_monad = GiryMonad.unit(lambda x: x * 2)
+        func_monad = Giry.insert(lambda x: x * 2)
 
         # Create a monad containing a value
-        value_monad = GiryMonad.unit(5)
+        value_monad = Giry.insert(5)
 
         # Apply the function
         result_monad = func_monad.amap(value_monad)
@@ -221,11 +221,11 @@ class TestGiryMonad(unittest.TestCase):
     def test_complex_composition(self):
         """Test complex monadic compositions."""
         # Create a chain of operations
-        initial = GiryMonad.unit(1)
+        initial = Giry.insert(1)
 
         # Chain multiple bind operations
         result = (
-            initial.bind(lambda x: GiryMonad.unit(x + 1))  # 1 -> 2
+            initial.bind(lambda x: Giry.insert(x + 1))  # 1 -> 2
             .bind(lambda x: binomial(x, 0.5))  # 2 -> binomial(2, 0.5)
             .map(lambda x: x * 2)
         )  # double each outcome

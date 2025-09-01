@@ -34,7 +34,7 @@ def integrate[T](f: Callable[[T], float], measure: Measure[T]) -> float:
     return measure(f)
 
 
-class GiryMonad[T](ParametrizedMonad[Measure[T]]):
+class Giry[T](ParametrizedMonad[T]):
     """
     Giry Monad for Probabilistic Computation with Measures
 
@@ -59,7 +59,7 @@ class GiryMonad[T](ParametrizedMonad[Measure[T]]):
         self.value = value
 
     @classmethod
-    def unit(cls, value: T) -> "GiryMonad":
+    def insert(cls, value: T) -> "Giry[T]":
         """
         Create a Giry monad with a point mass (Dirac delta measure).
         Also known as 'return' or 'pure' in Haskell.
@@ -72,7 +72,7 @@ class GiryMonad[T](ParametrizedMonad[Measure[T]]):
         """
         return cls(lambda f: f(value))
 
-    def bind[S](self, kleisli_function: Callable[[T], "GiryMonad[S]"]) -> "GiryMonad[S]": # pyright: ignore[reportIncompatibleMethodOverride] # fmt: skip # noqa: E501
+    def bind[S](self, kleisli_function: Callable[[T], "Giry[S]"]) -> "Giry[S]": # pyright: ignore[reportIncompatibleMethodOverride] # fmt: skip # noqa: E501
         """
         Monadic bind operation (>>=) for the Giry monad.
 
@@ -87,11 +87,11 @@ class GiryMonad[T](ParametrizedMonad[Measure[T]]):
         """
         rho = kleisli_function
 
-        return GiryMonad(
+        return Giry(
             lambda f: integrate(lambda m: integrate(f, rho(m).value), self.value)
         )
 
-    def map[U](self, function: Callable[[T], U]) -> "GiryMonad[U]":  # pyright: ignore[reportIncompatibleMethodOverride] # fmt: skip # noqa: E501
+    def map[U](self, function: Callable[[T], U]) -> "Giry[U]":  # pyright: ignore[reportIncompatibleMethodOverride] # fmt: skip # noqa: E501
         """
         Apply a function to the values in the measure (functor map).
 
@@ -103,9 +103,9 @@ class GiryMonad[T](ParametrizedMonad[Measure[T]]):
         Returns:
             New GiryMonad with the function applied to the measure
         """
-        return GiryMonad(lambda f: integrate(lambda m: f(function(m)), self.value))
+        return Giry(lambda f: integrate(lambda m: f(function(m)), self.value))
 
-    def amap[S](self: 'GiryMonad[Callable[[S], T]]', monad_value: 'GiryMonad[S]') -> 'GiryMonad[T]':   # pyright: ignore[reportIncompatibleMethodOverride] # fmt: skip # noqa: E501
+    def amap[S](self: 'Giry[Callable[[S], T]]', monad_value: 'Giry[S]') -> 'Giry[T]':   # pyright: ignore[reportIncompatibleMethodOverride] # fmt: skip # noqa: E501
         """
         Applicative functor application for the Giry monad.
 
@@ -120,19 +120,7 @@ class GiryMonad[T](ParametrizedMonad[Measure[T]]):
         """
         g = self.value
         h = monad_value.value
-        return GiryMonad(lambda f: g(lambda k: h(lambda x: f(k(x)))))
-    
-    def sample(self, n: int) -> list[T]:
-        """
-        Draw samples from the measure.
-
-        Args:
-            n: The number of samples to draw.
-
-        Returns:
-            A list of samples drawn from the measure.
-        """
-        return [self.value(lambda x: x) for _ in range(n)]
+        return Giry(lambda f: g(lambda k: h(lambda x: f(k(x)))))
 
     def __repr__(self):
         name = self.value.__name__ if hasattr(self.value, "__name__") else "<measure>"
@@ -145,7 +133,7 @@ class GiryMonad[T](ParametrizedMonad[Measure[T]]):
 # fromMassFunction :: (a -> Double) -> [a] -> Measure a
 # fromMassFunction f support = Measure $ \g ->
 #   foldl' (\acc x -> acc + f x * g x) 0 support
-def fromMassFunction[T](f: Callable[[T], float], support: list[T]) -> GiryMonad[T]:
+def fromMassFunction[T](f: Callable[[T], float], support: list[T]) -> Giry[T]:
     """Creates a GiryMonad from a mass function.
 
     Args:
@@ -155,7 +143,7 @@ def fromMassFunction[T](f: Callable[[T], float], support: list[T]) -> GiryMonad[
     Returns:
         A GiryMonad representing the mass function.
     """
-    return GiryMonad(lambda g: sum(g(x) * f(x) for x in support))
+    return Giry(lambda g: sum(g(x) * f(x) for x in support))
 
 
 # binomial :: Int -> Double -> Measure Int
@@ -163,7 +151,7 @@ def fromMassFunction[T](f: Callable[[T], float], support: list[T]) -> GiryMonad[
 #   pmf n p x
 #     | x < 0 || n < x = 0
 #     | otherwise = choose n x * p ^^ x * (1 - p) ^^ (n - x)
-def binomial(n: int, p: float) -> GiryMonad[int]:
+def binomial(n: int, p: float) -> Giry[int]:
     """Creates a GiryMonad from a binomial distribution.
 
     Args:
@@ -189,7 +177,7 @@ def binomial(n: int, p: float) -> GiryMonad[int]:
 #     quadratureTanhSinh (\x -> f x * d x)
 #   where
 #     quadratureTanhSinh = result . last . everywhere trap
-def fromDensityFunction(d: Callable[[float], float]) -> GiryMonad[float]:
+def fromDensityFunction(d: Callable[[float], float]) -> Giry[float]:
     """Creates a GiryMonad from a density function.
 
     Args:
@@ -198,7 +186,7 @@ def fromDensityFunction(d: Callable[[float], float]) -> GiryMonad[float]:
     Returns:
         A GiryMonad representing the density function.
     """
-    return GiryMonad(lambda f: quad(lambda x: f(x) * d(x), -np.inf, np.inf)[0])
+    return Giry(lambda f: quad(lambda x: f(x) * d(x), -np.inf, np.inf)[0])
 
 
 # beta :: Double -> Double -> Measure Double
@@ -206,7 +194,7 @@ def fromDensityFunction(d: Callable[[float], float]) -> GiryMonad[float]:
 #   density a b p
 #     | p < 0 || p > 1 = 0
 #     | otherwise = 1 / exp (logBeta a b) * p ** (a - 1) * (1 - p) ** (b - 1)
-def beta(a: float, b: float) -> GiryMonad[float]:
+def beta(a: float, b: float) -> Giry[float]:
     """Creates a GiryMonad from a beta distribution.
 
     Args:
@@ -227,7 +215,7 @@ def beta(a: float, b: float) -> GiryMonad[float]:
 
 # betaBinomial :: Int -> Double -> Double -> Measure Int
 # betaBinomial n a b = beta a b >>= binomial n
-def betaBinomial(n: int, a: float, b: float) -> GiryMonad[int]:
+def betaBinomial(n: int, a: float, b: float) -> Giry[int]:
     """Creates a GiryMonad from a beta-binomial distribution.
 
     Args:
@@ -243,7 +231,7 @@ def betaBinomial(n: int, a: float, b: float) -> GiryMonad[int]:
 
 # fromSample :: Foldable f => f a -> Measure a
 # fromSample = Measure . flip weightedAverage
-def fromSample[T](sample: List[T]) -> GiryMonad[T]:
+def fromSample[T](sample: List[T]) -> Giry[T]:
     """Creates a GiryMonad from a sample.
 
     Args:
@@ -256,4 +244,4 @@ def fromSample[T](sample: List[T]) -> GiryMonad[T]:
     def weighted_average(f: Callable[[T], float]) -> float:
         return sum(f(x) for x in sample) / len(sample)
 
-    return GiryMonad(weighted_average)
+    return Giry(weighted_average)
