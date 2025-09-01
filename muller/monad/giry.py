@@ -121,6 +121,18 @@ class GiryMonad[T](ParametrizedMonad[Measure[T]]):
         g = self.value
         h = monad_value.value
         return GiryMonad(lambda f: g(lambda k: h(lambda x: f(k(x)))))
+    
+    def sample(self, n: int) -> list[T]:
+        """
+        Draw samples from the measure.
+
+        Args:
+            n: The number of samples to draw.
+
+        Returns:
+            A list of samples drawn from the measure.
+        """
+        return [self.value(lambda x: x) for _ in range(n)]
 
     def __repr__(self):
         name = self.value.__name__ if hasattr(self.value, "__name__") else "<measure>"

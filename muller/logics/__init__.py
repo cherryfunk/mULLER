@@ -15,9 +15,16 @@ from .boolean import (
 )
 from .priest import (
     ClassicalPriestLogic,
+    ClassicalPriestLogicList,
+    ClassicalPriestLogicProb,
     NonDeterministicPriestLogic,
+    NonDeterministicPriestLogicList,
+    NonDeterministicPriestLogicProb,
     Priest,
     ProbabilisticPriestLogic,
+    ProbabilisticPriestLogicList,
+    ProbabilisticPriestLogicProb,
+    
 )
 from .product_algebra import ProductAlgebraLogic
 from .giry_product_algebra import GiryProductAlgebraLogic

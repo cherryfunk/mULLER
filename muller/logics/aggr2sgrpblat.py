@@ -16,6 +16,7 @@ import types
 
 from muller.monad.base import ParametrizedMonad
 from muller.monad.giry_pymc import GiryMonadPyMC
+from muller.monad.giry_sampling import GirySampling
 from muller.monad.identity import Identity
 
 
@@ -79,18 +80,18 @@ def with_list_structure[T: ParametrizedMonad, O](
 
 def with_prob_structure[T: ParametrizedMonad, O](
     t: Type[T], o: Type[O]
-) -> Callable[[Type[DblSGrpBLat[T]]], Type[Aggr2SGrpBLat[GiryMonadPyMC, T]]]:
-    def fn(cls: Type[DblSGrpBLat[T]]) -> Type[Aggr2SGrpBLat[GiryMonadPyMC, T]]:
-        class _Aggr2SGrpBLatProb(Aggr2SGrpBLat[GiryMonadPyMC, T], cls):
-            __annotations__ = {"S": GiryMonadPyMC, "T": t, "O": o}
+) -> Callable[[Type[DblSGrpBLat[T]]], Type[Aggr2SGrpBLat[GirySampling, T]]]:
+    def fn(cls: Type[DblSGrpBLat[T]]) -> Type[Aggr2SGrpBLat[GirySampling, T]]:
+        class _Aggr2SGrpBLatProb(Aggr2SGrpBLat[GirySampling, T], cls):
+            __annotations__ = {"S": GirySampling, "T": t, "O": o}
 
-            def aggrE[A](self, structure: GiryMonadPyMC, f: Callable[[A], T]) -> T:
+            def aggrE[A](self, structure: GirySampling, f: Callable[[A], T]) -> T:
                 samples = structure.sample(1000)
                 return reduce(
                     lambda a, b: self.disjunction(a, b), map(f, samples), self.bottom()
                 )
 
-            def aggrA[A](self, structure: GiryMonadPyMC, f: Callable[[A], T]) -> T:
+            def aggrA[A](self, structure: GirySampling, f: Callable[[A], T]) -> T:
                 samples = structure.sample(1000)
                 return reduce(
                     lambda a, b: self.conjunction(a, b), map(f, samples), self.top()

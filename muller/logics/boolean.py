@@ -5,7 +5,6 @@ from muller.monad.distribution import Prob
 from muller.monad.identity import Identity
 from muller.monad.non_empty_powerset import NonEmptyPowerset, from_list, singleton
 from muller.monad.util import bind_T, fmap_T
-from muller.monad.giry_pymc import GiryMonadPyMC
 
 class ClassicalBooleanLogic(DblSGrpBLat[Identity[bool]], NeSyLogicMeta[bool]):
     def top(self) -> Identity[bool]:
@@ -42,12 +41,12 @@ class NonDeterministicBooleanLogic(
     def conjunction(
         self, a: NonEmptyPowerset[bool], b: NonEmptyPowerset[bool]
     ) -> NonEmptyPowerset[bool]:
-        return from_list([x and y for x in a.value for y in b.value])
+        return bind_T(a, a, lambda x: fmap_T(b, b, lambda y: x and y) if x else self.bottom())
 
     def disjunction(
         self, a: NonEmptyPowerset[bool], b: NonEmptyPowerset[bool]
     ) -> NonEmptyPowerset[bool]:
-        return from_list([x or y for x in a.value for y in b.value])
+        return bind_T(a, a, lambda x: fmap_T(b, b, lambda y: x or y) if not x else self.top())
 
 NonDeterministicBooleanLogicList = with_list_structure(NonEmptyPowerset, bool)(NonDeterministicBooleanLogic)
 NonDeterministicBooleanLogicProb = with_prob_structure(NonEmptyPowerset, bool)(NonDeterministicBooleanLogic)
@@ -64,10 +63,29 @@ class ProbabilisticBooleanLogic(DblSGrpBLat[Prob[bool]], NeSyLogicMeta[bool]):
         return fmap_T(a, a, lambda x: not x)
 
     def conjunction(self, a: Prob[bool], b: Prob[bool]) -> Prob[bool]:
-        return bind_T(a, a, lambda x: fmap_T(b, b, lambda y: x and y))
+        return bind_T(a, a, lambda x: fmap_T(b, b, lambda y: x and y) if x else self.bottom())
 
     def disjunction(self, a: Prob[bool], b: Prob[bool]) -> Prob[bool]:
-        return bind_T(a, a, lambda x: fmap_T(b, b, lambda y: x or y))
+        return bind_T(a, a, lambda x: fmap_T(b, b, lambda y: x or y) if not x else self.top())
 
 ProbabilisticBooleanLogicList = with_list_structure(Prob, bool)(ProbabilisticBooleanLogic)
 ProbabilisticBooleanLogicProb = with_prob_structure(Prob, bool)(ProbabilisticBooleanLogic)
+
+class GiryBooleanLogic(DblSGrpBLat[GiryPyMC[bool]], NeSyLogicMeta[bool]):
+    def top(self) -> GiryPyMC[bool]:
+        return GiryPyMC.insert(True)
+
+    def bottom(self) -> GiryPyMC[bool]:
+        return GiryPyMC.insert(False)
+
+    def neg(self, a: GiryPyMC[bool]) -> GiryPyMC[bool]:
+        return fmap_T(a, a, lambda x: not x)
+
+    def conjunction(self, a: GiryPyMC[bool], b: GiryPyMC[bool]) -> GiryPyMC[bool]:
+        return bind_T(a, a, lambda x: fmap_T(b, b, lambda y: x and y) if x else self.bottom())
+
+    def disjunction(self, a: GiryPyMC[bool], b: GiryPyMC[bool]) -> GiryPyMC[bool]:
+        return bind_T(a, a, lambda x: fmap_T(b, b, lambda y: x or y) if not x else self.top())
+
+GiryBooleanLogicList = with_list_structure(GiryPyMC, bool)(GiryBooleanLogic)
+GiryBooleanLogicProb = with_prob_structure(GiryPyMC, bool)(GiryBooleanLogic)

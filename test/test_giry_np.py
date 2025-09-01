@@ -1,7 +1,7 @@
 import math
 import unittest
 
-from muller.monad.giry_np import (
+from muller.monad.giry_sampling import (
     GiryNP,
     beta,
     binomial,

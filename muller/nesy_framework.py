@@ -285,10 +285,10 @@ class Predicate(Formula):
 
     def __repr__(self):
         # Special case for equality operator: use infix notation
-        if self.name == "==" and len(self.arguments) == 2:
+        if self.name in {"==", "<", ">", "<=", ">="} and len(self.arguments) == 2:
             left, right = self.arguments
             # Add parentheses for clarity, similar to other binary operators
-            return f"({left} == {right})"
+            return f"({left} {self.name} {right})"
 
         # Standard predicate representation
         args_str = ", ".join(str(arg) for arg in self.arguments)
@@ -322,7 +322,7 @@ class MonadicPredicate(Formula):
         formatted_name = _format_predicate_ident(self.name)
         if not args_str:
             return formatted_name
-        return f"{formatted_name}({args_str})"
+        return f"${formatted_name}({args_str})"
 
     def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,
@@ -486,7 +486,7 @@ class Computation(Formula):
     def __repr__(self):
         args_str = ", ".join(str(arg) for arg in self.arguments)
         formatted_function = _format_function_ident(self.function)
-        return f"{self.variable} := {formatted_function}({args_str})({self.formula})"
+        return f"{self.variable} := ${formatted_function}({args_str})({self.formula})"
 
     def eval[T: ParametrizedMonad, O, R: Aggr2SGrpBLat, A, S](
         self,

@@ -39,15 +39,20 @@ mpred_ident: /\$[a-z][a-zA-Z0-9_]*/ | /\$'[^']*'/
 
 ?disjunction : conjunction
              | disjunction "or" conjunction -> disjunction
+             | disjunction "∨" conjunction -> disjunction
+             | disjunction "|" conjunction -> disjunction
 
 ?conjunction : negation
              | conjunction "and" negation -> conjunction
+             | conjunction "∧" negation -> conjunction
+             | conjunction "&" negation -> conjunction
 
 ?negation : "not" negation -> negation
+          | "~" negation -> negation
           | quantified
 
-?quantified : "exists" var_ident quantified -> exists
-            | "forall" var_ident quantified -> forall
+?quantified : "?[" var_ident "]:" quantified -> exists
+            | "![" var_ident "]:" quantified -> forall
             | computation
 
 ?computation : computation_sequence
@@ -63,6 +68,11 @@ mpred_ident: /\$[a-z][a-zA-Z0-9_]*/ | /\$'[^']*'/
       | "(" formula ")"
       | "(" computation_assignment ")" "(" formula ")" -> parenthesized_computation
       | term "==" term -> equality
+      | term "!=" term -> not_equal
+      | term "<" term -> lessthan
+      | term "<=" term -> less_equal
+      | term ">" term -> greaterthan
+      | term ">=" term -> greater_equal
       | pred_ident "(" [term ("," term)*] ")" -> predicate
       | pred_ident -> predicate
       | mpred_ident "(" [term ("," term)*] ")" -> computational_predicate
@@ -158,6 +168,26 @@ class NeSyTransformer(Transformer):
     def equality(self, children: list) -> Predicate:
         [left, right] = children
         return Predicate("==", [left, right])
+
+    def lessthan(self, children: list) -> Predicate:
+        [left, right] = children
+        return Predicate("<", [left, right])
+
+    def greaterthan(self, children: list) -> Predicate:
+        [left, right] = children
+        return Predicate(">", [left, right])
+
+    def not_equal(self, children: list) -> Predicate:
+        [left, right] = children
+        return Predicate("!=", [left, right])
+
+    def less_equal(self, children: list) -> Predicate:
+        [left, right] = children
+        return Predicate("<=", [left, right])
+
+    def greater_equal(self, children: list) -> Predicate:
+        [left, right] = children
+        return Predicate(">=", [left, right])
 
     def conjunction(self, children: list) -> Conjunction:
         [left, right] = children
