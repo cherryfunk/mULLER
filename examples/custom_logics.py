@@ -1,9 +1,7 @@
 from functools import reduce
 from typing import Callable
 from muller import nesy, Prob
-from muller.logics import Aggr2SGrpBLat
-from muller.logics.aggr2sgrpblat import DblSGrpBLat, with_list_structure, with_prob_structure
-from muller.monad.giry_pymc import GiryMonadPyMC
+from muller.logics import Aggr2SGrpBLat, DblSGrpBLat, with_list_structure, with_prob_structure
 from muller.monad.util import bind_T, fmap_T
 
 

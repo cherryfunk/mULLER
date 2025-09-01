@@ -8,7 +8,7 @@ Universe = Literal["red", "green", "yellow", False, True]
 universe = list(get_args(Universe))
 
 
-def _drive(l: Universe) -> Prob[bool | str]:
+def _drive(l: Universe) -> Prob[bool]:
     """Drive function based on traffic light color."""
     match l:
         case "red":
@@ -21,7 +21,7 @@ def _drive(l: Universe) -> Prob[bool | str]:
             return Prob({})
 
 
-traffic_light_model = Interpretation(
+traffic_light_model = Interpretation[Universe, bool, list[Universe]](
     universe=universe,
     functions={
         "green": lambda: "green",

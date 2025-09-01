@@ -1,25 +1,23 @@
 from typing import Union, Dict, cast
 
-from muller.nesy_framework import Interpretation, nesy
+from muller import Interpretation, nesy
 from muller.parser import parse
 
-from muller.monad.giry_sampling import (
+from muller.monad import (
     GirySampling,
-    bernoulli,
-    categorical,
-    normal,
-    uniform,
+    giry_bernoulli as bernoulli,
+    giry_categorical as categorical,
+    giry_normal as normal,
+    giry_uniform as uniform
 )
 
 GIRY = GirySampling
 
+# Get a framework for bools over the Giry monad and an infinite universe over the Giry monad
 framework = nesy(GIRY, bool, GIRY)
 
-
+# No multi sort implementation yet. Thus, union of all sorts
 Universe = Union[int, float, tuple[float, float]]
-
-WeatherPrediction = Dict[str, Union[float, int]]
-
 
 def humid_detector(d: Universe) -> float:
     """Humidity detection function for day d."""
@@ -40,7 +38,6 @@ def temperature_predictor(d: Universe) -> tuple[float, float]:
 def uniformUniverse() -> GIRY[Universe]:
     """
     Create a mixed universe distribution over integers, floats, and tuples.
-    This is a direct function that returns a GiryNP monad.
     """
     return categorical([1, 1, 1]).bind(
         lambda choice: {
@@ -102,12 +99,26 @@ T := $normal(temperature_predictor(data1))
 )
 result = formula.eval(framework, weather_model, {})
 samples = result.sample(1000)
-print(sum(1 for s in samples if s) / len(samples))
+print(f"Probability of a humid and cold or non humid and warm day: {sum(1 for s in samples if s) / len(samples)}")
 
 
 formula = parse(
     """
-forall D (
+![D]: (
+    H := $bernoulli(humid_detector(D)),
+    T := $normal(temperature_predictor(D))
+    ((H == 1 ∧ T < 0) ∨ (H == 0 ∧ T > 15))
+)
+"""
+)
+result = formula.eval(framework, weather_model, {})
+samples = result.sample(100)
+print(f"Probability that all days are humid and cold or non humid and warm: {sum(1 for s in samples if s) / len(samples)}")
+
+
+formula = parse(
+    """
+?[D]: (
     H := $bernoulli(humid_detector(D)),
     T := $normal(temperature_predictor(D))
     ((H == 1 ∧ T < 0) ∨ (H == 0 ∧ T > 15))
@@ -116,18 +127,4 @@ forall D (
 )
 result = formula.eval(framework, weather_model, {})
 samples = result.sample(1000)
-print(sum(1 for s in samples if s) / len(samples))
-
-
-formula = parse(
-    """
-exists D (
-    H := $bernoulli(humid_detector(D)),
-    T := $normal(temperature_predictor(D))
-    ((H == 1 ∧ T < 0) ∨ (H == 0 ∧ T > 15))
-)
-"""
-)
-result = formula.eval(framework, weather_model, {})
-samples = result.sample(1000)
-print(sum(1 for s in samples if s) / len(samples))
+print(f"Probability at least one day is humid and cold or non humid and warm: {sum(1 for s in samples if s) / len(samples)}")

@@ -8,7 +8,7 @@ from types import ModuleType, get_original_bases
 import muller.logics
 from muller.monad.base import ParametrizedMonad
 
-from .aggr2sgrpblat import Aggr2SGrpBLat
+from .aggr2sgrpblat import Aggr2SGrpBLat, DblSGrpBLat, with_prob_structure, with_list_structure
 from .boolean import (
     ClassicalBooleanLogic,
     ClassicalBooleanLogicList,
@@ -170,4 +170,8 @@ __all__ = [
     "ProbabilisticPriestLogicProb",
     "ProductAlgebraLogic",
     "GiryProductAlgebraLogic",
+    "DblSGrpBLat",
+    "Aggr2SGrpBLat",
+    "with_prob_structure",
+    "with_list_structure"
 ]
