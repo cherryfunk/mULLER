@@ -26,14 +26,14 @@ class TestDistributionMonad(unittest.TestCase):
     def assertDistributionEqual(self, dist1: Prob, dist2: Prob, msg=None):
         """Helper method for comparing distributions."""
         self.assertEqual(
-            set(dist1.value.keys()),
-            set(dist2.value.keys()),
+            set(dist1._inner_value.keys()),
+            set(dist2._inner_value.keys()),
             msg=f"Distribution keys differ: {msg}",
         )
-        for key in dist1.value:
+        for key in dist1._inner_value:
             self.assertAlmostEqualFloat(
-                dist1.value[key],
-                dist2.value[key],
+                dist1._inner_value[key],
+                dist2._inner_value[key],
                 msg=f"Probability for {key} differs: {msg}",
             )
 
@@ -43,22 +43,22 @@ class TestDistributionMonad(unittest.TestCase):
         dist = Prob({"A": 2.0, "B": 3.0, "C": 5.0})
 
         # Should be normalized to sum to 1
-        total_prob = sum(dist.value.values())
+        total_prob = sum(dist._inner_value.values())
         self.assertAlmostEqualFloat(total_prob, 1.0)
 
         # Check specific probabilities
-        self.assertAlmostEqualFloat(dist.value["A"], 0.2)  # 2/10
-        self.assertAlmostEqualFloat(dist.value["B"], 0.3)  # 3/10
-        self.assertAlmostEqualFloat(dist.value["C"], 0.5)  # 5/10
+        self.assertAlmostEqualFloat(dist._inner_value["A"], 0.2)  # 2/10
+        self.assertAlmostEqualFloat(dist._inner_value["B"], 0.3)  # 3/10
+        self.assertAlmostEqualFloat(dist._inner_value["C"], 0.5)  # 5/10
 
     def test_insert_operation(self):
         """Test the insert (unit/return) operation."""
         # Create a deterministic distribution
-        dist = Prob.insert("certain")
+        dist = Prob.from_value("certain")
 
         # Should have probability 1 for the single value
-        self.assertEqual(len(dist.value), 1)
-        self.assertAlmostEqualFloat(dist.value["certain"], 1.0)
+        self.assertEqual(len(dist._inner_value), 1)
+        self.assertAlmostEqualFloat(dist._inner_value["certain"], 1.0)
 
     def test_map_operation(self):
         """Test the map (functor) operation."""
@@ -111,13 +111,13 @@ class TestDistributionMonad(unittest.TestCase):
         def f(x):
             return Prob({x + "_mapped": 0.6, x + "_other": 0.4})
 
-        left = Prob.insert(a).bind(f)
+        left = Prob.from_value(a).bind(f)
         right = f(a)
         self.assertDistributionEqual(left, right)
 
         # Right identity: m.bind(unit) == m
         m = Prob({"A": 0.3, "B": 0.7})
-        bound = m.bind(Prob.insert)
+        bound = m.bind(Prob.from_value)
         self.assertDistributionEqual(m, bound)
 
         # Associativity: (m.bind(f)).bind(g) == m.bind(lambda x: f(x).bind(g))
@@ -197,11 +197,11 @@ class TestDistributionMonad(unittest.TestCase):
 
         # Each value should have probability 1/3
         for value in values:
-            self.assertAlmostEqualFloat(dist.value[value], 1 / 3)
+            self.assertAlmostEqualFloat(dist._inner_value[value], 1 / 3)
 
         # Test empty uniform distribution
         empty_dist = uniform([])
-        self.assertEqual(len(empty_dist.value), 0)
+        self.assertEqual(len(empty_dist._inner_value), 0)
 
     def test_weighted_distribution(self):
         """Test weighted distribution creation."""
@@ -218,13 +218,13 @@ class TestDistributionMonad(unittest.TestCase):
         dist = bernoulli(p)
 
         # Default values should be True/False
-        self.assertAlmostEqualFloat(dist.value[True], 0.3)
-        self.assertAlmostEqualFloat(dist.value[False], 0.7)
+        self.assertAlmostEqualFloat(dist._inner_value[True], 0.3)
+        self.assertAlmostEqualFloat(dist._inner_value[False], 0.7)
 
         # Test with custom values
         dist_custom = bernoulli(0.6, true_val="success", false_val="failure")
-        self.assertAlmostEqualFloat(dist_custom.value["success"], 0.6)
-        self.assertAlmostEqualFloat(dist_custom.value["failure"], 0.4)
+        self.assertAlmostEqualFloat(dist_custom._inner_value["success"], 0.6)
+        self.assertAlmostEqualFloat(dist_custom._inner_value["failure"], 0.4)
 
     def test_complex_composition(self):
         """Test complex monadic compositions."""
@@ -239,17 +239,17 @@ class TestDistributionMonad(unittest.TestCase):
         )
 
         # Check that probabilities sum to 1
-        total_prob = sum(result.value.values())
+        total_prob = sum(result._inner_value.values())
         self.assertAlmostEqualFloat(total_prob, 1.0)
 
         # Check specific probabilities
         expected_heads_final = 0.6 * 0.8  # 0.48
         expected_tails_final = 0.4 * 0.8  # 0.32
         self.assertAlmostEqualFloat(
-            result.value["heads_round2_final"], expected_heads_final
+            result._inner_value["heads_round2_final"], expected_heads_final
         )
         self.assertAlmostEqualFloat(
-            result.value["tails_round2_final"], expected_tails_final
+            result._inner_value["tails_round2_final"], expected_tails_final
         )
 
     def test_empty_distribution_handling(self):

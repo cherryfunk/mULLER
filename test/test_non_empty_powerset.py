@@ -20,21 +20,21 @@ class TestNonEmptyPowersetMonad(unittest.TestCase):
         self, ps1: NonEmptyPowerset, ps2: NonEmptyPowerset, msg=None
     ):
         """Helper method for comparing non-empty powersets."""
-        self.assertEqual(ps1.value, ps2.value, msg=msg)
+        self.assertEqual(ps1._inner_value, ps2._inner_value, msg=msg)
 
     def test_initialization(self):
         """Test NonEmptyPowerset monad initialization."""
         # Test with list
         ps = NonEmptyPowerset([1, 2, 3])
-        self.assertEqual(ps.value, frozenset({1, 2, 3}))
+        self.assertEqual(ps._inner_value, frozenset({1, 2, 3}))
 
         # Test with set
         ps_set = NonEmptyPowerset({4, 5, 6})
-        self.assertEqual(ps_set.value, frozenset({4, 5, 6}))
+        self.assertEqual(ps_set._inner_value, frozenset({4, 5, 6}))
 
         # Test with duplicates (should be removed)
         ps_dup = NonEmptyPowerset([1, 1, 2, 2, 3])
-        self.assertEqual(ps_dup.value, frozenset({1, 2, 3}))
+        self.assertEqual(ps_dup._inner_value, frozenset({1, 2, 3}))
 
     def test_empty_initialization_raises_error(self):
         """Test that empty initialization raises ValueError."""
@@ -50,11 +50,11 @@ class TestNonEmptyPowersetMonad(unittest.TestCase):
     def test_unit_operation(self):
         """Test the unit operation."""
         value = "single"
-        ps = NonEmptyPowerset.insert(value)
+        ps = NonEmptyPowerset.from_value(value)
 
         # Should contain only the single value
-        self.assertEqual(ps.value, frozenset({"single"}))
-        self.assertEqual(len(ps.value), 1)
+        self.assertEqual(ps._inner_value, frozenset({"single"}))
+        self.assertEqual(len(ps._inner_value), 1)
 
     def test_map_operation(self):
         """Test the map (functor) operation."""
@@ -75,8 +75,8 @@ class TestNonEmptyPowersetMonad(unittest.TestCase):
 
         # Map should still be non-empty
         mapped = ps.map(lambda x: x * 10)
-        self.assertEqual(len(mapped.value), 1)
-        self.assertEqual(mapped.value, frozenset({10}))
+        self.assertEqual(len(mapped._inner_value), 1)
+        self.assertEqual(mapped._inner_value, frozenset({10}))
 
     def test_map_with_duplicates(self):
         """Test map operation when function produces duplicate values."""
@@ -115,8 +115,8 @@ class TestNonEmptyPowersetMonad(unittest.TestCase):
         result = ps.bind(lambda x: NonEmptyPowerset([x * 2]))
 
         # Should still be non-empty
-        self.assertGreater(len(result.value), 0)
-        self.assertEqual(result.value, frozenset({2}))
+        self.assertGreater(len(result._inner_value), 0)
+        self.assertEqual(result._inner_value, frozenset({2}))
 
     def test_monad_laws(self):
         """Test that the monad laws hold."""
@@ -126,13 +126,13 @@ class TestNonEmptyPowersetMonad(unittest.TestCase):
         def f(x):
             return NonEmptyPowerset([x, x + 1])
 
-        left = NonEmptyPowerset.insert(a).bind(f)
+        left = NonEmptyPowerset.from_value(a).bind(f)
         right = f(a)
         self.assertNonEmptyPowersetEqual(left, right)
 
         # Right identity: m.bind(unit) == m
         m = NonEmptyPowerset([1, 2, 3])
-        bound = m.bind(NonEmptyPowerset.insert)
+        bound = m.bind(NonEmptyPowerset.from_value)
         self.assertNonEmptyPowersetEqual(m, bound)
 
         # Associativity: (m.bind(f)).bind(g) == m.bind(lambda x: f(x).bind(g))
@@ -187,7 +187,7 @@ class TestNonEmptyPowersetMonad(unittest.TestCase):
         nested = NonEmptyPowerset([inner])
 
         flattened = join(nested)
-        self.assertEqual(flattened.value, frozenset({42}))
+        self.assertEqual(flattened._inner_value, frozenset({42}))
 
     def test_singleton_function(self):
         """Test singleton convenience function."""
@@ -267,10 +267,10 @@ class TestNonEmptyPowersetMonad(unittest.TestCase):
 
         # Any operation should maintain non-emptiness
         mapped = ps.map(lambda x: x * 100)
-        self.assertGreater(len(mapped.value), 0)
+        self.assertGreater(len(mapped._inner_value), 0)
 
         bound = ps.bind(lambda x: NonEmptyPowerset([x % 3]))
-        self.assertGreater(len(bound.value), 0)
+        self.assertGreater(len(bound._inner_value), 0)
 
     def test_cartesian_product_simulation(self):
         """Test simulating cartesian product with monadic operations."""
@@ -337,13 +337,13 @@ class TestNonEmptyPowersetMonad(unittest.TestCase):
 
         # Map to different single element
         mapped = minimal.map(lambda x: x * 2)
-        self.assertEqual(len(mapped.value), 1)
-        self.assertEqual(mapped.value, frozenset({84}))
+        self.assertEqual(len(mapped._inner_value), 1)
+        self.assertEqual(mapped._inner_value, frozenset({84}))
 
         # Bind to different single element
         bound = minimal.bind(lambda x: NonEmptyPowerset([str(x)]))
-        self.assertEqual(len(bound.value), 1)
-        self.assertEqual(bound.value, frozenset({"42"}))
+        self.assertEqual(len(bound._inner_value), 1)
+        self.assertEqual(bound._inner_value, frozenset({"42"}))
 
     def test_overlapping_results_in_bind(self):
         """Test bind operation when results overlap."""
@@ -367,11 +367,11 @@ class TestNonEmptyPowersetMonad(unittest.TestCase):
 
         # Map to integers
         ps_int = ps_str.map(ord)  # Convert to ASCII values
-        self.assertIsInstance(list(ps_int.value)[0], int)
+        self.assertIsInstance(list(ps_int._inner_value)[0], int)
 
         # Bind back to strings
         ps_str2 = ps_int.bind(lambda x: NonEmptyPowerset([chr(x), chr(x + 1)]))
-        self.assertIsInstance(list(ps_str2.value)[0], str)
+        self.assertIsInstance(list(ps_str2._inner_value)[0], str)
 
     def test_large_computation_chains(self):
         """Test long chains of computations."""
@@ -388,21 +388,21 @@ class TestNonEmptyPowersetMonad(unittest.TestCase):
         )
 
         # Should still be non-empty and contain reasonable values
-        self.assertGreater(len(result.value), 0)
-        self.assertTrue(all(isinstance(x, int) for x in result.value))
-        self.assertTrue(all(x > 0 for x in result.value))
+        self.assertGreater(len(result._inner_value), 0)
+        self.assertTrue(all(isinstance(x, int) for x in result._inner_value))
+        self.assertTrue(all(x > 0 for x in result._inner_value))
 
     def test_deterministic_vs_non_deterministic(self):
         """Test difference between deterministic and non-deterministic computations."""
         # Deterministic: single value
         deterministic = NonEmptyPowerset([5])
         det_result = deterministic.bind(lambda x: NonEmptyPowerset([x * 2]))
-        self.assertEqual(len(det_result.value), 1)
+        self.assertEqual(len(det_result._inner_value), 1)
 
         # Non-deterministic: multiple values
         non_deterministic = NonEmptyPowerset([1, 2, 3])
         non_det_result = non_deterministic.bind(lambda x: NonEmptyPowerset([x * 2]))
-        self.assertEqual(len(non_det_result.value), 3)
+        self.assertEqual(len(non_det_result._inner_value), 3)
 
     def test_choice_explosion(self):
         """Test how choices can explode through bind operations."""
@@ -413,11 +413,11 @@ class TestNonEmptyPowersetMonad(unittest.TestCase):
         step1 = initial.bind(
             lambda x: NonEmptyPowerset([x * 10, x * 10 + 1, x * 10 + 2])
         )
-        self.assertEqual(len(step1.value), 6)  # 2 * 3
+        self.assertEqual(len(step1._inner_value), 6)  # 2 * 3
 
         # Each of those creates 2 more choices
         step2 = step1.bind(lambda x: NonEmptyPowerset([x, x + 100]))
-        self.assertEqual(len(step2.value), 12)  # 6 * 2
+        self.assertEqual(len(step2._inner_value), 12)  # 6 * 2
 
 
 if __name__ == "__main__":

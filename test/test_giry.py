@@ -27,38 +27,38 @@ class TestGiryMonad(unittest.TestCase):
     def test_unit_creation(self):
         """Test that unit creates a point mass measure."""
         # Create a point mass at value 5
-        point_mass = Giry.insert(5)
+        point_mass = Giry.from_value(5)
 
         # Test that integrating identity function gives the value
-        result = integrate(lambda x: x, point_mass.value)
+        result = integrate(lambda x: x, point_mass._inner_value)
         self.assertAlmostEqualFloat(result, 5.0)
 
         # Test that integrating constant function gives the constant
-        result = integrate(lambda x: 10.0, point_mass.value)
+        result = integrate(lambda x: 10.0, point_mass._inner_value)
         self.assertAlmostEqualFloat(result, 10.0)
 
     def test_map_operation(self):
         """Test the map operation (functor law)."""
         # Create a point mass at 3
-        monad = Giry.insert(3)
+        monad = Giry.from_value(3)
 
         # Map with a function that doubles the value
         mapped = monad.map(lambda x: x * 2)
 
         # Integrate identity to get the new value
-        result = integrate(lambda x: x, mapped.value)
+        result = integrate(lambda x: x, mapped._inner_value)
         self.assertAlmostEqualFloat(result, 6.0)
 
     def test_bind_operation(self):
         """Test the bind operation (monad law)."""
         # Create a point mass at 2
-        monad = Giry.insert(2)
+        monad = Giry.from_value(2)
 
         # Bind with a function that creates a point mass at double the value
-        bound = monad.bind(lambda x: Giry.insert(x * 3))
+        bound = monad.bind(lambda x: Giry.from_value(x * 3))
 
         # Integrate identity to get the result
-        result = integrate(lambda x: x, bound.value)
+        result = integrate(lambda x: x, bound._inner_value)
         self.assertAlmostEqualFloat(result, 6.0)
 
     def test_monad_laws(self):
@@ -67,24 +67,24 @@ class TestGiryMonad(unittest.TestCase):
         a = 5
 
         def f(x):
-            return Giry.insert(x + 1)
+            return Giry.from_value(x + 1)
 
-        left = Giry.insert(a).bind(f)
+        left = Giry.from_value(a).bind(f)
         right = f(a)
 
         def test_function(x):
             return x * 2  # Any test function
 
-        left_result = integrate(test_function, left.value)
-        right_result = integrate(test_function, right.value)
+        left_result = integrate(test_function, left._inner_value)
+        right_result = integrate(test_function, right._inner_value)
         self.assertAlmostEqualFloat(left_result, right_result)
 
         # Right identity: m.bind(unit) == m
-        m = Giry.insert(7)
-        bound = m.bind(Giry.insert)
+        m = Giry.from_value(7)
+        bound = m.bind(Giry.from_value)
 
-        left_result = integrate(test_function, m.value)
-        right_result = integrate(test_function, bound.value)
+        left_result = integrate(test_function, m._inner_value)
+        right_result = integrate(test_function, bound._inner_value)
         self.assertAlmostEqualFloat(left_result, right_result)
 
     def test_fromMassFunction(self):
@@ -103,11 +103,11 @@ class TestGiryMonad(unittest.TestCase):
         monad = fromMassFunction(mass_func, support)
 
         # Test that probabilities sum to 1
-        total_prob = integrate(lambda x: 1.0, monad.value)
+        total_prob = integrate(lambda x: 1.0, monad._inner_value)
         self.assertAlmostEqualFloat(total_prob, 1.0)
 
         # Test expected value
-        expected_value = integrate(lambda x: x, monad.value)
+        expected_value = integrate(lambda x: x, monad._inner_value)
         self.assertAlmostEqualFloat(expected_value, 1 * 0.3 + 2 * 0.7)
 
     def test_binomial_distribution(self):
@@ -117,29 +117,29 @@ class TestGiryMonad(unittest.TestCase):
         monad = binomial(n, p)
 
         # Test that probabilities sum to 1
-        total_prob = integrate(lambda x: 1.0, monad.value)
+        total_prob = integrate(lambda x: 1.0, monad._inner_value)
         self.assertAlmostEqualFloat(total_prob, 1.0)
 
         # Test expected value (np)
-        expected_value = integrate(lambda x: x, monad.value)
+        expected_value = integrate(lambda x: x, monad._inner_value)
         self.assertAlmostEqualFloat(expected_value, n * p)
 
         # Test variance (np(1-p))
         mean = n * p
-        variance = integrate(lambda x: (x - mean) ** 2, monad.value)
+        variance = integrate(lambda x: (x - mean) ** 2, monad._inner_value)
         self.assertAlmostEqualFloat(variance, n * p * (1 - p))
 
     def test_binomial_edge_cases(self):
         """Test binomial distribution edge cases."""
         # Test with p = 0 (always 0 successes)
         monad = binomial(5, 0.0)
-        prob_zero = integrate(lambda x: 1.0 if x == 0 else 0.0, monad.value)
+        prob_zero = integrate(lambda x: 1.0 if x == 0 else 0.0, monad._inner_value)
         self.assertAlmostEqualFloat(prob_zero, 1.0)
 
         # Test with p = 1 (always n successes)
         n = 4
         monad = binomial(n, 1.0)
-        prob_n = integrate(lambda x: 1.0 if x == n else 0.0, monad.value)
+        prob_n = integrate(lambda x: 1.0 if x == n else 0.0, monad._inner_value)
         self.assertAlmostEqualFloat(prob_n, 1.0)
 
     def test_fromDensityFunction(self):
@@ -153,11 +153,11 @@ class TestGiryMonad(unittest.TestCase):
 
         # Test that the total probability is 1 (approximately, due to numerical
         # integration)
-        total_prob = integrate(lambda x: 1.0, monad.value)
+        total_prob = integrate(lambda x: 1.0, monad._inner_value)
         self.assertAlmostEqual(total_prob, 1.0, places=3)
 
         # Test expected value (should be 0.5 for uniform on [0,1])
-        expected_value = integrate(lambda x: x, monad.value)
+        expected_value = integrate(lambda x: x, monad._inner_value)
         self.assertAlmostEqual(expected_value, 0.5, places=3)
 
     def test_beta_distribution(self):
@@ -166,11 +166,11 @@ class TestGiryMonad(unittest.TestCase):
         monad = beta(a, b)
 
         # Test that the total probability is approximately 1
-        total_prob = integrate(lambda x: 1.0, monad.value)
+        total_prob = integrate(lambda x: 1.0, monad._inner_value)
         self.assertAlmostEqual(total_prob, 1.0, places=2)
 
         # Test expected value (a/(a+b) for beta distribution)
-        expected_value = integrate(lambda x: x, monad.value)
+        expected_value = integrate(lambda x: x, monad._inner_value)
         theoretical_mean = a / (a + b)
         self.assertAlmostEqual(expected_value, theoretical_mean, places=2)
 
@@ -181,11 +181,11 @@ class TestGiryMonad(unittest.TestCase):
         monad = betaBinomial(n, a, b)
 
         # Test that probabilities sum to 1
-        total_prob = integrate(lambda x: 1.0, monad.value)
+        total_prob = integrate(lambda x: 1.0, monad._inner_value)
         self.assertAlmostEqualFloat(total_prob, 1.0)
 
         # Test that the expected value is approximately n * a/(a+b)
-        expected_value = integrate(lambda x: x, monad.value)
+        expected_value = integrate(lambda x: x, monad._inner_value)
         theoretical_mean = n * a / (a + b)
         self.assertAlmostEqual(expected_value, theoretical_mean, places=1)
 
@@ -196,46 +196,46 @@ class TestGiryMonad(unittest.TestCase):
 
         # Test that the empirical mean matches the sample mean
         sample_mean = sum(sample) / len(sample)
-        monad_mean = integrate(lambda x: x, monad.value)
+        monad_mean = integrate(lambda x: x, monad._inner_value)
         self.assertAlmostEqualFloat(monad_mean, sample_mean)
 
         # Test with a constant function
-        constant_result = integrate(lambda x: 5.0, monad.value)
+        constant_result = integrate(lambda x: 5.0, monad._inner_value)
         self.assertAlmostEqualFloat(constant_result, 5.0)
 
-    def test_amap_operation(self):
+    def test_apply_operation(self):
         """Test the applicative map operation."""
-        # Create a monad containing a function
-        func_monad = Giry.insert(lambda x: x * 2)
-
         # Create a monad containing a value
-        value_monad = Giry.insert(5)
+        value_monad = Giry.from_value(5)
+
+        # Create a monad containing a function
+        func_monad = Giry.from_value(lambda x: x * 2)
 
         # Apply the function
-        result_monad = func_monad.amap(value_monad)
+        result_monad = value_monad.apply(func_monad)
 
         # Test the result
-        result = integrate(lambda x: x, result_monad.value)
+        result = integrate(lambda x: x, result_monad._inner_value)
         self.assertAlmostEqualFloat(result, 10.0)
 
     def test_complex_composition(self):
         """Test complex monadic compositions."""
         # Create a chain of operations
-        initial = Giry.insert(1)
+        initial = Giry.from_value(1)
 
         # Chain multiple bind operations
         result = (
-            initial.bind(lambda x: Giry.insert(x + 1))  # 1 -> 2
+            initial.bind(lambda x: Giry.from_value(x + 1))  # 1 -> 2
             .bind(lambda x: binomial(x, 0.5))  # 2 -> binomial(2, 0.5)
             .map(lambda x: x * 2)
         )  # double each outcome
 
         # Test that the result is a valid probability measure
-        total_prob = integrate(lambda x: 1.0, result.value)
+        total_prob = integrate(lambda x: 1.0, result._inner_value)
         self.assertAlmostEqualFloat(total_prob, 1.0)
 
         # Test that the expected value is reasonable
-        expected_value = integrate(lambda x: x, result.value)
+        expected_value = integrate(lambda x: x, result._inner_value)
         # E[2 * Binomial(2, 0.5)] = 2 * 2 * 0.5 = 2
         self.assertAlmostEqualFloat(expected_value, 2.0)
 
@@ -245,12 +245,12 @@ class TestGiryMonad(unittest.TestCase):
         monad = fromMassFunction(lambda x: 0.5, [0, 1])
 
         # Test with polynomial functions
-        result1 = integrate(lambda x: x**2, monad.value)
+        result1 = integrate(lambda x: x**2, monad._inner_value)
         expected1 = 0.5 * (0**2) + 0.5 * (1**2)  # 0.5
         self.assertAlmostEqualFloat(result1, expected1)
 
         # Test with exponential function
-        result2 = integrate(lambda x: math.exp(x), monad.value)
+        result2 = integrate(lambda x: math.exp(x), monad._inner_value)
         expected2 = 0.5 * math.exp(0) + 0.5 * math.exp(1)
         self.assertAlmostEqualFloat(result2, expected2)
 
@@ -273,8 +273,8 @@ class TestGiryMonad(unittest.TestCase):
         a, b = 2.0, 3.0
 
         # E[af + bg] = aE[f] + bE[g]
-        left_side = integrate(lambda x: a * f(x) + b * g(x), monad.value)
-        right_side = a * integrate(f, monad.value) + b * integrate(g, monad.value)
+        left_side = integrate(lambda x: a * f(x) + b * g(x), monad._inner_value)
+        right_side = a * integrate(f, monad._inner_value) + b * integrate(g, monad._inner_value)
         self.assertAlmostEqualFloat(left_side, right_side)
 
     def test_error_handling(self):
@@ -282,7 +282,7 @@ class TestGiryMonad(unittest.TestCase):
         # Test with empty support (should handle gracefully)
         try:
             monad = fromMassFunction(lambda x: 1.0, [])
-            result = integrate(lambda x: x, monad.value)
+            result = integrate(lambda x: x, monad._inner_value)
             self.assertEqual(result, 0.0)
         except Exception:
             # If it raises an exception, that's also acceptable behavior
@@ -293,13 +293,13 @@ class TestGiryMonad(unittest.TestCase):
         # Test with very small probabilities
         small_p = 1e-10
         monad = binomial(2, small_p)
-        total_prob = integrate(lambda x: 1.0, monad.value)
+        total_prob = integrate(lambda x: 1.0, monad._inner_value)
         self.assertAlmostEqual(total_prob, 1.0, places=8)
 
         # Test with probabilities close to 1
         large_p = 1 - 1e-10
         monad = binomial(2, large_p)
-        total_prob = integrate(lambda x: 1.0, monad.value)
+        total_prob = integrate(lambda x: 1.0, monad._inner_value)
         self.assertAlmostEqual(total_prob, 1.0, places=8)
 
 

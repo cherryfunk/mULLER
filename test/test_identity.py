@@ -20,16 +20,16 @@ class TestIdentityMonad(unittest.TestCase):
         identity = Identity(value)
 
         # Should wrap the value
-        self.assertEqual(identity.value, value)
-        self.assertEqual(identity.get(), value)
+        self.assertEqual(identity._inner_value, value)
+        self.assertEqual(identity._inner_value, value)
 
     def test_insert_operation(self):
         """Test the insert (unit/return) operation."""
         value = "test"
-        identity = Identity.insert(value)
+        identity = Identity.from_value(value)
 
         # Should create an Identity containing the value
-        self.assertEqual(identity.get(), value)
+        self.assertEqual(identity._inner_value, value)
         self.assertIsInstance(identity, Identity)
 
     def test_map_operation(self):
@@ -41,7 +41,7 @@ class TestIdentityMonad(unittest.TestCase):
         mapped = identity.map(lambda x: x * 2)
 
         # Should contain the transformed value
-        self.assertEqual(mapped.get(), 10)
+        self.assertEqual(mapped._inner_value, 10)
         self.assertIsInstance(mapped, Identity)
 
     def test_map_with_type_change(self):
@@ -53,7 +53,7 @@ class TestIdentityMonad(unittest.TestCase):
         mapped = identity.map(str)
 
         # Should contain string representation
-        self.assertEqual(mapped.get(), "42")
+        self.assertEqual(mapped._inner_value, "42")
         self.assertIsInstance(mapped, Identity)
 
     def test_bind_operation(self):
@@ -68,7 +68,7 @@ class TestIdentityMonad(unittest.TestCase):
         bound = identity.bind(double_and_wrap)
 
         # Should contain the result of the function
-        self.assertEqual(bound.get(), 6)
+        self.assertEqual(bound._inner_value, 6)
         self.assertIsInstance(bound, Identity)
 
     def test_bind_with_type_change(self):
@@ -83,7 +83,7 @@ class TestIdentityMonad(unittest.TestCase):
         bound = identity.bind(int_to_string_identity)
 
         # Should contain the string
-        self.assertEqual(bound.get(), "value_10")
+        self.assertEqual(bound._inner_value, "value_10")
         self.assertIsInstance(bound, Identity)
 
     def test_monad_laws(self):
@@ -94,16 +94,16 @@ class TestIdentityMonad(unittest.TestCase):
         def f(x):
             return Identity(x + 1)
 
-        left = Identity.insert(a).bind(f)
+        left = Identity.from_value(a).bind(f)
         right = f(a)
 
-        self.assertEqual(left.get(), right.get())
+        self.assertEqual(left._inner_value, right._inner_value)
 
         # Right identity: m.bind(unit) == m
         m = Identity(15)
-        bound = m.bind(Identity.insert)
+        bound = m.bind(Identity.from_value)
 
-        self.assertEqual(m.get(), bound.get())
+        self.assertEqual(m._inner_value, bound._inner_value)
 
         # Associativity: (m.bind(f)).bind(g) == m.bind(lambda x: f(x).bind(g))
         def g(x):
@@ -112,7 +112,7 @@ class TestIdentityMonad(unittest.TestCase):
         left_assoc = m.bind(f).bind(g)
         right_assoc = m.bind(lambda x: f(x).bind(g))
 
-        self.assertEqual(left_assoc.get(), right_assoc.get())
+        self.assertEqual(left_assoc._inner_value, right_assoc._inner_value)
 
     def test_functor_laws(self):
         """Test that the functor laws hold."""
@@ -120,7 +120,7 @@ class TestIdentityMonad(unittest.TestCase):
         identity = Identity("test")
         mapped_id = identity.map(lambda x: x)
 
-        self.assertEqual(identity.get(), mapped_id.get())
+        self.assertEqual(identity._inner_value, mapped_id._inner_value)
 
         # Composition law: map(f . g) == map(f) . map(g)
         def f(x):
@@ -140,7 +140,7 @@ class TestIdentityMonad(unittest.TestCase):
         # map(f) . map(g)
         right_side = identity_num.map(g).map(f)
 
-        self.assertEqual(left_side.get(), right_side.get())
+        self.assertEqual(left_side._inner_value, right_side._inner_value)
 
     def test_get_method(self):
         """Test the get method for extracting values."""
@@ -150,10 +150,10 @@ class TestIdentityMonad(unittest.TestCase):
         identity_list = Identity([1, 2, 3])
         identity_dict = Identity({"key": "value"})
 
-        self.assertEqual(identity_int.get(), 42)
-        self.assertEqual(identity_str.get(), "hello")
-        self.assertEqual(identity_list.get(), [1, 2, 3])
-        self.assertEqual(identity_dict.get(), {"key": "value"})
+        self.assertEqual(identity_int._inner_value, 42)
+        self.assertEqual(identity_str._inner_value, "hello")
+        self.assertEqual(identity_list._inner_value, [1, 2, 3])
+        self.assertEqual(identity_dict._inner_value, {"key": "value"})
 
     def test_string_representation(self):
         """Test string representation of Identity."""
@@ -184,7 +184,7 @@ class TestIdentityMonad(unittest.TestCase):
         )  # 36 -> "36"
 
         # Should contain the final result
-        self.assertEqual(result.get(), "36")
+        self.assertEqual(result._inner_value, "36")
         self.assertIsInstance(result, Identity)
 
     def test_nested_identities(self):
@@ -193,13 +193,13 @@ class TestIdentityMonad(unittest.TestCase):
         nested = Identity(Identity(5))
 
         # Get the outer value (which is an Identity)
-        inner_identity = nested.get()
+        inner_identity = nested._inner_value
         self.assertIsInstance(inner_identity, Identity)
-        self.assertEqual(inner_identity.get(), 5)
+        self.assertEqual(inner_identity._inner_value, 5)
 
         # Bind to flatten the nesting
         flattened = nested.bind(lambda x: x)
-        self.assertEqual(flattened.get(), 5)
+        self.assertEqual(flattened._inner_value, 5)
 
     def test_identity_with_functions(self):
         """Test Identity monad containing functions."""
@@ -207,7 +207,7 @@ class TestIdentityMonad(unittest.TestCase):
         func_identity = Identity(lambda x: x * 2)
 
         # Extract and use the function
-        func = func_identity.get()
+        func = func_identity._inner_value
         result = func(5)
         self.assertEqual(result, 10)
 
@@ -216,7 +216,7 @@ class TestIdentityMonad(unittest.TestCase):
             lambda f: lambda x: f(x) + 1  # Compose with +1
         )
 
-        new_func = mapped_func_identity.get()
+        new_func = mapped_func_identity._inner_value
         result2 = new_func(5)
         self.assertEqual(result2, 11)  # (5 * 2) + 1
 
@@ -227,14 +227,14 @@ class TestIdentityMonad(unittest.TestCase):
 
         # Map to transform the list
         mapped_list = list_identity.map(lambda lst: [x * 2 for x in lst])
-        self.assertEqual(mapped_list.get(), [2, 4, 6])
+        self.assertEqual(mapped_list._inner_value, [2, 4, 6])
 
         # Test with dictionary
         dict_identity = Identity({"a": 1, "b": 2})
 
         # Map to transform values
         mapped_dict = dict_identity.map(lambda d: {k: v * 3 for k, v in d.items()})
-        self.assertEqual(mapped_dict.get(), {"a": 3, "b": 6})
+        self.assertEqual(mapped_dict._inner_value, {"a": 3, "b": 6})
 
     def test_error_preservation(self):
         """Test that Identity preserves computational context (including exceptions)."""
@@ -243,7 +243,7 @@ class TestIdentityMonad(unittest.TestCase):
 
         # Map should work even with None
         mapped = identity.map(lambda x: x if x is not None else "null")
-        self.assertEqual(mapped.get(), "null")
+        self.assertEqual(mapped._inner_value, "null")
 
     def test_sequential_computations(self):
         """Test sequential computations using Identity."""
@@ -263,7 +263,7 @@ class TestIdentityMonad(unittest.TestCase):
             Identity("5").bind(parse_int).bind(validate_positive).bind(double_value)
         )
 
-        self.assertEqual(result.get(), 10)
+        self.assertEqual(result._inner_value, 10)
 
     def test_mathematical_operations(self):
         """Test mathematical operations within Identity."""
@@ -273,15 +273,15 @@ class TestIdentityMonad(unittest.TestCase):
 
         # We need to extract values for operations since Identity doesn't implement
         # arithmetic
-        sum_result = Identity(x.get() + y.get())
-        self.assertEqual(sum_result.get(), 13)
+        sum_result = Identity(x._inner_value + y._inner_value)
+        self.assertEqual(sum_result._inner_value, 13)
 
         # Or use bind to combine them
         def add_identities(x_id, y_id):
             return x_id.bind(lambda x: y_id.bind(lambda y: Identity(x + y)))
 
         combined = add_identities(x, y)
-        self.assertEqual(combined.get(), 13)
+        self.assertEqual(combined._inner_value, 13)
 
     def test_comparison_operations(self):
         """Test comparison operations with Identity values."""
@@ -289,16 +289,16 @@ class TestIdentityMonad(unittest.TestCase):
         id2 = Identity(5)
         id3 = Identity(10)
 
-        # Identities are compared by their wrapped values when using .get()
-        self.assertEqual(id1.get(), id2.get())
-        self.assertNotEqual(id1.get(), id3.get())
+        # Identities are compared by their wrapped values when using ._inner_value
+        self.assertEqual(id1._inner_value, id2._inner_value)
+        self.assertNotEqual(id1._inner_value, id3._inner_value)
 
         # Test comparison using bind
         def compare_greater(x_id, y_id):
             return x_id.bind(lambda x: y_id.bind(lambda y: Identity(x > y)))
 
         result = compare_greater(id3, id1)
-        self.assertTrue(result.get())
+        self.assertTrue(result._inner_value)
 
     def test_type_safety(self):
         """Test type safety with Identity monad."""
@@ -307,13 +307,13 @@ class TestIdentityMonad(unittest.TestCase):
 
         # Map to get length (int)
         len_identity = str_identity.map(len)
-        self.assertEqual(len_identity.get(), 5)
-        self.assertIsInstance(len_identity.get(), int)
+        self.assertEqual(len_identity._inner_value, 5)
+        self.assertIsInstance(len_identity._inner_value, int)
 
         # Map back to string
         str_len_identity = len_identity.map(str)
-        self.assertEqual(str_len_identity.get(), "5")
-        self.assertIsInstance(str_len_identity.get(), str)
+        self.assertEqual(str_len_identity._inner_value, "5")
+        self.assertIsInstance(str_len_identity._inner_value, str)
 
 
 if __name__ == "__main__":

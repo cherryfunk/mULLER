@@ -18,30 +18,30 @@ class TestPowersetMonad(unittest.TestCase):
 
     def assertPowersetEqual(self, ps1: Powerset, ps2: Powerset, msg=None):
         """Helper method for comparing powersets."""
-        self.assertEqual(ps1.value, ps2.value, msg=msg)
+        self.assertEqual(ps1._inner_value, ps2._inner_value, msg=msg)
 
     def test_initialization(self):
         """Test Powerset monad initialization."""
         # Test with list
         ps = Powerset([1, 2, 3])
-        self.assertEqual(ps.value, frozenset({1, 2, 3}))
+        self.assertEqual(ps._inner_value, frozenset({1, 2, 3}))
 
         # Test with set
         ps_set = Powerset({4, 5, 6})
-        self.assertEqual(ps_set.value, frozenset({4, 5, 6}))
+        self.assertEqual(ps_set._inner_value, frozenset({4, 5, 6}))
 
         # Test with duplicates (should be removed)
         ps_dup = Powerset([1, 1, 2, 2, 3])
-        self.assertEqual(ps_dup.value, frozenset({1, 2, 3}))
+        self.assertEqual(ps_dup._inner_value, frozenset({1, 2, 3}))
 
     def test_insert_operation(self):
         """Test the insert (unit/return) operation."""
         value = "single"
-        ps = Powerset.insert(value)
+        ps = Powerset.from_value(value)
 
         # Should contain only the single value
-        self.assertEqual(ps.value, frozenset({"single"}))
-        self.assertEqual(len(ps.value), 1)
+        self.assertEqual(ps._inner_value, frozenset({"single"}))
+        self.assertEqual(len(ps._inner_value), 1)
 
     def test_map_operation(self):
         """Test the map (functor) operation."""
@@ -107,13 +107,13 @@ class TestPowersetMonad(unittest.TestCase):
         def f(x):
             return Powerset([x, x + 1])
 
-        left = Powerset.insert(a).bind(f)
+        left = Powerset.from_value(a).bind(f)
         right = f(a)
         self.assertPowersetEqual(left, right)
 
         # Right identity: m.bind(unit) == m
         m = Powerset([1, 2, 3])
-        bound = m.bind(Powerset.insert)
+        bound = m.bind(Powerset.from_value)
         self.assertPowersetEqual(m, bound)
 
         # Associativity: (m.bind(f)).bind(g) == m.bind(lambda x: f(x).bind(g))
@@ -154,8 +154,8 @@ class TestPowersetMonad(unittest.TestCase):
         empty_ps = empty()
 
         # Should be empty
-        self.assertEqual(len(empty_ps.value), 0)
-        self.assertEqual(empty_ps.value, frozenset())
+        self.assertEqual(len(empty_ps._inner_value), 0)
+        self.assertEqual(empty_ps._inner_value, frozenset())
 
         # Map on empty should return empty
         mapped = empty_ps.map(lambda x: x * 2)
@@ -360,7 +360,7 @@ class TestPowersetMonad(unittest.TestCase):
 
         # Bind to expand further
         expanded = large_ps.bind(lambda x: Powerset([x, x + 100]))
-        self.assertEqual(len(expanded.value), 20)  # Original 10 + 10 new values
+        self.assertEqual(len(expanded._inner_value), 20)  # Original 10 + 10 new values
 
 
 if __name__ == "__main__":

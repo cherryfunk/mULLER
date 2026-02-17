@@ -1,13 +1,16 @@
-from typing import Callable, Literal, cast
+from typing import Literal
 
-from muller.monad.base import ParametrizedMonad
+from muller.hkt import List
 from muller.monad.distribution import Prob, weighted
-from muller.nesy_framework import Interpretation
+from muller.nesy_framework import Interpretation, nesy
 
 Universe = Literal["red", "green", "yellow", False, True]
 universe: list[Universe] = ["red", "green", "yellow", False, True]
 
-def _drive(light: Universe) -> ParametrizedMonad[Universe]:
+nf = nesy(Prob, bool, List, Universe)
+
+
+def _drive(light: Universe) -> Prob[bool]:
     """Drive function based on traffic light color."""
     if light == "red":
         return weighted([(True, 0.1), (False, 0.9)])
@@ -19,23 +22,26 @@ def _drive(light: Universe) -> ParametrizedMonad[Universe]:
         return Prob({})
 
 
-
-traffic_light_model = Interpretation[Universe, bool, list[Universe]](
-    universe=universe,
+traffic_light_model: Interpretation[
+    Prob[bool], bool, List[Universe], Universe
+] = nf.create_interpretation(
+    sort=List(universe),
     functions={
-        "green": lambda: "green",
-        "red": lambda: "red",
-        "yellow": lambda: "yellow",
+        "green": lambda _args: "green",
+        "red": lambda _args: "red",
+        "yellow": lambda _args: "yellow",
     },
     mfunctions={
-        "light": lambda: weighted([("red", 0.6), ("green", 0.3), ("yellow", 0.1)]),
-        "driveF": _drive,
+        "light": lambda _args: weighted(
+            [("red", 0.6), ("green", 0.3), ("yellow", 0.1)]
+        ),
+        "driveF": lambda args: _drive(args[0]),
     },
-    preds={
-        "equals": lambda a, b: a == b,
-        "eval": lambda x: isinstance(x, bool) and x,
+    predicates={
+        "equals": lambda args: args[0] == args[1],
+        "eval": lambda args: isinstance(args[0], bool) and args[0],
     },
-    mpreds={
-        "driveP": cast(Callable[[Universe], ParametrizedMonad[bool]], _drive)
+    mpredicates={
+        "driveP": lambda args: _drive(args[0]),
     },
 )

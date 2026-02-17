@@ -21,7 +21,7 @@ class TestGirySampling(unittest.TestCase):
     def test_insert_creation(self):
         """Test that.insert creates a point mass measure."""
         # Create a point mass at value 5
-        point_mass = GirySampling.insert(5)
+        point_mass = GirySampling.from_value(5)
 
         # Test that integrating identity function gives the value
         result = sample(point_mass)
@@ -30,7 +30,7 @@ class TestGirySampling(unittest.TestCase):
     def test_map_operation(self):
         """Test the map operation (functor law)."""
         # Create a point mass at 3
-        monad = GirySampling.insert(3)
+        monad = GirySampling.from_value(3)
 
         # Map with a function that doubles the value
         mapped = monad.map(lambda x: x * 2)
@@ -42,10 +42,10 @@ class TestGirySampling(unittest.TestCase):
     def test_bind_operation(self):
         """Test the bind operation (monad law)."""
         # Create a point mass at 2
-        monad = GirySampling.insert(2)
+        monad = GirySampling.from_value(2)
 
         # Bind with a function that creates a point mass at double the value
-        bound = monad.bind(lambda x: GirySampling.insert(x * 3))
+        bound = monad.bind(lambda x: GirySampling.from_value(x * 3))
 
         # Integrate identity to get the result
         result = sample(bound)
@@ -57,9 +57,9 @@ class TestGirySampling(unittest.TestCase):
         a = 5
 
         def f(x):
-            return GirySampling.insert(x + 1)
+            return GirySampling.from_value(x + 1)
 
-        left = GirySampling.insert(a).bind(f)
+        left = GirySampling.from_value(a).bind(f)
         right = f(a)
 
         left_result = sample(left)
@@ -67,8 +67,8 @@ class TestGirySampling(unittest.TestCase):
         self.assertAlmostEqualFloat(left_result, right_result)
 
         # Right identity: m.bind.insert) == m
-        m = GirySampling.insert(7)
-        bound = m.bind(GirySampling.insert)
+        m = GirySampling.from_value(7)
+        bound = m.bind(GirySampling.from_value)
 
         left_result = sample(m)
         right_result = sample(bound)
@@ -125,16 +125,16 @@ class TestGirySampling(unittest.TestCase):
         # Test expected value (mu for normal distribution)
         expected_value = sample(monad)
         theoretical_mean = mu
-        self.assertAlmostEqual(expected_value, theoretical_mean, places=2)
+        self.assertAlmostEqualFloat(expected_value, theoretical_mean)
 
     def test_complex_composition(self):
         """Test complex monadic compositions."""
         # Create a chain of operations
-        initial = GirySampling.insert(1)
+        initial = GirySampling.from_value(1)
 
         # Chain multiple bind operations
         result = (
-            initial.bind(lambda x: GirySampling.insert(x + 1))  # 1 -> 2
+            initial.bind(lambda x: GirySampling.from_value(x + 1))  # 1 -> 2
             .bind(lambda x: binomial(x, 0.5))  # 2 -> binomial(2, 0.5)
             .map(lambda x: x * 2)
         )  # double each outcome

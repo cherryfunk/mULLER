@@ -121,7 +121,7 @@ def get_logic(
     structure_type: type[_StructureType],
 ) -> Aggr2SGrpBLat[_MonadType, _TruthValueType, _StructureType, _ObjectType]:
     mixin: type[Aggr2SGrpBLat[_MonadType, _TruthValueType, Any, _ObjectType]] | None
-    if structure_type is list:
+    if issubclass(structure_type, list):
         mixin = ListAggregationMixin
     elif structure_type is GirySampling:
         mixin = GirySamplingAggregationMixin
