@@ -95,11 +95,11 @@ light_formula1 = parse("L := $light()(D := $driveF(L) (eval(D) -> equals(L, gree
 light_formula2 = parse("L := $light(), D := $driveF(L) (eval(D) -> equals(L, green))")
 assert light_formula1 == light_formula2
 
-result = nf._eval(light_formula1, model)
+result = nf.eval(light_formula1, model)
 print("Probability of driving when light is green:", result)
 
 # Alternative way using mpred `driveP`
 light_formula = parse("L := $light() ($driveP(L) -> equals(L, green))")
 
-result = nf._eval(light_formula, model)
+result = nf.eval(light_formula, model)
 print("Probability of driving when light is green (using mpred):", result)

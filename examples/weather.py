@@ -130,7 +130,7 @@ T := $normal(temperature_predictor(data1))
 ((H == 1 ∧ T < 0) ∨ (H == 0 ∧ T > 15))
 """
 )
-result = nf.eval_formula(formula, model, {})
+result = nf.eval(formula, model, {})
 samples = result.sample(1000)
 print(
     f"Probability of a humid and cold or non humid and warm day: {sum(1 for s in samples if s) / len(samples)}"
@@ -146,7 +146,7 @@ formula = parse(
 )
 """
 )
-result = nf.eval_formula(formula, model, {})
+result = nf.eval(formula, model, {})
 samples = result.sample(100)
 print(
     f"Probability that all days are humid and cold or non humid and warm: {sum(1 for s in samples if s) / len(samples)}"
@@ -162,7 +162,7 @@ formula = parse(
 )
 """
 )
-result = nf.eval_formula(formula, model, {})
+result = nf.eval(formula, model, {})
 samples = result.sample(1000)
 print(
     f"Probability at least one day is humid and cold or non humid and warm: {sum(1 for s in samples if s) / len(samples)}"

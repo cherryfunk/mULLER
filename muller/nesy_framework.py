@@ -209,7 +209,7 @@ class NeSyFramework(Generic[_MonadType, _TruthType, _StructureType, _ObjectType]
         """
         return self._monad_from_value(value)
 
-    def eval_formula(
+    def eval(
         self,
         formula: Formula,
         interpretation: Interpretation[_MonadType, _TruthType, _StructureType, _ObjectType],
