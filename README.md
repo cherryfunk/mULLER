@@ -38,23 +38,15 @@ uv pip install git+https://github.com/cherryfunk/mULLER.git
 The package automatically installs the following dependencies:
 - `lark>=1.2.2` - for parsing ULLER formulas
 - `numpy>=2.3.2` - for numerical computations
-- `pymonad>=2.4.0` - for monadic operations
+- `returns>=0.26.0` - for higher-kinded type emulation
 - `scipy>=1.16.0` - for statistical distributions
 
 ## Usage
 
-1. Choose a nesy framework based on your logic. The `nesy` function can create frameworks for different monads like `Prob`, `NonEmptyPowerset`, or `Identity`. Either provide it with a Monad type (T) and a truth value type (Ω, defaulting to `bool`), or instantiate a logic (an implementation of `Aggr2GrpBLat[Monad[O]]`) yourself and pass it to `nesy`. 
-2. Define an interpretation with a universe, functions, and predicates. Type checkers should infer the universe types, when you start with the `universe` parameter. Alternatively, specify the type of the universe explicitly e.g.:
-    ```python
-   Universe = Literal["alice", "bob"]
-   O = bool
-   interpretation = Interpretation[Universe, O](
-       universe=["alice", "bob"],
-       ...
-   )
-    ```
+1. Choose a nesy framework based on your logic. The `nesy` function creates frameworks for different monads like `Prob`, `NonEmptyPowerset`, or `Identity`. Provide it with a monad type, a truth value type (e.g., `bool`), and a structure type for the domain.
+2. Create an interpretation using `framework.create_interpretation()` with a `sort` (domain of discourse). Define functions and predicates using decorators (`@model.fn()`, `@model.comp_fn()`, `@model.pred()`, `@model.comp_pred()`) or by directly setting the dictionaries.
 3. Parse the ULLER formula using the `parse` function, which returns an abstract syntax tree (AST) representation of the formula.
-4. Evaluate the formula against the interpretation using the `eval` method, which returns a result in the specified Monad.
+4. Evaluate the formula against the interpretation using `framework.eval(formula, interpretation)`, which returns a result in the specified Monad.
 
 ### Examples
 
@@ -63,25 +55,40 @@ More examples can be found in the `examples/` directory.
 #### Basic Probabilistic Example
 
 ```python
-from muller import Prob, uniform, weighted
-from muller import nesy, parse, NeSyFramework, Interpretation
-from muller.transformation import argmax  # For transformations between frameworks
+from muller import List, Prob, nesy, parse, uniform
 
-# Create a probabilistic NeSy framework
-prob_framework = nesy(Prob, bool)
+# Create a probabilistic NeSy framework with Prob monad, bool truth values, and List structure
+prob_framework = nesy(Prob, bool, List, int)
 
-# Define an interpretation with a universe and functions
-interpretation = Interpretation(
-    universe=[1, 2, 3, 4, 5, 6],
-    functions={"1": lambda: 1, "6": lambda: 6},
-    mfunctions={"die": lambda: uniform([1, 2, 3, 4, 5, 6])},
-    preds={"equals": lambda x, y: x == y, "even": lambda x: x % 2 == 0},
-    mpreds={}
+# Create an interpretation using the framework
+model = prob_framework.create_interpretation(
+    sort=List(range(1, 7))  # Domain: dice values 1-6
 )
 
+# Define functions using decorators
+@model.fn()
+def one() -> int:
+    return 1
+
+@model.fn()
+def six() -> int:
+    return 6
+
+@model.comp_fn()
+def die() -> Prob[int]:
+    return uniform(list(range(1, 7)))
+
+@model.pred()
+def equals(x: int, y: int) -> bool:
+    return x == y
+
+@model.pred()
+def even(x: int) -> bool:
+    return x % 2 == 0
+
 # Parse and evaluate a dice formula: "roll a die and check if it's 6 and even"
-formula = parse("X := $die() (equals(X, 6) and even(X))")
-result = formula.eval(prob_framework, interpretation, {})
+formula = parse("X := $die() (equals(X, six) and even(X))")
+result = prob_framework.eval(formula, model)
 
 print(f"Probability of rolling an even 6: {result.value[True]}")  # 1/6 ≈ 0.167
 ```
@@ -89,59 +96,84 @@ print(f"Probability of rolling an even 6: {result.value[True]}")  # 1/6 ≈ 0.16
 #### Non-Deterministic Example
 
 ```python
-from muller import NonEmptyPowerset, from_list, singleton
-from muller import nesy, parse, NeSyFramework, Interpretation
+from muller import List, NonEmptyPowerset, nesy, parse, from_list, singleton
 from muller.logics import Priest
 
-# Create a non-deterministic NeSy framework
-nondet_framework = nesy(NonEmptyPowerset, Priest)
+# Create a non-deterministic NeSy framework with Priest logic
+nondet_framework = nesy(NonEmptyPowerset, Priest, List, str)
 
-interpretation = Interpretation(
-    universe=["alice", "bob"],
-    functions={},
-    mfunctions={"choose_person": lambda: from_list(["alice", "bob"])},
-    preds={},
-    mpreds={
-        "might_be_tall": lambda x: {
-            "alice": singleton("Both"),
-            "bob": singleton(False) 
-        }.get(x, singleton(False))
-    }
+model = nondet_framework.create_interpretation(
+    sort=List(["alice", "bob"])
 )
+
+@model.comp_fn()
+def choose_person() -> NonEmptyPowerset[str]:
+    return from_list(["alice", "bob"])
+
+@model.comp_pred()
+def might_be_tall(x: str) -> NonEmptyPowerset[Priest]:
+    return {
+        "alice": singleton(Priest.Both),
+        "bob": singleton(Priest.False_)
+    }.get(x, singleton(Priest.False_))
 
 # Parse a non-deterministic formula
 formula = parse("X := $choose_person() ($might_be_tall(X))")
-result = formula.eval(nondet_framework, interpretation, {})
+result = nondet_framework.eval(formula, model)
 
-print(f"Possible truth values: {result.value}")  # frozenset({"Both", False})
+print(f"Possible truth values: {result.value}")  # frozenset({Priest.Both, Priest.False_})
 ```
 
 #### Traffic Light Example
 
 ```python
-from muller import Prob, weighted
-from muller import nesy, parse, Interpretation
+from typing import Literal, get_args
+from muller import List, Prob, nesy, parse, weighted
 
-prob_framework = nesy(Prob, bool)
+Universe = Literal["red", "green", "yellow", True, False]
+universe: list[Universe] = list(get_args(Universe))
 
-interpretation = Interpretation(
-    universe=["red", "green", "yellow", True, False],
-    functions={"green": lambda: "green", "red": lambda: "red"},
-    mfunctions={
-        "light": lambda: weighted([("red", 0.6), ("green", 0.3), ("yellow", 0.1)]),
-        "driveF": lambda l: (
-            weighted([(True, 0.1), (False, 0.9)]) if l == "red" else
-            weighted([(True, 0.2), (False, 0.8)]) if l == "yellow" else
-            weighted([(True, 0.9), (False, 0.1)])  # green
-        )
-    },
-    preds={"equals": lambda a, b: a == b, "eval": lambda x: x == True},
-    mpreds={}
+prob_framework = nesy(Prob, bool, List, Universe)
+
+model = prob_framework.create_interpretation(
+    sort=List(universe)
 )
+
+@model.fn()
+def green() -> Universe:
+    return "green"
+
+@model.fn()
+def red() -> Universe:
+    return "red"
+
+@model.comp_fn()
+def light() -> Prob[Universe]:
+    return weighted([("red", 0.6), ("green", 0.3), ("yellow", 0.1)])
+
+@model.comp_fn()
+def driveF(l: Universe) -> Prob[bool]:
+    match l:
+        case "red":
+            return weighted([(True, 0.1), (False, 0.9)])
+        case "yellow":
+            return weighted([(True, 0.2), (False, 0.8)])
+        case "green":
+            return weighted([(True, 0.9), (False, 0.1)])
+        case _:
+            return Prob({})
+
+@model.pred()
+def equals(a: Universe, b: Universe) -> bool:
+    return a == b
+
+@model.pred()
+def eval(x: Universe) -> bool:
+    return x == True
 
 # "If we drive, the light should be green"
 formula = parse("L := $light()(D := $driveF(L) (eval(D) -> equals(L, green)))")
-result = formula.eval(prob_framework, interpretation, {})
+result = prob_framework.eval(formula, model)
 
 print(f"Safety probability: {result.value[True]}")  # ~0.92
 ```
@@ -168,43 +200,67 @@ The parser supports standard first-order logic with computational extensions:
 
 ### Core Functions
 
-#### `nesy(logic)`
-Creates a NeSy framework instance from a logic.
+#### `nesy(monad_type, truth_type, structure_type, object_type=None)`
+Creates a NeSy framework instance from a monad type, truth type, and structure type.
 
 **Parameters:**
-- `logic`: An instance of `Aggr2SGrpBLat[Monad[O]]` that defines the logical operations
+- `monad_type`: A monad type (`Prob`, `NonEmptyPowerset`, `Identity`, `GirySampling`)
+- `truth_type`: Type for truth values (e.g., `bool`, `Priest`)
+- `structure_type`: Type for the domain structure (e.g., `List`, `GirySampling`)
+- `object_type`: Optional type for objects in the domain
 
 **Returns:** `NeSyFramework` instance
 
-#### `nesy(monad_type, omega=bool)`
-Creates a NeSy framework instance from a monad type.
+The function searches all loaded modules for a subclass of `Aggr2SGrpBLat` that matches the provided types and returns a corresponding `NeSyFramework`. If no matching logic is found, it raises a `ValueError`.
 
-The function will search all loaded modules for a subclass of `Aggr2SGrpBLat` that matches the provided monad and truth value type and returns a corresponding `NeSyFramework`. To extend the built-in logics, you can create a new logic class that inherits from `Aggr2SGrpBLat` and implements the required methods. The search stops at the first matching logic class found and starts with the built-in logics. To overwrite a builtin implementation with a custom implementation, it has to be instantiated (second overload of `nesy` function).
+#### `NeSyFramework.from_logic(logic)`
+Creates a NeSy framework instance directly from a logic instance.
 
-If no matching logic is found, it raises a `ValueError`.
+**Parameters:**
+- `logic`: An instance of `Aggr2SGrpBLat` that defines the logical operations
+
+**Returns:** `NeSyFramework` instance
 
 Example:
 ```python
-from muller import nesy, Prob
-from pymonad import Prob
+from muller import nesy, Prob, List
 from muller.logics import Aggr2SGrpBLat
 
-class MyLogicOverwrite(Aggr2SGrpBLat[Prob[bool]]):
-    ...
-    
-class MyCustomLogic(Aggr2SGrpBLat[Prob[str]]):
+class MyCustomLogic(Aggr2SGrpBLat[Prob, bool, List, int]):
     ...
         
-nesy_framework = nesy(Prob, bool) # Uses `muller.logics.ProbabilisticBooleanLogic`
-nesy_framework = nesy(MyLogicOverwrite()) # Uses `MyLogicOverwrite`
-nesy_framework = nesy(Prob, str) # Uses `MyCustomLogic`
+nesy_framework = nesy(Prob, bool, List, int)  # Uses built-in `ProbabilisticBooleanLogic`
+nesy_framework = NeSyFramework.from_logic(MyCustomLogic())  # Uses custom logic
 ```
 
 **Parameters:**
 - `monad_type`: A monad type (`Prob`, `NonEmptyPowerset`, `Identity`)
-- `omega`: Type for truth values (default: `bool`)
+- `truth_type`: Type for truth values (e.g., `bool`)
+- `structure_type`: Type for the domain structure
 
 **Returns:** `NeSyFramework` instance
+
+#### `NeSyFramework.create_interpretation(sort, ...)`
+Creates an interpretation for the framework.
+
+**Parameters:**
+- `sort`: The domain of discourse as a monadic structure
+- `functions`: Dictionary of regular functions (optional)
+- `predicates`: Dictionary of regular predicates (optional)
+- `mfunctions`: Dictionary of computational (monadic) functions (optional)
+- `mpredicates`: Dictionary of computational (monadic) predicates (optional)
+
+**Returns:** `Interpretation` instance that can be populated using decorators
+
+#### `NeSyFramework.eval(formula, interpretation, valuation={})`
+Evaluates a formula against an interpretation.
+
+**Parameters:**
+- `formula`: Parsed formula AST
+- `interpretation`: The interpretation to evaluate against
+- `valuation`: Optional variable assignments
+
+**Returns:** Monadic result
 
 #### `parse(formula_string)`
 Parses a ULLER formula string into an AST.
@@ -254,38 +310,42 @@ Identity monad for classical deterministic reasoning.
 
 ### Custom Monads
 
-You can define custom monads by inheriting from the base `Monad` class and creating a corresponding logic:
+You can define custom monads by implementing the `Container1` interface from `returns` and creating a corresponding logic:
 
 ```python
-from pymonad.monad import Monad
+from returns.interfaces.container import Container1
 from muller.logics import Aggr2SGrpBLat
+from muller import NeSyFramework
 
-class MyCustomMonad[T](Monad[T]):
+class MyCustomMonad[T](Container1[T]):
     def __init__(self, value: T):
         self.value = value
-    
+
     @classmethod
-    def insert(cls, value: T) -> 'MyCustomMonad[T]':
+    def from_value(cls, value: T) -> 'MyCustomMonad[T]':
         return cls(value)
-    
+
     def bind(self, function) -> 'MyCustomMonad':
         # Define your monadic bind operation
         return function(self.value)
 
-class MyCustomLogic(Aggr2SGrpBLat[MyCustomMonad[bool]]):
+    def map(self, function) -> 'MyCustomMonad':
+        return MyCustomMonad(function(self.value))
+
+class MyCustomLogic(Aggr2SGrpBLat[MyCustomMonad, bool, list, int]):
     """Custom logic for your monad"""
     
     def top(self) -> MyCustomMonad[bool]:
-        return MyCustomMonad.insert(True)
+        return MyCustomMonad.from_value(True)
     
     def bottom(self) -> MyCustomMonad[bool]:
-        return MyCustomMonad.insert(False)
+        return MyCustomMonad.from_value(False)
     
     # Implement other required methods...
 
 # Use with mULLER
 logic = MyCustomLogic()
-custom_framework = nesy(logic)
+custom_framework = NeSyFramework.from_logic(logic)
 ```
 
 ### Transformations
@@ -352,6 +412,11 @@ python -m pytest test/
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues, feature requests, or pull requests.
+
+## Development
+
+> [!NOTE]
+> While the library is strongly typed and strictly checked using mypy we ignore a specific pattern throughout the code. Using `KindN[T, A, B, ...]` from the `returns` library as an alias for inexpressible `T[A, B, ...]` shows the error, taht `T` is missing generic type parameters. We ignore this error wit `# type: ignore[type-arg]`
 
 
 ## Citation

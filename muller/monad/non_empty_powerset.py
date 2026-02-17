@@ -1,10 +1,23 @@
-# pip install pymonad
-from typing import Callable, FrozenSet, Set, Union
+from __future__ import annotations
 
-from muller.monad.base import ParametrizedMonad
+from typing import Callable, FrozenSet, Set, TypeVar, Union, final
+
+from returns.interfaces.container import Container1
+from returns.primitives.container import BaseContainer
+from returns.primitives.hkt import Kind1, SupportsKind1, dekind, kinded
+
+from muller.monad.base import monad_apply
+
+_ValueType = TypeVar("_ValueType")
+_NewValueType = TypeVar("_NewValueType")
 
 
-class NonEmptyPowerset[T](ParametrizedMonad[T]):
+@final
+class NonEmptyPowerset(
+    BaseContainer,
+    SupportsKind1["NonEmptyPowerset", _ValueType],  # type: ignore[type-arg]
+    Container1[_ValueType],
+):
     """
     Non-Empty Powerset Monad for Non-deterministic Computation
 
@@ -15,14 +28,16 @@ class NonEmptyPowerset[T](ParametrizedMonad[T]):
     one possible outcome.
     """
 
-    value: FrozenSet[T]
+    _inner_value: FrozenSet[_ValueType]
 
-    def __init__(self, value: Union[Set[T], FrozenSet[T], list]):
+    def __init__(
+        self, value: Union[Set[_ValueType], FrozenSet[_ValueType], list[_ValueType]]
+    ) -> None:
         """
         Initialize a non-empty powerset computation.
 
         Args:
-            values: Set, frozenset, or list of values representing possible outcomes
+            value: Set, frozenset, or list of values representing possible outcomes
 
         Raises:
             ValueError: If values is empty
@@ -33,13 +48,13 @@ class NonEmptyPowerset[T](ParametrizedMonad[T]):
         if len(value) == 0:
             raise ValueError("NonEmptyPowerset cannot be initialized with empty values")
 
-        super().__init__(value, None)
+        super().__init__(value)
 
     @classmethod
-    def insert(cls, value: T) -> "NonEmptyPowerset[T]":
+    def from_value(cls, value: _NewValueType) -> Kind1["NonEmptyPowerset", _NewValueType]:  # type: ignore[type-arg]
         """
         Create a non-empty powerset with a single value (deterministic computation).
-        Implements ηX(x) = {x}
+        Implements etaX(x) = {x}
 
         Args:
             value: The single value to wrap
@@ -47,32 +62,56 @@ class NonEmptyPowerset[T](ParametrizedMonad[T]):
         Returns:
             NonEmptyPowerset containing only the given value
         """
-        return cls({value})
+        return NonEmptyPowerset({value})
 
-    def bind[S](self, kleisli_function: Callable[[T], "NonEmptyPowerset[S]"]) -> "NonEmptyPowerset[S]":  # pyright: ignore[reportIncompatibleMethodOverride] Python doesn't support Self[S] or other forms of changing type variables in method signatures # fmt: skip # noqa: E501
-        return join(self.map(kleisli_function))
+    def bind(
+        self,
+        function: Callable[  # type: ignore[type-arg]
+            [_ValueType],
+            Kind1["NonEmptyPowerset", _NewValueType],
+        ],
+    ) -> NonEmptyPowerset[_NewValueType]:
+        return NonEmptyPowerset(
+            [
+                element
+                for x in self._inner_value
+                for element in dekind(function(x))._inner_value
+            ]
+        )
 
-    def map[S](self, function: Callable[[T], S]) -> "NonEmptyPowerset[S]":
-        return NonEmptyPowerset([function(x) for x in self.value])
+    def map(
+        self,
+        function: Callable[[_ValueType], _NewValueType],
+    ) -> NonEmptyPowerset[_NewValueType]:
+        return NonEmptyPowerset([function(x) for x in self._inner_value])
 
-    def __repr__(self):
-        sorted_values = sorted(self.value, key=str)
+    apply = monad_apply
+
+    def __repr__(self) -> str:
+        sorted_values = sorted(self._inner_value, key=str)
         return f"NonEmptyPowerset({set(sorted_values)})"
 
 
-def join[T](monad: NonEmptyPowerset[NonEmptyPowerset[T]]) -> NonEmptyPowerset[T]:
-    return NonEmptyPowerset([element for sets in monad.value for element in sets.value])
+def join(
+    monad: NonEmptyPowerset[NonEmptyPowerset[_ValueType]],
+) -> NonEmptyPowerset[_ValueType]:
+    return NonEmptyPowerset(
+        [element for sets in monad._inner_value for element in sets._inner_value]
+    )
 
 
 # Convenience functions for creating common non-empty powersets
 
 
-def singleton[T](value: T) -> NonEmptyPowerset[T]:
+@kinded
+def singleton(value: _ValueType) -> Kind1["NonEmptyPowerset", _ValueType]:  # type: ignore[type-arg]
     """Create a non-empty powerset with a single value."""
-    return NonEmptyPowerset.insert(value)
+    return NonEmptyPowerset.from_value(value)
 
 
-def from_list[T](values: list[T]) -> NonEmptyPowerset[T]:
+def from_list(
+    values: list[_ValueType],
+) -> NonEmptyPowerset[_ValueType]:
     """
     Create non-empty powerset from a list of values.
 
@@ -88,7 +127,7 @@ def from_list[T](values: list[T]) -> NonEmptyPowerset[T]:
     return NonEmptyPowerset(values)
 
 
-def choice[T](option: T, *options: T) -> NonEmptyPowerset[T]:
+def choice(option: _ValueType, *options: _ValueType) -> NonEmptyPowerset[_ValueType]:
     """
     Create non-empty powerset representing a choice between options.
 

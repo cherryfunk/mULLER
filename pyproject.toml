@@ -12,8 +12,10 @@ dependencies = [
     "lark>=1.2.2",
     "numpy>=2.3.2",
     "pymc>=5.25.1",
-    "pymonad>=2.4.0",
+    "returns>=0.26.0",
     "scipy>=1.16.0",
+    "torch>=2.10.0",
+    "torchvision>=0.25.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -23,6 +25,7 @@ include = ["muller*"]
 [dependency-groups]
 dev = [
     "coverage>=7.10.1",
+    "mypy>=1.19.1",
     "pytest>=8.0.0",
     "ruff>=0.8.0",
 ]
@@ -41,6 +44,15 @@ extend-select = [
 ignore = [
 
 ]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["returns.contrib.mypy.returns_plugin"]
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["pymc.*", "scipy.*", "numpy.*"]
+ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["muller"]

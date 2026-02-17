@@ -1,12 +1,25 @@
-# pip install pymonad
+from __future__ import annotations
+
 import random
 from collections import defaultdict
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, Tuple, TypeVar, final
 
-from muller.monad.base import ParametrizedMonad
+from returns.interfaces.container import Container1
+from returns.primitives.container import BaseContainer
+from returns.primitives.hkt import Kind1, SupportsKind1, dekind
+
+from muller.monad.base import monad_apply
+
+_ValueType = TypeVar("_ValueType")
+_NewValueType = TypeVar("_NewValueType")
 
 
-class Prob[T](ParametrizedMonad[T]):
+@final
+class Prob(
+    BaseContainer,
+    SupportsKind1["Prob", _ValueType],  # type: ignore[type-arg]
+    Container1[_ValueType],
+):
     """
     Probability Distribution Monad
 
@@ -14,7 +27,9 @@ class Prob[T](ParametrizedMonad[T]):
     mapping values to their probabilities.
     """
 
-    def __init__(self, dist: Dict[T, float]):
+    _inner_value: Dict[_ValueType, float]
+
+    def __init__(self, dist: Dict[_ValueType, float]):
         """
         Initialize a probability distribution.
 
@@ -23,10 +38,10 @@ class Prob[T](ParametrizedMonad[T]):
         """
         # Normalize probabilities
         total = sum(dist.values())
-        self.value = {k: v / total for k, v in dist.items()}
+        super().__init__({k: v / total for k, v in dist.items()})
 
     @classmethod
-    def insert(cls, value: T) -> "Prob[T]":
+    def from_value(cls, value: _NewValueType) -> Prob[_NewValueType]:
         """
         Create a distribution with certainty for a single value.
         Also known as 'return' or 'pure' in Haskell.
@@ -37,9 +52,12 @@ class Prob[T](ParametrizedMonad[T]):
         Returns:
             Prob distribution with single value
         """
-        return cls({value: 1.0})
+        return Prob({value: 1.0})
 
-    def bind[S](self, kleisli_function: Callable[[T], 'Prob[S]']) -> 'Prob[S]':  # pyright: ignore[reportIncompatibleMethodOverride] This is the correct signature for bind # fmt: skip
+    def bind(
+        self,
+        function: Callable[[_ValueType], Kind1["Prob", _NewValueType]],  # type: ignore[type-arg]
+    ) -> Prob[_NewValueType]:
         """
         Monadic bind operation (>>=).
 
@@ -47,72 +65,77 @@ class Prob[T](ParametrizedMonad[T]):
         to each value in this distribution, weighted by probability.
 
         Args:
-            f: Function from value to probability distribution
+            function: Function from value to probability distribution
 
         Returns:
             New probability distribution
         """
-        result = defaultdict(float)
+        result: Dict[_NewValueType, float] = defaultdict(float)
 
-        for value, prob in self.value.items():
-            new_dist = kleisli_function(value)
-            for new_val, new_prob in new_dist.value.items():
+        for value, prob in self._inner_value.items():
+            new_dist = dekind(function(value))
+            for new_val, new_prob in new_dist._inner_value.items():
                 result[new_val] += prob * new_prob
 
         return Prob(dict(result))
 
-    def map[U](self, function: Callable[[T], U]) -> "Prob[U]":
+    def map(
+        self,
+        function: Callable[[_ValueType], _NewValueType],
+    ) -> Prob[_NewValueType]:
         """
         Apply a function to all values in the distribution.
 
         Args:
-            f: Function to apply to values
+            function: Function to apply to values
 
         Returns:
             New probability distribution
         """
-        result = defaultdict(float)
-        for value, prob in self.value.items():
+        result: Dict[_NewValueType, float] = defaultdict(float)
+        for value, prob in self._inner_value.items():
             result[function(value)] += prob
         return Prob(dict(result))
 
-    def __repr__(self):
-        items = sorted(self.value.items(), key=lambda x: -x[1])
+    apply = monad_apply
+
+    def __repr__(self) -> str:
+        items = sorted(self._inner_value.items(), key=lambda x: -x[1])
         return f"Prob({dict(items)})"
 
     # Utility methods
 
-    def expected_value(self, f: Callable[[T], float]) -> float:
+    def expected_value(self, f: Callable[[_ValueType], float]) -> float:
         """Calculate expected value of the distribution."""
-        return sum(f(val) * prob for val, prob in self.value.items())
+        return sum(f(val) * prob for val, prob in self._inner_value.items())
 
-    def sample(self) -> T:
+    def sample(self) -> _ValueType:
         """Sample a value from the distribution."""
-        values = list(self.value.keys())
-        probs = list(self.value.values())
+        values = list(self._inner_value.keys())
+        probs = list(self._inner_value.values())
         return random.choices(values, weights=probs)[0]
 
-    def filter(self, predicate: Callable[[T], bool]) -> "Prob[T]":
+    def filter(self, predicate: Callable[[_ValueType], bool]) -> Prob[_ValueType]:
         """Filter distribution keeping only values satisfying predicate."""
-        filtered = {v: p for v, p in self.value.items() if predicate(v)}
+        filtered = {v: p for v, p in self._inner_value.items() if predicate(v)}
         return Prob(filtered)
 
     def max_probability(self) -> float:
         """Get the maximum probability value"""
-        return max(self.value.values()) if self.value else 0.0
+        return max(self._inner_value.values()) if self._inner_value else 0.0
 
-    def argmax(self) -> list[T]:
+    def argmax(self) -> list[_ValueType]:
         """Get outcomes with maximum probability"""
-        if not self.value:
+        if not self._inner_value:
             return []
         max_prob = self.max_probability()
-        return [k for k, v in self.value.items() if v >= max_prob - 1e-5]
+        return [k for k, v in self._inner_value.items() if v >= max_prob - 1e-5]
 
 
 # Convenience functions for creating common distributions
 
 
-def uniform(values: list) -> Prob:
+def uniform(values: list[_ValueType]) -> Prob[_ValueType]:
     """Create uniform distribution over given values."""
     if not values:
         return Prob({})
@@ -120,11 +143,15 @@ def uniform(values: list) -> Prob:
     return Prob({v: prob for v in values})
 
 
-def weighted[T](pairs: list[Tuple[T, float]]) -> Prob[T]:
+def weighted(_ValueType_pairs: list[Tuple[_ValueType, float]]) -> Prob[_ValueType]:
     """Create distribution from (value, weight) pairs."""
-    return Prob(dict(pairs))
+    return Prob(dict(_ValueType_pairs))
 
 
-def bernoulli[T](p: float, true_val: T = True, false_val: T = False) -> Prob[T]:
+def bernoulli(
+    p: float,
+    true_val: bool = True,
+    false_val: bool = False,
+) -> Prob[bool]:
     """Create Bernoulli distribution."""
     return Prob({true_val: p, false_val: 1 - p})

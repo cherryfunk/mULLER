@@ -1,24 +1,61 @@
-from typing import Union, Dict, cast
+import sys
+from typing import Union, cast
 
-from muller import Interpretation, nesy
-from muller.parser import parse
-
+from muller import nesy
 from muller.monad import (
     GirySampling,
-    giry_bernoulli as bernoulli,
-    giry_categorical as categorical,
-    giry_normal as normal,
-    giry_uniform as uniform
+    giry_bernoulli,
+    giry_normal,
 )
+from muller.monad import (
+    giry_categorical as categorical,
+)
+from muller.monad import (
+    giry_uniform as uniform,
+)
+from muller.nesy_framework import NeSyFramework
+from muller.parser import parse
 
 GIRY = GirySampling
-
-# Get a framework for bools over the Giry monad and an infinite universe over the Giry monad
-framework = nesy(GIRY, bool, GIRY)
 
 # No multi sort implementation yet. Thus, union of all sorts
 Universe = Union[int, float, tuple[float, float]]
 
+# Get a framework for bools over the Giry monad and an infinite universe over the Giry monad
+nf: NeSyFramework[GIRY[bool], bool, GIRY[Universe], Universe] = nesy(GIRY, bool, GIRY)
+
+
+def uniformUniverse() -> GIRY[Universe]:
+    """
+    Create a mixed universe distribution over integers, floats, and tuples.
+    """
+    return categorical([1, 1, 1]).bind(
+        lambda choice: categorical([1] * 21).bind(lambda i: GIRY.from_value(i - 10))
+        if choice == 0
+        else uniform(0, 1)
+        if choice == 1
+        else uniform(-5, 20).bind(
+            lambda x: uniform(0, 5).bind(lambda y: GIRY.from_value((x, y)))
+        )
+    )
+
+
+model = nf.create_interpretation(
+    sort=uniformUniverse(),
+    functions={
+        "0": lambda _: 0.0,
+        "1": lambda _: 1.0,
+        "15": lambda _: 15.0,
+    },
+    predicates={
+        "==": lambda args: args[0] == args[1],
+        "<": lambda args: args[0] < args[1],
+        ">": lambda args: args[0] > args[1],
+    },
+)
+
+
+@model.fn()
 def humid_detector(d: Universe) -> float:
     """Humidity detection function for day d."""
     if isinstance(d, int):
@@ -27,6 +64,7 @@ def humid_detector(d: Universe) -> float:
     return 0.0
 
 
+@model.fn()
 def temperature_predictor(d: Universe) -> tuple[float, float]:
     """Temperature prediction function returning (mean, std) for day d."""
     if isinstance(d, int):
@@ -35,60 +73,55 @@ def temperature_predictor(d: Universe) -> tuple[float, float]:
     return (0.0, 0.0)
 
 
-def uniformUniverse() -> GIRY[Universe]:
-    """
-    Create a mixed universe distribution over integers, floats, and tuples.
-    """
-    return categorical([1, 1, 1]).bind(
-        lambda choice: {
-            0: categorical([1] * 21).bind(lambda i: GIRY.insert(i - 10)),
-            1: uniform(0, 1),
-            2: uniform(-5, 20).bind(
-                lambda x: uniform(0, 5).bind(lambda y: GIRY.insert((x, y)))
-            ),
-        }[choice]
-    )
+@model.fn()
+def data1() -> int:
+    return 1
 
 
-def universeBernoulli(p: Universe) -> GIRY[Universe]:
+@model.comp_fn()
+def bernoulli(p: Universe) -> GIRY[Universe]:
     if isinstance(p, (int, float)):
-        return cast(GIRY[Universe], bernoulli(p))
+        return cast(GIRY[Universe], giry_bernoulli(p))
 
-    return GIRY.insert(0)
+    return GIRY.from_value(0)
 
 
-def universeNormal(d: Universe) -> GIRY[Universe]:
+@model.comp_fn()
+def normal(d: Universe) -> GIRY[Universe]:
     match d:
         case (mean, std) if isinstance(mean, (int, float)) and isinstance(
             std, (int, float)
         ):
-            return cast(GIRY[Universe], normal(mean, std))
+            return cast(GIRY[Universe], giry_normal(mean, std))
         case _:
-            return GIRY.insert(0)
+            return GIRY.from_value(0)
 
 
-weather_model = Interpretation[Universe, bool, GIRY[Universe]](
-    universe=uniformUniverse(),
-    functions={
-        "humid_detector": lambda d: humid_detector(d),
-        "temperature_predictor": lambda d: temperature_predictor(d),
-        "data1": lambda: 1,
-        "0": lambda: 0,
-        "1": lambda: 1,
-        "0": lambda: 0.0,
-        "15": lambda: 15.0,
-    },
-    mfunctions={
-        "bernoulli": lambda d: universeBernoulli(d),
-        "normal": lambda d: universeNormal(d),
-    },
-    preds={
-        "==": lambda x, y: x == y,
-        "<": lambda x, y: x < y,
-        ">": lambda x, y: x > y,
-    },
-    mpreds={},
-)
+# weather_model = Interpretation[Universe, bool, GIRY[Universe]](
+#     universe=uniformUniverse(),
+#     functions={
+#         "humid_detector": lambda d: humid_detector(d),
+#         "temperature_predictor": lambda d: temperature_predictor(d),
+#         "data1": lambda: 1,
+#         "0": lambda: 0,
+#         "1": lambda: 1,
+#         "0": lambda: 0.0,
+#         "15": lambda: 15.0,
+#     },
+#     mfunctions={
+#         "bernoulli": lambda d: universeBernoulli(d),
+#         "normal": lambda d: universeNormal(d),
+#     },
+#     preds={
+#         "==": lambda x, y: x == y,
+#         "<": lambda x, y: x < y,
+#         ">": lambda x, y: x > y,
+#     },
+#     mpreds={},
+# )
+
+sys.setrecursionlimit(1500)
+
 
 formula = parse(
     """
@@ -97,9 +130,11 @@ T := $normal(temperature_predictor(data1))
 ((H == 1 ∧ T < 0) ∨ (H == 0 ∧ T > 15))
 """
 )
-result = formula.eval(framework, weather_model, {})
+result = nf.eval_formula(formula, model, {})
 samples = result.sample(1000)
-print(f"Probability of a humid and cold or non humid and warm day: {sum(1 for s in samples if s) / len(samples)}")
+print(
+    f"Probability of a humid and cold or non humid and warm day: {sum(1 for s in samples if s) / len(samples)}"
+)
 
 
 formula = parse(
@@ -111,9 +146,11 @@ formula = parse(
 )
 """
 )
-result = formula.eval(framework, weather_model, {})
+result = nf.eval_formula(formula, model, {})
 samples = result.sample(100)
-print(f"Probability that all days are humid and cold or non humid and warm: {sum(1 for s in samples if s) / len(samples)}")
+print(
+    f"Probability that all days are humid and cold or non humid and warm: {sum(1 for s in samples if s) / len(samples)}"
+)
 
 
 formula = parse(
@@ -125,6 +162,8 @@ formula = parse(
 )
 """
 )
-result = formula.eval(framework, weather_model, {})
+result = nf.eval_formula(formula, model, {})
 samples = result.sample(1000)
-print(f"Probability at least one day is humid and cold or non humid and warm: {sum(1 for s in samples if s) / len(samples)}")
+print(
+    f"Probability at least one day is humid and cold or non humid and warm: {sum(1 for s in samples if s) / len(samples)}"
+)

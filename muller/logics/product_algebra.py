@@ -1,15 +1,21 @@
-from typing import Iterable
+# mypy: disable-error-code="type-arg"
+from typing import Any, TypeVar
 
-from muller.logics.aggr2sgrpblat import Aggr2SGrpBLat, NeSyLogicMeta
-from muller.monad.identity import Identity
+import torch
+from returns.interfaces.container import Container1
+from returns.primitives.hkt import Kind1
+
+from muller.logics.aggr2sgrpblat import DblSGrpBLat
+
+_MonadType = TypeVar("_MonadType", bound=Container1[Any])
 
 
-class ProductAlgebraLogic(Aggr2SGrpBLat[list, Identity[float]], NeSyLogicMeta[float]):
+class ProductAlgebraLogic(DblSGrpBLat[_MonadType, float]):
     """
     Product algebra on [0, 1] with:
     - Conjunction: a · b
-    - Disjunction: a + b − a · b (probabilistic sum)
-    - Negation: 1 − a
+    - Disjunction: a + b - a · b (probabilistic sum)
+    - Negation: 1 - a
     - Implication (residuum of ·): min(1, b / a) with convention 1 if a == 0
 
     This matches the semantics used in the paper excerpt for the weather examples.
@@ -18,54 +24,87 @@ class ProductAlgebraLogic(Aggr2SGrpBLat[list, Identity[float]], NeSyLogicMeta[fl
     """
 
     # Lattice bounds ---------------------------------------------------------
-    def top(self) -> Identity[float]:
-        return Identity.insert(1.0)
+    def top(self) -> Kind1[_MonadType, float]:
+        return self.monad_from_value(1.0)
 
-    def bottom(self) -> Identity[float]:
-        return Identity.insert(0.0)
+    def bottom(self) -> Kind1[_MonadType, float]:
+        return self.monad_from_value(0.0)
 
     # Connectives ------------------------------------------------------------
-    def neg(self, a: Identity[float]) -> Identity[float]:
-        return Identity.insert(1.0 - a.value)
+    def neg(self, a: Kind1[_MonadType, float]) -> Kind1[_MonadType, float]:
+        return a.bind(lambda x: self.monad_from_value(1.0 - x))
 
-    def conjunction(self, a: Identity[float], b: Identity[float]) -> Identity[float]:
-        return Identity.insert(a.value * b.value)
+    def conjunction(
+        self, a: Kind1[_MonadType, float], b: Kind1[_MonadType, float]
+    ) -> Kind1[_MonadType, float]:
+        return a.bind(lambda x: b.bind(lambda y: self.monad_from_value(x * y)))
 
-    def disjunction(self, a: Identity[float], b: Identity[float]) -> Identity[float]:
+    def disjunction(
+        self, a: Kind1[_MonadType, float], b: Kind1[_MonadType, float]
+    ) -> Kind1[_MonadType, float]:
         # probabilistic sum
-        return Identity.insert(a.value + b.value - a.value * b.value)
+        return a.bind(lambda x: b.bind(lambda y: self.monad_from_value(x + y - x * y)))
 
     # Override default material implication with product residuum
-    def implies(self, a: Identity[float], b: Identity[float]) -> Identity[float]:
-        if a.value <= b.value:
-            return Identity.insert(1.0)
-        if a.value == 0.0:
-            return Identity.insert(1.0)
-        return Identity.insert(min(1.0, b.value / a.value))
+    def implies(
+        self, a: Kind1[_MonadType, float], b: Kind1[_MonadType, float]
+    ) -> Kind1[_MonadType, float]:
+        return a.bind(lambda x: b.bind(lambda y: self._residuum(x, y)))
 
-    # High-level aggregations on plain floats --------------------------------
-    # These helpers expose the product-algebra ∀/∃ fold directly on lists of
-    # probabilities without requiring callers to wrap values in Identity.
-    def universal(self, probabilities: Iterable[float]) -> float:
-        """Universal aggregation (conjunction/product) over probabilities.
-
-        Computes the product-algebra conjunction over the sequence, equivalent
-        to iterative application of `conjunction` starting from `top()`.
-        """
-        acc: Identity[float] = self.top()
-        for p in probabilities:
-            acc = self.conjunction(acc, Identity.insert(float(p)))
-        return acc.value
-
-    def existential(self, probabilities: Iterable[float]) -> float:
-        """Existential aggregation (probabilistic sum) over probabilities.
-
-        Computes the product-algebra disjunction over the sequence, equivalent
-        to iterative application of `disjunction` starting from `bottom()`.
-        """
-        acc: Identity[float] = self.bottom()
-        for p in probabilities:
-            acc = self.disjunction(acc, Identity.insert(float(p)))
-        return acc.value
+    def _residuum(self, x: float, y: float) -> Kind1[_MonadType, float]:
+        if x <= y:
+            return self.monad_from_value(1.0)
+        if x == 0.0:
+            return self.monad_from_value(1.0)
+        return self.monad_from_value(min(1.0, y / x))
 
 
+class ProductTorchAlgebraLogic(DblSGrpBLat[_MonadType, torch.Tensor]):
+    """
+    Product algebra on [0, 1] with:
+    - Conjunction: a · b
+    - Disjunction: a + b - a · b (probabilistic sum)
+    - Negation: 1 - a
+    - Implication (residuum of ·): min(1, b / a) with convention 1 if a == 0
+
+    This matches the semantics used in the paper excerpt for the weather examples.
+    Truth values are wrapped in the Identity monad to match the existing logic API
+    (see boolean.py and priest.py).
+    """
+
+    # Lattice bounds ---------------------------------------------------------
+    def top(self) -> Kind1[_MonadType, torch.Tensor]:
+        return self.monad_from_value(torch.tensor(1.0))
+
+    def bottom(self) -> Kind1[_MonadType, torch.Tensor]:
+        return self.monad_from_value(torch.tensor(0.0))
+
+    # Connectives ------------------------------------------------------------
+    def neg(self, a: Kind1[_MonadType, torch.Tensor]) -> Kind1[_MonadType, torch.Tensor]:
+        return a.bind(lambda x: self.monad_from_value(torch.tensor(1.0) - x))
+
+    def conjunction(
+        self, a: Kind1[_MonadType, torch.Tensor], b: Kind1[_MonadType, torch.Tensor]
+    ) -> Kind1[_MonadType, torch.Tensor]:
+        return a.bind(lambda x: b.bind(lambda y: self.monad_from_value(x * y)))
+
+    def disjunction(
+        self, a: Kind1[_MonadType, torch.Tensor], b: Kind1[_MonadType, torch.Tensor]
+    ) -> Kind1[_MonadType, torch.Tensor]:
+        # probabilistic sum
+        return a.bind(lambda x: b.bind(lambda y: self.monad_from_value(x + y - x * y)))
+
+    # Override default material implication with product residuum
+    def implies(
+        self, a: Kind1[_MonadType, torch.Tensor], b: Kind1[_MonadType, torch.Tensor]
+    ) -> Kind1[_MonadType, torch.Tensor]:
+        return a.bind(lambda x: b.bind(lambda y: self._residuum(x, y)))
+
+    def _residuum(
+        self, x: torch.Tensor, y: torch.Tensor
+    ) -> Kind1[_MonadType, torch.Tensor]:
+        if x <= y:
+            return self.monad_from_value(torch.tensor(1.0))
+        if x == 0.0:
+            return self.monad_from_value(torch.tensor(1.0))
+        return self.monad_from_value(torch.minimum(torch.tensor(1.0), y / x))

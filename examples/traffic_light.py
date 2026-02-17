@@ -1,11 +1,18 @@
-from typing import Literal, get_args
+import random
+from typing import Any, Literal, get_args
 
-from muller import nesy, Prob, parse, Interpretation, weighted
-
-prob_framework = nesy(Prob, bool)
+from muller import Prob, nesy, parse, weighted
+from muller.monad.giry_sampling import GirySampling
+from muller.nesy_framework import NeSyFramework
 
 Universe = Literal["red", "green", "yellow", False, True]
-universe = list(get_args(Universe))
+universe: list[Universe] = list(get_args(Universe))
+
+nf: NeSyFramework[Prob[bool], bool, GirySampling[Universe], Universe] = nesy(
+    Prob, bool, GirySampling
+)
+
+model = nf.create_interpretation(sort=GirySampling(lambda: random.choice(universe)))
 
 
 def _drive(l: Universe) -> Prob[bool]:
@@ -21,47 +28,78 @@ def _drive(l: Universe) -> Prob[bool]:
             return Prob({})
 
 
-traffic_light_model = Interpretation[Universe, bool, list[Universe]](
-    universe=universe,
-    functions={
-        "green": lambda: "green",
-        "red": lambda: "red",
-        "yellow": lambda: "yellow",
-    },
-    mfunctions={
-        "light": lambda: weighted([("red", 0.6), ("green", 0.3), ("yellow", 0.1)]),
-        "driveF": _drive,
-    },
-    preds={
-        "equals": lambda a, b: a == b,
-        "eval": lambda x: x,
-    },
-    mpreds={
-        "driveP": _drive
-    },
-)
+@model.comp_fn()
+def driveF(l: Universe) -> Prob[bool]:
+    return _drive(l)
 
-valuation = {}
 
-light_formula1 = parse(
-    "L := $light()(D := $driveF(L) (eval(D) -> equals(L, green)))"
-)
+@model.comp_fn()
+def light() -> Prob[Universe]:
+    return weighted([("red", 0.6), ("green", 0.3), ("yellow", 0.1)])
+
+
+@model.fn()
+def green() -> Universe:
+    return "green"
+
+
+@model.fn()
+def red() -> Universe:
+    return "red"
+
+
+@model.fn()
+def yellow() -> Universe:
+    return "yellow"
+
+
+@model.pred()
+def equals(a: Universe, b: Universe) -> bool:
+    return a == b
+
+
+@model.pred()
+def eval(x: Universe) -> bool:
+    if isinstance(x, bool):
+        return x
+
+    raise ValueError(f"Expected a boolean value, got {x}")
+
+
+@model.comp_pred()
+def driveP(l: Universe) -> Prob[bool]:
+    return _drive(l)
+
+
+# model = Interpretation[Universe, bool, list[Universe]](
+#     universe=universe,
+#     functions={
+#         "green": lambda: "green",
+#         "red": lambda: "red",
+#         "yellow": lambda: "yellow",
+#     },
+#     mfunctions={
+#         "light": lambda: weighted([("red", 0.6), ("green", 0.3), ("yellow", 0.1)]),
+#         "driveF": _drive,
+#     },
+#     preds={
+#         "equals": lambda a, b: a == b,
+#         "eval": lambda x: x,
+#     },
+#     mpreds={"driveP": _drive},
+# )
+
+
+light_formula1 = parse("L := $light()(D := $driveF(L) (eval(D) -> equals(L, green)))")
 # With syntactic sugar, this is equivalent to:
-light_formula2 = parse(
-    "L := $light(), D := $driveF(L) (eval(D) -> equals(L, green))"
-)
-assert (light_formula1 == light_formula2)
+light_formula2 = parse("L := $light(), D := $driveF(L) (eval(D) -> equals(L, green))")
+assert light_formula1 == light_formula2
 
-result = light_formula1.eval(prob_framework, traffic_light_model, valuation)
+result = nf._eval(light_formula1, model)
 print("Probability of driving when light is green:", result)
 
 # Alternative way using mpred `driveP`
-light_formula = parse(
-    "L := $light() ($driveP(L) -> equals(L, green))"
-)
-result = light_formula.eval(prob_framework, traffic_light_model, valuation)
+light_formula = parse("L := $light() ($driveP(L) -> equals(L, green))")
+
+result = nf._eval(light_formula, model)
 print("Probability of driving when light is green (using mpred):", result)
-
-
-
-

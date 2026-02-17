@@ -1,14 +1,19 @@
-from typing import Literal, Type, cast
+# mypy: disable-error-code="type-arg"
+"""
+Priest Logic (LP - Logic of Paradox) implementations for various monad types.
 
-from muller.logics.aggr2sgrpblat import (
-    DblSGrpBLat,
-    with_list_structure,
-    with_prob_structure,
-)
-from muller.monad.base import ParametrizedMonad
-from muller.monad.identity import Identity
-from muller.monad.non_empty_powerset import NonEmptyPowerset
-from muller.monad.util import bind_T
+Priest logic is a three-valued logic with values True, False, and "Both" (paradox).
+"""
+
+from typing import Any, Literal, TypeVar
+
+from returns.interfaces.container import Container1
+from returns.primitives.hkt import Kind1
+
+from muller.logics.aggr2sgrpblat import DblSGrpBLat  # GirySamplingAggregationMixin,,
+
+_ObjectType = TypeVar("_ObjectType")
+_MonadType = TypeVar("_MonadType", bound=Container1[Any])
 
 Priest = Literal[True, False, "Both"]
 
@@ -39,44 +44,112 @@ def priest_implication(a: Priest, b: Priest) -> Priest:
     return not a or b
 
 
-def priest_logic[T: ParametrizedMonad[Priest]](monad: Type[T]) -> Type[DblSGrpBLat[T]]:
-    class _PriestLogic(DblSGrpBLat[T]):
-        def top(self) -> T:
-            return cast(T, monad.insert("Both"))
-
-        def bottom(self) -> T:
-            return cast(T, monad.insert(False))
-
-        def neg(self, a: T) -> T:
-            return bind_T(a, a, lambda x: monad.insert(priest_negation(x)))
-
-        def conjunction(self, a: T, b: T) -> T:
-            return bind_T(a, a, lambda x: a if x != True else b)  # noqa: E712
-
-        def disjunction(self, a: T, b: T) -> T:
-            return bind_T(a, a, lambda x: a if x != False else b)  # noqa: E712
-
-    return _PriestLogic
+# =============================================================================
+# Identity Monad Priest Logic (Classical/Deterministic)
+# =============================================================================
 
 
-ClassicalPriestLogic = priest_logic(Identity[Priest])
-ClassicalPriestLogicList = with_list_structure(Identity, Priest)(ClassicalPriestLogic)
-ClassicalPriestLogicProb = with_prob_structure(Identity, Priest)(ClassicalPriestLogic)
+class PriestLogic(DblSGrpBLat[_MonadType, Priest]):
+    """Classical Priest logic with Identity monad (deterministic)."""
+
+    def top(self) -> Kind1[_MonadType, Priest]:
+        return self.monad_from_value("Both")
+
+    def bottom(self) -> Kind1[_MonadType, Priest]:
+        return self.monad_from_value(False)
+
+    def neg(self, a: Kind1[_MonadType, Priest]) -> Kind1[_MonadType, Priest]:
+        return a.map(priest_negation)
+
+    def conjunction(
+        self, a: Kind1[_MonadType, Priest], b: Kind1[_MonadType, Priest]
+    ) -> Kind1[_MonadType, Priest]:
+        return a.bind(lambda x: self.bottom() if x is False else b)
+
+    def disjunction(
+        self, a: Kind1[_MonadType, Priest], b: Kind1[_MonadType, Priest]
+    ) -> Kind1[_MonadType, Priest]:
+        return a.bind(lambda x: self.top() if x is True else b)
 
 
-NonDeterministicPriestLogic = priest_logic(NonEmptyPowerset[Priest])
-NonDeterministicPriestLogicList = with_list_structure(NonEmptyPowerset, Priest)(
-    NonDeterministicPriestLogic
-)
-NonDeterministicPriestLogicProb = with_prob_structure(NonEmptyPowerset, Priest)(
-    NonDeterministicPriestLogic
-)
+# class IdentityPriestLogicList(
+#     ListAggregationMixin[Identity[Priest], Priest, _ObjectType],
+#     PriestLogic[Identity[Priest]],
+# ):
+#     """Classical Priest logic with list aggregation."""
+
+#     pass
 
 
-ProbabilisticPriestLogic = priest_logic(NonEmptyPowerset[Priest])
-ProbabilisticPriestLogicList = with_list_structure(NonEmptyPowerset, Priest)(
-    ProbabilisticPriestLogic
-)
-ProbabilisticPriestLogicProb = with_prob_structure(NonEmptyPowerset, Priest)(
-    ProbabilisticPriestLogic
-)
+# class IdentityPriestLogicGiry(
+#     GirySamplingAggregationMixin[Kind1["Identity", Priest], Priest],
+#     IdentityPriestLogic,
+# ):
+#     """Classical Priest logic with Giry sampling aggregation."""
+
+#     pass
+
+
+# =============================================================================
+# NonEmptyPowerset Monad Priest Logic (Non-deterministic)
+# =============================================================================
+
+
+# class NonEmptyPowersetPriestLogic(
+#     DblSGrpBLat[NonEmptyPowerset[Priest], Priest], NeSyLogicMeta[Priest]
+# ):
+#     """Non-deterministic Priest logic with NonEmptyPowerset monad."""
+
+#     def top(self) -> Kind1["NonEmptyPowerset", Priest]:
+#         return NonEmptyPowerset.from_value("Both")
+
+#     def bottom(self) -> Kind1["NonEmptyPowerset", Priest]:
+#         return NonEmptyPowerset.from_value(False)
+
+#     def neg(self, a: Kind1["NonEmptyPowerset", Priest]) -> Kind1["NonEmptyPowerset", Priest]:
+#         return a.map(priest_negation)
+
+#     def conjunction(
+#         self, a: Kind1["NonEmptyPowerset", Priest], b: Kind1["NonEmptyPowerset", Priest]
+#     ) -> Kind1["NonEmptyPowerset", Priest]:
+#         return a.bind(lambda x: self.bottom() if x is False else b)
+
+#     def disjunction(
+#         self, a: Kind1["NonEmptyPowerset", Priest], b: Kind1["NonEmptyPowerset", Priest]
+#     ) -> Kind1["NonEmptyPowerset", Priest]:
+#         return a.bind(lambda x: self.top() if x is True else b)
+
+
+# class NonEmptyPowersetPriestLogicList(
+#     ListAggregationMixin[Kind1["NonEmptyPowerset", Priest], Priest, _ObjectType],
+#     NonEmptyPowersetPriestLogic,
+# ):
+#     """Non-deterministic Priest logic with list aggregation."""
+
+#     pass
+
+
+# class NonEmptyPowersetPriestLogicGiry(
+#     GirySamplingAggregationMixin[Kind1["NonEmptyPowerset", Priest], Priest],
+#     NonEmptyPowersetPriestLogic,
+# ):
+#     """Non-deterministic Priest logic with Giry sampling aggregation."""
+
+#     pass
+
+
+# =============================================================================
+# Backward compatibility aliases
+# =============================================================================
+
+# ClassicalPriestLogic = IdentityPriestLogic
+# ClassicalPriestLogicList = IdentityPriestLogicList
+# # ClassicalPriestLogicProb = IdentityPriestLogicGiry
+
+# NonDeterministicPriestLogic = NonEmptyPowersetPriestLogic
+# NonDeterministicPriestLogicList = NonEmptyPowersetPriestLogicList
+# # NonDeterministicPriestLogicProb = NonEmptyPowersetPriestLogicGiry
+
+# ProbabilisticPriestLogic = NonEmptyPowersetPriestLogic
+# ProbabilisticPriestLogicList = NonEmptyPowersetPriestLogicList
+# # ProbabilisticPriestLogicProb = NonEmptyPowersetPriestLogicGiry

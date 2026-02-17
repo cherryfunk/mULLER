@@ -1,4 +1,3 @@
-from .base import ParametrizedMonad
 from .distribution import Prob, bernoulli, uniform, weighted
 from .giry import Giry
 from .giry_sampling import (
@@ -45,7 +44,6 @@ __all__ = [
     "from_list",
     "Identity",
     "Giry",
-    "ParametrizedMonad",
     "GirySampling",
     "giry_bernoulli",
     "giry_beta",
@@ -56,5 +54,5 @@ __all__ = [
     "giry_normal",
     "giry_poisson",
     "giry_uniform",
-    "from_sampler_fn"
+    "from_sampler_fn",
 ]

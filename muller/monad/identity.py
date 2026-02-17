@@ -1,65 +1,38 @@
-# pip install pymonad
-from typing import Callable
+from __future__ import annotations
 
-from muller.monad.base import ParametrizedMonad
+from typing import Callable, TypeVar, final
+
+from returns.interfaces.container import Container1
+from returns.primitives.container import BaseContainer
+from returns.primitives.hkt import Kind1, SupportsKind1
+
+from muller.monad.base import monad_apply
+
+_ValueType = TypeVar("_ValueType")
+_NewValueType = TypeVar("_NewValueType")
 
 
-class Identity[T](ParametrizedMonad[T]):
-    """
-    Identity Monad for Deterministic Side-Effect Free Computation
+@final
+class Identity(
+    BaseContainer,
+    SupportsKind1["Identity", _ValueType],  # type: ignore[type-arg]
+    Container1[_ValueType],
+):
+    def __init__(self, value: _ValueType) -> None:
+        super().__init__(value)
 
-    The simplest monad that just wraps values without any computational effects.
-    """
+    def map(
+        self, function: Callable[[_ValueType], _NewValueType]
+    ) -> Kind1["Identity", _NewValueType]:  # type: ignore[type-arg]
+        return Identity(function(self._inner_value))
 
-    def __init__(self, value: T):
-        """
-        Initialize an Identity monad with a value.
-
-        Args:
-            value: The value to wrap
-        """
-        super().__init__(value, None)
+    def bind(
+        self, function: Callable[[_ValueType], Kind1["Identity", _NewValueType]]  # type: ignore[type-arg]
+    ) -> Kind1["Identity", _NewValueType]:  # type: ignore[type-arg]
+        return function(self._inner_value)
 
     @classmethod
-    def insert(cls, value: T) -> "Identity":
-        """
-        Create an Identity monad (pure computation).
+    def from_value(cls, inner_value: _NewValueType) -> Kind1["Identity", _NewValueType]:  # type: ignore[type-arg]
+        return Identity(inner_value)
 
-        Args:
-            value: The value to wrap
-
-        Returns:
-            Identity monad containing the value
-        """
-        return cls(value)
-
-    def bind[S](self, kleisli_function: Callable[[T], 'Identity[S]']) -> 'Identity[S]':  # pyright: ignore[reportIncompatibleMethodOverride] This is the correct signature for bind # fmt: skip
-        """
-        Monadic bind operation.
-
-        Args:
-            f: Function from value to Identity monad
-
-        Returns:
-            Result of applying f to the wrapped value
-        """
-        return kleisli_function(self.value)
-
-    def map[U](self, function: Callable[[T], U]) -> "Identity[U]":
-        """
-        Apply a function to the wrapped value.
-
-        Args:
-            f: Function to apply
-
-        Returns:
-            New Identity monad with transformed value
-        """
-        return Identity(function(self.value))
-
-    def get(self) -> T:
-        """Extract the value from the Identity monad."""
-        return self.value
-
-    def __repr__(self):
-        return f"Identity({self.value})"
+    apply = monad_apply

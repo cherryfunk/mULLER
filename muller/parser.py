@@ -1,23 +1,8 @@
+from abc import ABC
+from dataclasses import dataclass
+import re
+from typing import Any, Never
 from lark import Lark, Transformer
-
-from muller.nesy_framework import (
-    Computation,
-    Conjunction,
-    Disjunction,
-    ExistentialQuantification,
-    FalseFormula,
-    Formula,
-    FunctionApplication,
-    Implication,
-    MonadicPredicate,
-    Negation,
-    Predicate,
-    Term,
-    TrueFormula,
-    UniversalQuantification,
-    Variable,
-)
-
 parser = Lark(
     r"""
 %import common.WS
@@ -86,13 +71,228 @@ term : func_ident -> constant
     start="formula",
 )
 
+Ident = str
 
-class NeSyTransformer(Transformer):
-    def true(self, _) -> TrueFormula:
+
+def _format_function_ident(ident: str) -> str:
+    """
+    Format a function identifier with quotes if needed.
+    Functions can start with numbers or letters.
+    """
+    # Check if it's a simple lowercase identifier
+    if re.match(r"^[a-z][a-zA-Z0-9_]*$", ident):
+        return ident
+    # Check if it's a numeric identifier - functions can be numeric
+    if re.match(r"^[0-9]+$", ident):
+        return ident
+    # Otherwise, it needs quotes
+    return f"'{ident}'"
+
+
+def _format_predicate_ident(ident: str) -> str:
+    """
+    Format a predicate identifier with quotes if needed.
+    Predicates must start with letters, NOT numbers.
+    """
+    # Check if it's a simple lowercase identifier (predicates must start with letter)
+    if re.match(r"^[a-z][a-zA-Z0-9_]*$", ident):
+        return ident
+    # Predicates cannot be purely numeric - they need quotes
+    # Otherwise, it needs quotes
+    return f"'{ident}'"
+
+class Term(ABC):
+    """
+    Base class for all terms in the logic system.
+    Terms can be variables or applications of functions to arguments.
+    """
+
+
+@dataclass
+class Variable(Term):
+    ident: Ident
+
+    def __repr__(self) -> str:
+        return self.ident
+
+
+@dataclass
+class FunctionApplication(Term):
+    function: Ident
+    arguments: list[Term]
+
+    def __repr__(self) -> str:
+        args_str = ", ".join(str(arg) for arg in self.arguments)
+        formatted_function = _format_function_ident(self.function)
+        if not args_str:
+            return formatted_function
+        return f"{formatted_function}({args_str})"
+
+
+class Formula(ABC):
+    """
+    Base class for all formulas in the logic system.
+    """
+
+
+@dataclass
+class TrueFormula(Formula):
+    """
+    Represents the logical constant True.
+    """
+
+    def __repr__(self) -> str:
+        return "True"
+
+
+@dataclass
+class FalseFormula(Formula):
+    """
+    Represents the logical constant False.
+    """
+
+    def __repr__(self) -> str:
+        return "False"
+
+@dataclass
+class Predicate(Formula):
+    """
+    Represents a predicate with a name and arguments.
+    """
+
+    name: Ident
+    arguments: list[Term]
+
+    def __repr__(self) -> str:
+        # Special case for equality operator: use infix notation
+        if self.name in {"==", "<", ">", "<=", ">="} and len(self.arguments) == 2:
+            left, right = self.arguments
+            # Add parentheses for clarity, similar to other binary operators
+            return f"({left} {self.name} {right})"
+
+        # Standard predicate representation
+        args_str = ", ".join(str(arg) for arg in self.arguments)
+        formatted_name = _format_predicate_ident(self.name)
+        if not args_str:
+            return formatted_name
+        return f"{formatted_name}({args_str})"
+
+
+@dataclass
+class MonadicPredicate(Formula):
+    """
+    Represents a monadic predicate (a predicate with a single argument).
+    """
+
+    name: Ident
+    arguments: list[Term]
+
+    def __repr__(self) -> str:
+        args_str = ", ".join(str(arg) for arg in self.arguments)
+        formatted_name = _format_predicate_ident(self.name)
+        if not args_str:
+            return formatted_name
+        return f"${formatted_name}({args_str})"
+
+
+@dataclass
+class Negation(Formula):
+    """
+    Represents the negation of a formula.
+    """
+
+    formula: Formula
+
+    def __repr__(self) -> str:
+        return f"¬{self.formula}"
+
+
+@dataclass
+class Conjunction(Formula):
+    """
+    Represents the conjunction (AND) of two formulas.
+    """
+
+    left: Formula
+    right: Formula
+
+    def __repr__(self) -> str:
+        return f"({self.left} ∧ {self.right})"
+
+
+@dataclass
+class Disjunction(Formula):
+    """
+    Represents the disjunction (OR) of two formulas.
+    """
+
+    left: Formula
+    right: Formula
+
+    def __repr__(self) -> str:
+        return f"({self.left} ∨ {self.right})"
+
+
+@dataclass
+class Implication(Formula):
+    """
+    Represents the implication (IF...THEN) of two formulas.
+    """
+
+    antecedent: Formula
+    consequent: Formula
+
+    def __repr__(self) -> str:
+        return f"({self.antecedent} -> {self.consequent})"
+
+
+@dataclass
+class UniversalQuantification(Formula):
+    """
+    Represents a universally quantified formula.
+    """
+
+    variable: Ident
+    formula: Formula
+
+    def __repr__(self) -> str:
+        return f"∀{self.variable} ({self.formula})"
+
+
+@dataclass
+class ExistentialQuantification(Formula):
+    """
+    Represents an existentially quantified formula.
+    """
+
+    variable: Ident
+    formula: Formula
+
+    def __repr__(self) -> str:
+        return f"∃{self.variable} ({self.formula})"
+
+
+@dataclass
+class Computation(Formula):
+    variable: Ident
+    function: Ident
+    arguments: list[Term]
+    formula: Formula
+
+    def __repr__(self) -> str:
+        args_str = ", ".join(str(arg) for arg in self.arguments)
+        formatted_function = _format_function_ident(self.function)
+        return f"{self.variable} := ${formatted_function}({args_str})({self.formula})"
+
+
+
+
+class NeSyTransformer(Transformer[Any, Formula]):
+    def true(self, _: Never) -> TrueFormula:
         """Transform 'T' into a TrueFormula."""
         return TrueFormula()
 
-    def false(self, _) -> FalseFormula:
+    def false(self, _: Never) -> FalseFormula:
         """Transform 'F' into a FalseFormula."""
         return FalseFormula()
 
@@ -114,116 +314,116 @@ class NeSyTransformer(Transformer):
         return self._remove_quotes(ident)
 
     # Handle different identifier types
-    def var_ident(self, items):
+    def var_ident(self, items: list[str]) -> str:
         return items[0]
 
-    def func_ident(self, items):
+    def func_ident(self, items: list[str]) -> str:
         return self._remove_quotes(items[0])
 
-    def mfunc_ident(self, items):
+    def mfunc_ident(self, items: list[str]) -> str:
         return self._process_monadic_ident(items[0])
 
-    def pred_ident(self, items):
+    def pred_ident(self, items: list[str]) -> str:
         return self._remove_quotes(items[0])
 
-    def mpred_ident(self, items):
+    def mpred_ident(self, items: list[str]) -> str:
         return self._process_monadic_ident(items[0])
 
-    def variable(self, items):
+    def variable(self, items: list[str]) -> Variable:
         return Variable(items[0])
 
-    def constant(self, children: list) -> Term:
+    def constant(self, children: list[str]) -> Term:
         [name] = children
         # Constants are function names used as nullary functions
         return FunctionApplication(name, [])
 
-    def property(self, children: list) -> Term:
+    def property(self, children: list[Any]) -> Term:
         [obj, prop] = children
         # Property access: obj.prop becomes prop(obj)
         return FunctionApplication(prop, [obj])
 
-    def function(self, children: list) -> Term:
+    def function(self, children: list[Any]) -> Term:
         [name, *args] = children
         # Filter out None values that come from empty optional groups
         args = [arg for arg in args if arg is not None]
         return FunctionApplication(name, args)
 
-    def negation(self, children: list) -> Negation:
+    def negation(self, children: list[Any]) -> Negation:
         [f] = children
         return Negation(f)
 
-    def predicate(self, children: list) -> Formula:
+    def predicate(self, children: list[Any]) -> Formula:
         [name, *args] = children
         # Filter out None values that come from empty optional groups
         args = [arg for arg in args if arg is not None]
         return Predicate(name, args)
 
-    def computational_predicate(self, children: list) -> Formula:
+    def computational_predicate(self, children: list[Any]) -> Formula:
         [name, *args] = children
         # Filter out None values that come from empty optional groups
         args = [arg for arg in args if arg is not None]
         # Use MonadicPredicate for computational predicates
         return MonadicPredicate(name, args)
 
-    def equality(self, children: list) -> Predicate:
+    def equality(self, children: list[Any]) -> Predicate:
         [left, right] = children
         return Predicate("==", [left, right])
 
-    def lessthan(self, children: list) -> Predicate:
+    def lessthan(self, children: list[Any]) -> Predicate:
         [left, right] = children
         return Predicate("<", [left, right])
 
-    def greaterthan(self, children: list) -> Predicate:
+    def greaterthan(self, children: list[Any]) -> Predicate:
         [left, right] = children
         return Predicate(">", [left, right])
 
-    def not_equal(self, children: list) -> Predicate:
+    def not_equal(self, children: list[Any]) -> Predicate:
         [left, right] = children
         return Predicate("!=", [left, right])
 
-    def less_equal(self, children: list) -> Predicate:
+    def less_equal(self, children: list[Any]) -> Predicate:
         [left, right] = children
         return Predicate("<=", [left, right])
 
-    def greater_equal(self, children: list) -> Predicate:
+    def greater_equal(self, children: list[Any]) -> Predicate:
         [left, right] = children
         return Predicate(">=", [left, right])
 
-    def conjunction(self, children: list) -> Conjunction:
+    def conjunction(self, children: list[Any]) -> Conjunction:
         [left, right] = children
         return Conjunction(left, right)
 
-    def disjunction(self, children: list) -> Disjunction:
+    def disjunction(self, children: list[Any]) -> Disjunction:
         [left, right] = children
         return Disjunction(left, right)
 
-    def implication(self, children: list) -> Implication:
+    def implication(self, children: list[Any]) -> Implication:
         [antecedent, consequent] = children
         return Implication(antecedent, consequent)
 
-    def forall(self, children: list) -> UniversalQuantification:
+    def forall(self, children: list[Any]) -> UniversalQuantification:
         [variable, formula] = children
         return UniversalQuantification(variable, formula)
 
-    def exists(self, children: list) -> ExistentialQuantification:
+    def exists(self, children: list[Any]) -> ExistentialQuantification:
         [variable, formula] = children
         return ExistentialQuantification(variable, formula)
 
-    def computation_assignment(self, children: list) -> tuple:
+    def computation_assignment(self, children: list[Any]) -> tuple[Any, Any, list[Any]]:
         """Handle a single computation assignment like 'X := $f(args)'."""
         [variable, function, *args] = children
         # Filter out None values that come from empty optional groups
         args = [arg for arg in args if arg is not None]
         return (variable, function, args)
 
-    def computation_sequence(self, children: list) -> Computation:
+    def computation_sequence(self, children: list[Any]) -> Computation:
         """Handle a sequence of computation assignments followed by a formula."""
         # The last element is always the formula
         # All other elements are computation assignments (tuples)
         [*assignments, formula] = children
 
         # Build nested computations from right to left
-        result_formula = formula
+        result_formula: Computation = formula
         for variable, function, args in reversed(assignments):
             result_formula = Computation(variable, function, args, result_formula)
 
