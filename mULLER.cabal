@@ -45,7 +45,8 @@ executable daniel-haskell
     Semantics,
     Interpretations.Dice,
     Interpretations.TrafficLight,
-    Interpretations.Weather
+    Interpretations.Weather,
+    Interpretations.Countable
   build-depends:
     base >=4.16,
     containers,

@@ -5,6 +5,7 @@
 module Main where
 
 import qualified Data.Map as Map
+import Interpretations.Countable (countableInterp)
 import Interpretations.Dice (diceInterp)
 import Interpretations.TrafficLight (trafficInterp)
 import Interpretations.Weather (weatherInterp)
@@ -56,6 +57,25 @@ weatherSen1 =
         (Wedge (Rel "==" [Var "h", Con (0 :: Int)]) (Rel ">" [Var "t", Con (15.0 :: Double)]))
 
 --------------------------------------------------------------------------------
+-- 4. COUNTABLE SETS (INT & STRING) EXAMPLE
+--------------------------------------------------------------------------------
+-- x := drawInt(), y := drawStr()
+-- (x > 3) ∧ (startsWithTT y)
+countableSen1 :: Formula
+countableSen1 =
+  Compu "x" "drawInt" [] $
+    Compu "y" "drawStr" [] $
+      Wedge
+        (Rel ">3" [Var "x"])
+        (Rel "startsTT" [Var "y"])
+
+countableSenLazy :: Formula
+countableSenLazy = Compu "x" "drawLazy" [] (Rel "isEven" [Var "x"])
+
+countableSenHeavy :: Formula
+countableSenHeavy = Compu "x" "drawHeavy" [] (Rel "isAnything" [Var "x"])
+
+--------------------------------------------------------------------------------
 -- EXECUTION
 --------------------------------------------------------------------------------
 main :: IO ()
@@ -63,24 +83,37 @@ main = do
   args <- getArgs
   case args of
     ["baseline"] -> return ()
-    ["benchmark"] -> do
+    ["benchmark-weather"] -> do
       let w1 = evalFormula weatherInterp Map.empty weatherSen1
       print (expectation w1 id)
+    ["benchmark-countable"] -> do
+      let c1 = evalFormula countableInterp Map.empty countableSen1
+      print (expectation c1 id)
+    ["benchmark-countable-lazy"] -> do
+      let c1 = evalFormula countableInterp Map.empty countableSenLazy
+      print (expectation c1 id)
+    ["benchmark-countable-heavy"] -> do
+      let c1 = evalFormula countableInterp Map.empty countableSenHeavy
+      print (expectation c1 id)
     _ -> do
       putStrLn "--- Testing mULLER Framework Domain Interpretations ---"
 
-  putStrLn "\n[DICE] Evaluatin P(die == 6 AND even(die))"
-  let d1 = evalFormula diceInterp Map.empty dieSen1
-  print (expectation d1 id)
+      putStrLn "\n[DICE] Evaluatin P(die == 6 AND even(die))"
+      let d1 = evalFormula diceInterp Map.empty dieSen1
+      print (expectation d1 id)
 
-  putStrLn "\n[DICE] Evaluatin P(die == 6) AND P(even(die))"
-  let d2 = evalFormula diceInterp Map.empty dieSen2
-  print (expectation d2 id)
+      putStrLn "\n[DICE] Evaluatin P(die == 6) AND P(even(die))"
+      let d2 = evalFormula diceInterp Map.empty dieSen2
+      print (expectation d2 id)
 
-  putStrLn "\n[TRAFFIC] Evaluating P(light == green)"
-  let t1 = evalFormula trafficInterp Map.empty trafficSen1
-  print (expectation t1 id)
+      putStrLn "\n[TRAFFIC] Evaluating P(light == green)"
+      let t1 = evalFormula trafficInterp Map.empty trafficSen1
+      print (expectation t1 id)
 
-  putStrLn "\n[WEATHER] Evaluating P((h=1 ∧ t<0) ∨ (h=0 ∧ t>15))"
-  let w1 = evalFormula weatherInterp Map.empty weatherSen1
-  print (expectation w1 id)
+      putStrLn "\n[WEATHER] Evaluating P((h=1 ∧ t<0) ∨ (h=0 ∧ t>15))"
+      let w1 = evalFormula weatherInterp Map.empty weatherSen1
+      print (expectation w1 id)
+
+      putStrLn "\n[COUNTABLE] Evaluating P(int > 3 ∧ string starts with TT)"
+      let c1 = evalFormula countableInterp Map.empty countableSen1
+      print (expectation c1 id)

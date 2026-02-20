@@ -57,8 +57,8 @@ giry_results = []
 nesy_results = []
 nesy_int_results = []
 
-def get_precision(val):
-    error = abs(val - 0.25)
+def get_precision(val, target=0.25):
+    error = abs(val - target)
     if error == 0:
         error = 1e-16
     elif math.isnan(error):
@@ -66,7 +66,7 @@ def get_precision(val):
     return max(0, min(16, -math.log10(error)))
 
 print("====================================")
-print("1. Benchmarking Giry (New Framework)")
+print("1. Benchmarking Weather (Continuous)")
 print("====================================")
 
 for cfg in giry_configs:
@@ -74,7 +74,6 @@ for cfg in giry_configs:
     subprocess.run(["cabal", "build", "daniel-haskell"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     bin_path = subprocess.check_output(["cabal", "list-bin", "daniel-haskell"]).decode("utf-8").strip()
     
-    # Calculate baseline OS startup overhead time
     baseline_time = 0
     for _ in range(5):
         s = time.perf_counter()
@@ -82,13 +81,12 @@ for cfg in giry_configs:
         baseline_time += (time.perf_counter() - s)
     baseline_time /= 5
     
-    # Measure execution
     avg_total_time = 0
     runs = 5
     weather_val = float('nan')
     for i in range(runs):
         start = time.perf_counter()
-        out = subprocess.check_output([bin_path, "benchmark"]).decode("utf-8")
+        out = subprocess.check_output([bin_path, "benchmark-weather"]).decode("utf-8")
         end = time.perf_counter()
         avg_total_time += (end - start)
         lines = out.strip().split("\n")
@@ -98,9 +96,9 @@ for cfg in giry_configs:
             pass
             
     avg_total_time /= runs
-    pure_compute_time = max(0.1, (avg_total_time - baseline_time) * 1000) # strictly pure compute time in MS, min 0.1ms 
+    pure_compute_time = max(0.1, (avg_total_time - baseline_time) * 1000)
     
-    digits = get_precision(weather_val)
+    digits = get_precision(weather_val, target=0.25)
     giry_results.append({
         "name": cfg["name"],
         "time": pure_compute_time,
@@ -110,7 +108,18 @@ for cfg in giry_configs:
     print(f"[{cfg['name']}] -> Pure Compute: {pure_compute_time:.2f}ms | OS Overhead: {baseline_time*1000:.2f}ms | Dgt: ~{digits:.1f}")
 
 print("\n====================================")
-print("2. Benchmarking NeSy (Monte Carlo)")
+print("2. Benchmarking Countable (Geometric)")
+print("====================================")
+
+# Countable sets don't depend on quad parameters, so we just run once
+# target = 0.015625
+out = subprocess.check_output([bin_path, "benchmark-countable"]).decode("utf-8")
+countable_val = float(out.strip())
+countable_digits = get_precision(countable_val, target=0.015625)
+print(f"[Countable Infinite] -> Val: {countable_val} | Target: 0.015625 | Precision: ~{countable_digits:.1f} digits")
+
+print("\n====================================")
+print("3. Benchmarking NeSy (Monte Carlo)")
 print("====================================")
 
 for cfg in nesy_configs:
@@ -118,8 +127,6 @@ for cfg in nesy_configs:
     subprocess.run(["cabal", "build", "muller"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     bin_path = subprocess.check_output(["cabal", "list-bin", "muller"]).decode("utf-8").strip()
     
-    # Simple arbitrary baseline subtraction for MC just to keep scaling fair (since MC has similar OS overhead)
-    # We use roughly the same overhead as Giry
     avg_time = 0
     runs = 1
     weather_val = float('nan')
@@ -143,7 +150,7 @@ for cfg in nesy_configs:
             
     avg_time /= runs
     pure_compute_time = max(0.1, (avg_time - baseline_time) * 1000)
-    digits = get_precision(weather_val)
+    digits = get_precision(weather_val, target=0.25)
     
     nesy_results.append({
         "name": cfg["name"],
@@ -154,11 +161,10 @@ for cfg in nesy_configs:
     print(f"[{cfg['name']}] -> Pure Compute: {pure_compute_time:.2f}ms | Val: {weather_val} | Dgt: ~{digits:.1f}")
 
 print("\n====================================")
-print("3. Benchmarking NeSy (Native Integrator)")
+print("4. Benchmarking NeSy (Native Integrator)")
 print("====================================")
 
 for cfg in nesy_integrator_configs:
-    # No need to inject since integrator doesn't use samples, just run
     subprocess.run(["cabal", "build", "muller"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     bin_path = subprocess.check_output(["cabal", "list-bin", "muller"]).decode("utf-8").strip()
     
@@ -185,7 +191,7 @@ for cfg in nesy_integrator_configs:
             
     avg_time /= runs
     pure_compute_time = max(0.1, (avg_time - baseline_time) * 1000)
-    digits = get_precision(weather_val)
+    digits = get_precision(weather_val, target=0.25)
     
     nesy_int_results.append({
         "name": cfg["name"],
@@ -201,7 +207,7 @@ with open(NESY_PATH, "w") as f: f.write(original_nesy)
 
 # Plotting
 plt.style.use('ggplot')
-plt.figure(figsize=(15, 8)) # Made chart much wider and taller
+plt.figure(figsize=(15, 8))
 
 # Plot Giry
 g_times = [r["time"] for r in giry_results]
@@ -236,18 +242,17 @@ plt.plot(ni_times, ni_digits, marker='*', markersize=15, linestyle='none', color
 for i, name in enumerate(ni_names):
     plt.annotate(name, (ni_times[i], ni_digits[i]), xytext=(12, 0), textcoords='offset points', fontsize=11, color='purple', horizontalalignment='left', verticalalignment='center')
 
-plt.title("Pure Compute Runtime vs. Precision: New vs. Old", fontsize=14, fontweight='bold')
+plt.title("Pure Compute Runtime vs. Precision: Weather (Continuous)", fontsize=14, fontweight='bold')
 plt.xlabel("Pure Mathematical Compute Time (milliseconds) - Log Scale", fontsize=12)
 plt.ylabel("Precision (Correct Decimal Places)", fontsize=12)
 plt.xscale('log')
 plt.grid(True, which="both", linestyle='--', alpha=0.7)
 plt.legend(loc='upper right', fontsize=12)
 
-# Set axes limits
 plt.ylim(0, 16.5)
 all_times = g_times + n_times + ni_times
 if len(all_times) > 0:
-    plt.xlim(min(all_times) * 0.5, max(all_times) * 10.0) # More buffer for 10M samples and Native Int
+    plt.xlim(min(all_times) * 0.5, max(all_times) * 10.0)
 
 plot_path = os.path.abspath("pure_comparison_benchmark.png")
 plt.savefig(plot_path, dpi=300, bbox_inches='tight')
