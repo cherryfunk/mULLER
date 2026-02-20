@@ -14,13 +14,43 @@ executable muller
     base >=4.16,
     containers,
     mtl,
+    transformers,
     set-monad,
     probability,
     random,
     monad-bayes,
     vector,
     GaussQuadIntegration,
-    numeric-tools
+    numeric-tools,
+    hasktorch
+  default-language: Haskell2010 
+
+executable daniel-haskell
+  main-is: Main.hs
+  hs-source-dirs: daniel_haskell
+  other-modules: 
+    NeSyFramework.Categories.DATA, 
+    NeSyFramework.Categories.TENS, 
+    NeSyFramework.Categories.Utils, 
+    NeSyFramework.Monads.Dist, 
+    NeSyFramework.Monads.Giry, 
+    NeSyFramework.TruthSpaces.TwoMonBLat, 
+    NeSyFramework.TruthSpaces.Boolean, 
+    NeSyFramework.TruthSpaces.Lukasiewicz, 
+    NeSyFramework.TruthSpaces.Goedel, 
+    NeSyFramework.TruthSpaces.Product,
+    NeSyFramework.TruthSpaces.Real,
+    Syntax,
+    Semantics,
+    Interpretations.Dice,
+    Interpretations.TrafficLight,
+    Interpretations.Weather
+  build-depends:
+    base >=4.16,
+    containers,
+    mtl,
+    numeric-tools,
+    hasktorch
   default-language: Haskell2010 
 
 executable density-giry

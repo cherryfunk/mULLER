@@ -1,4 +1,8 @@
 cradle:
   cabal:
-    - path: "./Code/NeSy.hs"
-      component: "exe:muller" 
+    - path: "Haskell/NeSy.hs"
+      component: "exe:muller"
+    - path: "Haskell/density_giry.hs"
+      component: "exe:density-giry"
+    - path: "daniel_haskell/"
+      component: "exe:daniel-haskell"

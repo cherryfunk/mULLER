@@ -31,3 +31,4 @@ dist-newstyle/packagedb/ghc-9.4.8/package.cache.lock
 .gitignore
 dist-newstyle/tmp/src-58147/invariant-0.6.4/CHANGELOG.md
 dist-newstyle
+.DS_Store

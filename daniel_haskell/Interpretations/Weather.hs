@@ -1,0 +1,66 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
+module Interpretations.Weather (weatherInterp) where
+
+import qualified Data.Map as Map
+import Data.Typeable (cast)
+import NeSyFramework.Monads.Giry (Giry, categorical, normal)
+import Semantics (DynVal (..), Interpretation (..))
+
+humid_detector :: Int -> Double
+humid_detector _ = 0.5
+
+temperature_predictor :: Int -> (Double, Double)
+temperature_predictor _ = (0.0, 2.0)
+
+weatherInterp :: Interpretation Giry Double
+weatherInterp =
+  Interpretation
+    { funcs =
+        Map.fromList
+          [ ( "humid_detector",
+              \[DynVal d] -> case cast d of
+                Just (x :: Int) -> DynVal (humid_detector x)
+                _ -> error "Expected Int"
+            ),
+            ( "temperature_predictor",
+              \[DynVal d] -> case cast d of
+                Just (x :: Int) -> DynVal (temperature_predictor x)
+                _ -> error "Expected Int"
+            )
+          ],
+      rels =
+        Map.fromList
+          [ ( "==",
+              \[DynVal x, DynVal y] -> case (cast x, cast y) of
+                (Just (a :: Int), Just (b :: Int)) -> if a == b then 1.0 else 0.0
+                _ -> 0.0
+            ),
+            ( "<",
+              \[DynVal x, DynVal y] -> case (cast x, cast y) of
+                (Just (a :: Double), Just (b :: Double)) ->
+                  1.0 / (1.0 + exp (100.0 * (a - b)))
+                _ -> 0.0
+            ),
+            ( ">",
+              \[DynVal x, DynVal y] -> case (cast x, cast y) of
+                (Just (a :: Double), Just (b :: Double)) ->
+                  1.0 / (1.0 + exp (-100.0 * (a - b)))
+                _ -> 0.0
+            )
+          ],
+      mfuncs =
+        Map.fromList
+          [ ( "bernoulli",
+              \[DynVal p] -> case cast p of
+                Just (prob :: Double) -> categorical [(DynVal (1 :: Int), prob), (DynVal (0 :: Int), 1.0 - prob)]
+                _ -> error "Expected Double array for bernoulli prob"
+            ),
+            ( "normal",
+              \[DynVal pair] -> case cast pair of
+                Just (mu :: Double, sigma :: Double) -> fmap DynVal (normal mu sigma)
+                _ -> error "Expected (Double, Double) pair"
+            )
+          ],
+      mrels = Map.empty
+    }
