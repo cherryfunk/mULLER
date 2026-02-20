@@ -30,7 +30,7 @@ nesy_configs = [
 ]
 
 nesy_integrator_configs = [
-    {"name": "Native Integrator", "samples": 0}
+    {"name": "monad-bayes (Integrator)", "samples": 0}
 ]
 
 with open(GIRY_PATH, "r") as f:
@@ -220,18 +220,18 @@ plt.plot(n_times, n_digits, marker='^', markersize=10, linestyle='--', linewidth
 
 for i, name in enumerate(n_names):
     if i == 3: # 1M Samples
-        plt.annotate(name, (n_times[i], n_digits[i]), xytext=(10, 15), textcoords='offset points', fontsize=11, color='darkred', horizontalalignment='left', verticalalignment='center')
+        plt.annotate(name, (n_times[i], n_digits[i]), xytext=(-5, 25), textcoords='offset points', fontsize=11, color='darkred', horizontalalignment='left', verticalalignment='center')
     elif i < 3: # 1k, 10k, 100k
         off_y = [-22, -10, 0][i]
         plt.annotate(name, (n_times[i], n_digits[i]), xytext=(-10, off_y), textcoords='offset points', fontsize=11, color='darkred', horizontalalignment='right', verticalalignment='center')
     else: # 10M
-        plt.annotate(name, (n_times[i], n_digits[i]), xytext=(16, 25), textcoords='offset points', fontsize=11, color='darkred', horizontalalignment='left', verticalalignment='center')
+        plt.annotate(name, (n_times[i], n_digits[i]), xytext=(12, 22), textcoords='offset points', fontsize=11, color='darkred', horizontalalignment='left', verticalalignment='center')
 
 # Plot NeSy Integrator
 ni_times = [r["time"] for r in nesy_int_results]
 ni_digits = [r["digits"] for r in nesy_int_results]
 ni_names = [r["name"] for r in nesy_int_results]
-plt.plot(ni_times, ni_digits, marker='*', markersize=15, linestyle='none', color='purple', label='Old (Native Integrator)')
+plt.plot(ni_times, ni_digits, marker='*', markersize=15, linestyle='none', color='purple', label='Old (monad-bayes Integrator)')
 
 for i, name in enumerate(ni_names):
     plt.annotate(name, (ni_times[i], ni_digits[i]), xytext=(12, 0), textcoords='offset points', fontsize=11, color='purple', horizontalalignment='left', verticalalignment='center')

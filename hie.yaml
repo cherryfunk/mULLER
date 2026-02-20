@@ -2,6 +2,8 @@ cradle:
   cabal:
     - path: "Haskell/NeSy.hs"
       component: "exe:muller"
+    - path: "Haskell/integration.hs"
+      component: "exe:muller"
     - path: "Haskell/density_giry.hs"
       component: "exe:density-giry"
     - path: "daniel_haskell/"

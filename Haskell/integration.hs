@@ -1,3 +1,10 @@
+module Integration where
+
+import Control.Monad.Bayes.Integrator
+import Math.GaussianQuadratureIntegration
+import Numeric.Tools.Integration
+import System.Random (randomRIO)
+
 -- Different approaches to integration in Haskell
 integrationComparison :: IO ()
 integrationComparison = do
@@ -7,33 +14,45 @@ integrationComparison = do
   putStrLn "\n1. Monad-Bayes Integrator (more points?):"
   let points = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
   let betterUniform = integrator (\f -> sum (map f points) / fromIntegral (length points))
-  let integral1b = runIntegrator (\x -> x*x) betterUniform
+  let integral1b = runIntegrator (\x -> x * x) betterUniform
   putStrLn $ "   Using " ++ show (length points) ++ " points: ∫ x² dx from 0 to 1 ≈ " ++ show integral1b
 
   -- Method 2: Trapezoidal rule via numeric-tools
   putStrLn "\n2. Trapezoidal Rule (numeric-tools):"
-  let resTrap = quadTrapezoid defQuad (0.0, 1.0) (\x -> x*x)
-  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show (quadRes resTrap)
-           ++ ", prec≈ " ++ show (quadPrecEst resTrap)
-           ++ ", iters= " ++ show (quadNIter resTrap)
+  let resTrap = quadTrapezoid defQuad (0.0, 1.0) (\x -> x * x)
+  putStrLn $
+    "   ∫ x² dx from 0 to 1 ≈ "
+      ++ show (quadRes resTrap)
+      ++ ", prec≈ "
+      ++ show (quadPrecEst resTrap)
+      ++ ", iters= "
+      ++ show (quadNIter resTrap)
 
   -- Method 3: Simpson's rule via numeric-tools
   putStrLn "\n3. Simpson's Rule (numeric-tools):"
-  let resSimp = quadSimpson defQuad (0.0, 1.0) (\x -> x*x)
-  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show (quadRes resSimp)
-           ++ ", prec≈ " ++ show (quadPrecEst resSimp)
-           ++ ", iters= " ++ show (quadNIter resSimp)
+  let resSimp = quadSimpson defQuad (0.0, 1.0) (\x -> x * x)
+  putStrLn $
+    "   ∫ x² dx from 0 to 1 ≈ "
+      ++ show (quadRes resSimp)
+      ++ ", prec≈ "
+      ++ show (quadPrecEst resSimp)
+      ++ ", iters= "
+      ++ show (quadNIter resSimp)
 
   -- Method 3b: Romberg via numeric-tools
   putStrLn "\n3b. Romberg (numeric-tools):"
-  let resRomb = quadRomberg defQuad (0.0, 1.0) (\x -> x*x)
-  putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show (quadRes resRomb)
-           ++ ", prec≈ " ++ show (quadPrecEst resRomb)
-           ++ ", iters= " ++ show (quadNIter resRomb)
+  let resRomb = quadRomberg defQuad (0.0, 1.0) (\x -> x * x)
+  putStrLn $
+    "   ∫ x² dx from 0 to 1 ≈ "
+      ++ show (quadRes resRomb)
+      ++ ", prec≈ "
+      ++ show (quadPrecEst resRomb)
+      ++ ", iters= "
+      ++ show (quadNIter resRomb)
 
   -- Method 4: Analytical (when possible)
   putStrLn "\n4. Analytical Solution (Exact):"
-  let analytical = 1/3 :: Double
+  let analytical = 1 / 3 :: Double
   putStrLn $ "   ∫ x² dx from 0 to 1 = " ++ show analytical
 
   -- Method 5: Monte Carlo (simple implementation)
@@ -43,12 +62,12 @@ integrationComparison = do
         points <- sequence (replicate n (randomRIO (a, b)))
         let values = map f points
         return $ ((b - a) / fromIntegral n) * sum values
-  integral5 <- monteCarlo (\x -> x*x) 0.0 1.0 10000
+  integral5 <- monteCarlo (\x -> x * x) 0.0 1.0 10000
   putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show integral5
 
   -- Method 6: GaussQuadIntegration (professional numerical library)
   putStrLn "\n6. GaussQuadIntegration (Professional Library):"
-  let integral6 = nIntegrate256 (\x -> x*x) 0.0 1.0
+  let integral6 = nIntegrate256 (\x -> x * x) 0.0 1.0
   putStrLn $ "   ∫ x² dx from 0 to 1 ≈ " ++ show integral6
 
   -- Demonstrate different integration domains
@@ -67,10 +86,10 @@ integrationComparison = do
   let int1 = nIntegrate256 (\x -> sin x) 0.0 pi
   putStrLn $ "∫ sin(x) dx from 0 to π = " ++ show int1 ++ " (exact: 2.0)"
 
-  let int2 = nIntegrate256 (\x -> exp (-x*x)) (-1.0) 1.0
+  let int2 = nIntegrate256 (\x -> exp (-x * x)) (-1.0) 1.0
   putStrLn $ "∫ e^(-x²) dx from -1 to 1 ≈ " ++ show int2
 
-  let int3 = nIntegrate256 (\x -> 1/sqrt(2*pi) * exp(-x*x/2)) (-3.0) 3.0
+  let int3 = nIntegrate256 (\x -> 1 / sqrt (2 * pi) * exp (-x * x / 2)) (-3.0) 3.0
   putStrLn $ "∫ φ(x) dx from -3 to 3 (normal CDF) ≈ " ++ show int3 ++ " (should be ~1.0)"
 
   putStrLn "\n=== How Monad-Bayes Integrator Works ==="
@@ -109,7 +128,7 @@ testInfiniteLists = do
   putStrLn "\n=== Testing Infinite Lists in NeSy ==="
 
   -- Create an infinite list
-  let infiniteDomain = [0.0, 0.1 ..] :: [Double]  -- Infinite: [0.0, 0.1, 0.2, ...]
+  let infiniteDomain = [0.0, 0.1 ..] :: [Double] -- Infinite: [0.0, 0.1, 0.2, ...]
   putStrLn $ "Infinite domain created: [0.0, 0.1, 0.2, ...] (lazy)"
 
   -- Test with finite prefix (safe)
@@ -141,8 +160,7 @@ testInfiniteLists = do
 
   -- Show lazy evaluation to the rescue
   putStrLn $ "\n=== Lazy Evaluation Solution ==="
-  let lazyExists pred list = any pred (take 1000 list)  -- Limit to 1000 elements
-  let lazyForall pred list = all pred (take 1000 list)  -- Limit to 1000 elements
-
+  let lazyExists pred list = any pred (take 1000 list) -- Limit to 1000 elements
+  let lazyForall pred list = all pred (take 1000 list) -- Limit to 1000 elements
   putStrLn $ "Lazy ∃x: x > 0.5 (first 1000 elements) = " ++ show (lazyExists testPred infiniteDomain)
   putStrLn $ "Lazy ∀x: x > 0.5 (first 1000 elements) = " ++ show (lazyForall testPred infiniteDomain)

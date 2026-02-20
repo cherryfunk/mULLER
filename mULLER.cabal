@@ -9,6 +9,7 @@ maintainer: user@example.com
 
 executable muller
   main-is: NeSy.hs
+  other-modules: Integration
   hs-source-dirs: Haskell
   build-depends:
     base >=4.16,
