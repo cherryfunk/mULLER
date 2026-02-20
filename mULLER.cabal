@@ -52,7 +52,8 @@ executable daniel-haskell
     containers,
     mtl,
     numeric-tools,
-    hasktorch
+    hasktorch,
+    statistics
   default-language: Haskell2010 
 
 executable density-giry

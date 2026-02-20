@@ -7,6 +7,13 @@ module NeSyFramework.Monads.Giry where
 
 import Control.Monad (ap)
 import Numeric.Tools.Integration (QuadParam (..), defQuad, quadBestEst, quadRes, quadRomberg)
+import Statistics.Distribution (ContDistr (density, quantile), Mean (mean), Variance (stdDev))
+import qualified Statistics.Distribution.Beta as B
+import qualified Statistics.Distribution.Exponential as E
+import qualified Statistics.Distribution.Gamma as G
+import qualified Statistics.Distribution.Laplace as L
+import qualified Statistics.Distribution.Normal as N
+import qualified Statistics.Distribution.StudentT as T
 
 -- | The Giry Monad represented as an Abstract Syntax Tree (Free Monad).
 -- This separates the monadic structure from the concrete evaluation, allowing
@@ -22,6 +29,15 @@ data Giry a where
   -- Continuous (over Reals)
   Normal :: Double -> Double -> Giry Double
   Uniform :: Double -> Double -> Giry Double
+  Exponential :: Double -> Giry Double
+  Beta :: Double -> Double -> Giry Double
+  Gamma :: Double -> Double -> Giry Double
+  Laplace :: Double -> Double -> Giry Double
+  StudentT :: Double -> Giry Double
+  -- | Escape Hatch: Arbitrary Continuous Distribution (pdf function and lower/upper bounds)
+  ContinuousPdf :: (Double -> Double) -> (Double, Double) -> Giry Double
+  -- | Universal Escape Hatch: ANY Continuous distribution from the `statistics` package!
+  GenericCont :: (ContDistr d, Mean d, Variance d) => d -> Giry Double
 
 instance Functor Giry where
   fmap :: (a -> b) -> Giry a -> Giry b
@@ -85,6 +101,10 @@ instance Integrable String where
 --------------------------------------------------------------------------------
 -- COUNTABLY INFINITE OBJECTS (CHAIN OF FALLBACKS)
 --------------------------------------------------------------------------------
+
+-- | Maximum discrete iterations for infinite support like Countable Sets
+giryMaxDiscreteIter :: Int
+giryMaxDiscreteIter = 10000
 
 -- | Chained Fallback Strategy for Countably Infinite Types
 -- 1. Try Algebraic Simplify (Heuristic check)
@@ -161,9 +181,10 @@ stridedMonteCarlo tailXs pSumStart f =
 -- CONTINUOUS OBJECTS (LEBESGUE INTEGRATION)
 --------------------------------------------------------------------------------
 
--- | 1. Maximum extrapolation steps (Default: 1000)
+-- | 1. Maximum extrapolation steps (Default: 16, bounded by 65,536 evaluations)
+-- High enough for precision, low enough to bail out quickly on discontinuities.
 giryQuadMaxIter :: Int
-giryQuadMaxIter = 1000
+giryQuadMaxIter = 16
 
 -- | 2. Strict error tolerance threshold (Default: 1e-12)
 giryQuadPrecision :: Double
@@ -173,16 +194,7 @@ giryQuadPrecision = 1e-12
 giryTailSigmas :: Double
 giryTailSigmas = 8.0
 
--- | 4. Maximum discrete iterations for infinite support like Countable Sets
-giryMaxDiscreteIter :: Int
-giryMaxDiscreteIter = 10000
-
 -- | Normal Probability Density Function
-normalPdf :: Double -> Double -> Double -> Double
-normalPdf mu sigma x =
-  let s2 = sigma * sigma
-   in (1 / (sqrt (2 * pi) * sigma)) * exp (-(x - mu) * (x - mu) / (2 * s2))
-
 -- | Robust integration using numeric-tools Romberg rule.
 integrateNT :: (Double -> Double) -> (Double, Double) -> Double
 integrateNT f (a, b) =
@@ -199,12 +211,34 @@ integrateNT f (a, b) =
 expectation :: Giry a -> (a -> Double) -> Double
 expectation (Pure x) f = f x
 expectation (Categorical xs) f = chainedDiscreteStrategy xs f
-expectation (Normal mu sigma) f =
-  integrateNT (\x -> normalPdf mu sigma x * f x) (mu - giryTailSigmas * sigma, mu + giryTailSigmas * sigma)
+expectation (Normal mu sigma) f = expectation (GenericCont (N.normalDistr mu sigma)) f
 expectation (Uniform a b) f =
   if a == b
     then 0.0
     else integrateNT (\x -> (1 / (b - a)) * f x) (a, b)
+expectation (Exponential lambda) f = expectation (GenericCont (E.exponential lambda)) f
+expectation (Beta alpha beta) f = expectation (GenericCont (B.betaDistr alpha beta)) f
+expectation (Gamma shape scale) f = expectation (GenericCont (G.gammaDistr shape scale)) f
+expectation (Laplace loc scale) f = expectation (GenericCont (L.laplace loc scale)) f
+expectation (StudentT ndf) f =
+  -- StudentT often lacks a finite Variance or Mean (e.g., Cauchy when ndf=1),
+  -- so it cannot route through GenericCont's $O(1)$ typeclass bounds.
+  -- We fall back to the robust, albeit slower, quantile inversion method just for StudentT.
+  let dist = T.studentT ndf
+      lower = quantile dist 1e-15
+      upper = quantile dist (1 - 1e-15)
+   in integrateNT (\x -> density dist x * f x) (lower, upper)
+expectation (GenericCont dist) f =
+  -- Universal Fallback: Inspect the distribution for support limits.
+  let trueMin = quantile dist 0.0
+      trueMax = quantile dist 1.0
+      -- We now use O(1) Mean and Variance lookups
+      -- We span 12 standard deviations, strictly bounded by the mathematical reality of the distribution.
+      lower = max trueMin (mean dist - 12 * stdDev dist)
+      upper = min trueMax (mean dist + 12 * stdDev dist)
+   in integrateNT (\x -> density dist x * f x) (lower, upper)
+expectation (ContinuousPdf pdf (a, b)) f =
+  integrateNT (\x -> pdf x * f x) (a, b)
 expectation (Bind m k) f =
   -- Law of Total Expectation: E[E[f(Y) | X]] = E[f(Y)]
   expectation m (\x -> expectation (k x) f)
