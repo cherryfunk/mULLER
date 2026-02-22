@@ -18,7 +18,7 @@ import qualified Statistics.Distribution.StudentT as T
 -- | The Giry Monad represented as an Abstract Syntax Tree (Free Monad).
 -- This separates the monadic structure from the concrete evaluation, allowing
 -- standard unconstrained Monad compliance while enabling highly optimized
--- mathematical execution (exact sums for discrete, Lebesgue quadrature for continuous).
+-- mathematical execution (sums for discrete, Lebesgue quadrature for continuous).
 data Giry a where
   -- | Standard Monad Operations
   Pure :: a -> Giry a
@@ -34,10 +34,10 @@ data Giry a where
   Gamma :: Double -> Double -> Giry Double
   Laplace :: Double -> Double -> Giry Double
   StudentT :: Double -> Giry Double
-  -- | Escape Hatch: Arbitrary Continuous Distribution (pdf function and lower/upper bounds)
-  ContinuousPdf :: (Double -> Double) -> (Double, Double) -> Giry Double
-  -- | Universal Escape Hatch: ANY Continuous distribution from the `statistics` package!
+  -- | Escape Hatch: ANY Continuous distribution from the `statistics` package!
   GenericCont :: (ContDistr d, Mean d, Variance d) => d -> Giry Double
+  -- | Universal Escape Hatch: Arbitrary Continuous Distribution (pdf function and lower/upper bounds)
+  ContinuousPdf :: (Double -> Double) -> (Double, Double) -> Giry Double
 
 instance Functor Giry where
   fmap :: (a -> b) -> Giry a -> Giry b
@@ -259,3 +259,31 @@ normal = Normal
 -- | Create a Uniform continuous distribution.
 uniform :: Double -> Double -> Giry Double
 uniform = Uniform
+
+-- | Create an Exponential distribution.
+exponential :: Double -> Giry Double
+exponential = Exponential
+
+-- | Create a Beta distribution.
+beta :: Double -> Double -> Giry Double
+beta = Beta
+
+-- | Create a Gamma distribution.
+gamma :: Double -> Double -> Giry Double
+gamma = Gamma
+
+-- | Create a Laplace distribution.
+laplace :: Double -> Double -> Giry Double
+laplace = Laplace
+
+-- | Create a Student-T distribution.
+studentT :: Double -> Giry Double
+studentT = StudentT
+
+-- | Create a generic continuous distribution from the `statistics` package.
+genericCont :: (ContDistr d, Mean d, Variance d) => d -> Giry Double
+genericCont = GenericCont
+
+-- | Create an arbitrary continuous distribution from a PDF and bounds.
+continuousPdf :: (Double -> Double) -> (Double, Double) -> Giry Double
+continuousPdf = ContinuousPdf
