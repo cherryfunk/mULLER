@@ -43,10 +43,14 @@ executable daniel-haskell
     NeSyFramework.TruthSpaces.Real,
     Syntax,
     Semantics,
-    Interpretations.Dice,
-    Interpretations.TrafficLight,
-    Interpretations.Weather,
-    Interpretations.Countable
+    NeSySystem.Signatures.Dice,
+    NeSySystem.Signatures.TrafficLight,
+    NeSySystem.Signatures.Weather,
+    NeSySystem.Signatures.Countable,
+    NeSySystem.Interpretations.Dice,
+    NeSySystem.Interpretations.TrafficLight,
+    NeSySystem.Interpretations.Weather,
+    NeSySystem.Interpretations.Countable
   build-depends:
     base >=4.16,
     containers,

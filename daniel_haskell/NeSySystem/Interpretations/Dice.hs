@@ -1,16 +1,23 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Interpretations.Dice (diceInterp) where
+module NeSySystem.Interpretations.Dice (diceInterp) where
 
 import qualified Data.Map as Map
 import Data.Typeable (cast)
+import NeSyFramework.Categories.DATA (DataObj (..))
 import NeSyFramework.Monads.Giry (Giry, categorical)
-import Semantics (DynVal (..), Interpretation (..))
+import Semantics (DynVal (..), Interpretation (..), SomeObj (..))
 
+-- | Interpretation of the Dice signature on DATA with Giry monad.
+-- sort DieResult -> Finite {1,2,3,4,5,6}
 diceInterp :: Interpretation Giry Double
 diceInterp =
   Interpretation
-    { funcs = Map.empty,
+    { sorts =
+        Map.fromList
+          [ ("DieResult", SomeObj (Finite [1 :: Int, 2, 3, 4, 5, 6]))
+          ],
+      funcs = Map.empty,
       rels =
         Map.fromList
           [ ( "==",

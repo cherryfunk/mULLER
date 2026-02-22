@@ -5,12 +5,13 @@
 module Main where
 
 import qualified Data.Map as Map
-import Interpretations.Countable (countableInterp)
-import Interpretations.Dice (diceInterp)
-import Interpretations.TrafficLight (trafficInterp)
-import Interpretations.Weather (weatherInterp)
+import NeSyFramework.Categories.DATA (DataObj (..))
 import NeSyFramework.Monads.Giry
 import NeSyFramework.TruthSpaces.Real ()
+import NeSySystem.Interpretations.Countable (countableInterp)
+import NeSySystem.Interpretations.Dice (diceInterp)
+import NeSySystem.Interpretations.TrafficLight (trafficInterp)
+import NeSySystem.Interpretations.Weather (weatherInterp)
 import Semantics
 import Syntax
 import System.Environment (getArgs)
@@ -18,7 +19,7 @@ import System.Environment (getArgs)
 --------------------------------------------------------------------------------
 -- 1. DICE EXAMPLE
 --------------------------------------------------------------------------------
--- x := die() (x == 6 ∧ even(x))
+-- x := die() (x == 6 /\ even(x))
 dieSen1 :: Formula
 dieSen1 =
   Compu
@@ -27,7 +28,7 @@ dieSen1 =
     []
     (Wedge (Rel "==" [Var "x", Con (6 :: Int)]) (Rel "even" [Var "x"]))
 
--- (x := die() (x == 6)) ∧ (x := die() even(x))
+-- (x := die() (x == 6)) /\ (x := die() even(x))
 dieSen2 :: Formula
 dieSen2 =
   Wedge
@@ -47,7 +48,7 @@ trafficSen1 = Compu "l" "light" [] (Rel "==" [Var "l", Con ("Green" :: String)])
 --------------------------------------------------------------------------------
 -- h := bernoulli(humid_detector(1))
 -- t := normal(temperature_predictor(1))
--- (h == 1 ∧ t < 0.0) ∨ (h == 0 ∧ t > 15.0)
+-- (h == 1 /\ t < 0.0) \/ (h == 0 /\ t > 15.0)
 weatherSen1 :: Formula
 weatherSen1 =
   Compu "h" "bernoulli" [Fun "humid_detector" [Con (1 :: Int)]] $
@@ -60,7 +61,7 @@ weatherSen1 =
 -- 4. COUNTABLE SETS (INT & STRING) EXAMPLE
 --------------------------------------------------------------------------------
 -- x := drawInt(), y := drawStr()
--- (x > 3) ∧ (startsWithTT y)
+-- (x > 3) /\ (startsWithTT y)
 countableSen1 :: Formula
 countableSen1 =
   Compu "x" "drawInt" [] $
@@ -78,6 +79,8 @@ countableSenHeavy = Compu "x" "drawHeavy" [] (Rel "isAnything" [Var "x"])
 --------------------------------------------------------------------------------
 -- EXECUTION
 --------------------------------------------------------------------------------
+-- Note: evalFormula returns Giry Double (truth values are Doubles in [0,1]).
+-- The expectation is therefore over the truth value space, which is Reals.
 main :: IO ()
 main = do
   args <- getArgs
@@ -85,35 +88,35 @@ main = do
     ["baseline"] -> return ()
     ["benchmark-weather"] -> do
       let w1 = evalFormula weatherInterp Map.empty weatherSen1
-      print (expectation w1 id)
+      print (expectation Reals w1 id)
     ["benchmark-countable"] -> do
       let c1 = evalFormula countableInterp Map.empty countableSen1
-      print (expectation c1 id)
+      print (expectation Reals c1 id)
     ["benchmark-countable-lazy"] -> do
       let c1 = evalFormula countableInterp Map.empty countableSenLazy
-      print (expectation c1 id)
+      print (expectation Reals c1 id)
     ["benchmark-countable-heavy"] -> do
       let c1 = evalFormula countableInterp Map.empty countableSenHeavy
-      print (expectation c1 id)
+      print (expectation Reals c1 id)
     _ -> do
       putStrLn "--- Testing mULLER Framework Domain Interpretations ---"
 
       putStrLn "\n[DICE] Evaluatin P(die == 6 AND even(die))"
       let d1 = evalFormula diceInterp Map.empty dieSen1
-      print (expectation d1 id)
+      print (expectation Reals d1 id)
 
       putStrLn "\n[DICE] Evaluatin P(die == 6) AND P(even(die))"
       let d2 = evalFormula diceInterp Map.empty dieSen2
-      print (expectation d2 id)
+      print (expectation Reals d2 id)
 
       putStrLn "\n[TRAFFIC] Evaluating P(light == green)"
       let t1 = evalFormula trafficInterp Map.empty trafficSen1
-      print (expectation t1 id)
+      print (expectation Reals t1 id)
 
-      putStrLn "\n[WEATHER] Evaluating P((h=1 ∧ t<0) ∨ (h=0 ∧ t>15))"
+      putStrLn "\n[WEATHER] Evaluating P((h=1 /\\ t<0) \\/ (h=0 /\\ t>15))"
       let w1 = evalFormula weatherInterp Map.empty weatherSen1
-      print (expectation w1 id)
+      print (expectation Reals w1 id)
 
-      putStrLn "\n[COUNTABLE] Evaluating P(int > 3 ∧ string starts with TT)"
+      putStrLn "\n[COUNTABLE] Evaluating P(int > 3 /\\ string starts with TT)"
       let c1 = evalFormula countableInterp Map.empty countableSen1
-      print (expectation c1 id)
+      print (expectation Reals c1 id)

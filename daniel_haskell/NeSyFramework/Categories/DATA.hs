@@ -1,29 +1,24 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module NeSyFramework.Categories.DATA where
 
-import NeSyFramework.Categories.Utils (In, DATA)
-import NeSyFramework.Monads.Dist (Dist)
-import NeSyFramework.Monads.Giry (Giry)
+import Data.Typeable (Typeable)
 
 -- | The category DATA
-
--- 1. Base objects
-instance In DATA Int
-instance In DATA Double
-instance In DATA Bool
-instance In DATA Char
-instance In DATA String
-
--- 2. Finite products
-instance In DATA ()
-instance (In DATA a, In DATA b) => In DATA (a, b)
-
--- 3. Finite "sets" (lists over one type, mixed could be added later)
-instance In DATA a => In DATA [a]
-
--- 4. Closure under Monads on DATA
-instance In DATA a => In DATA (Dist a)
-instance In DATA a => In DATA (Giry a)
+-- Objects are specific sets: infinite sets (Reals, Integers) or finite enumerations.
+-- This module defines objects ONLY. Integration strategies are the Giry monad's responsibility.
+data DataObj a where
+  -- | The real line ℝ (approximated by IEEE 754 Double)
+  Reals :: DataObj Double
+  -- | The integers ℤ
+  Integers :: DataObj Int
+  -- | The two-element set {True, False}
+  Booleans :: DataObj Bool
+  -- | A specific finite "set" (list), e.g. Finite [1,2,3,4,5,6] or Finite ["Red","Green","Yellow"]
+  Finite :: (Eq a, Show a, Typeable a) => [a] -> DataObj a
+  -- | Finite products
+  -- | The terminal object (empty product)
+  UnitObj :: DataObj ()
+  -- | Recursive binary product of two objects
+  ProductObj :: DataObj a -> DataObj b -> DataObj (a, b)

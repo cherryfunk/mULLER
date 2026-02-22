@@ -1,11 +1,11 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 
 module NeSyFramework.Categories.TENS where
 
-import Torch
-import NeSyFramework.Categories.Utils (In, TENS)
+import Torch (Tensor)
 
--- | Instances for TENS category (Lists of Tensors) 
-instance In TENS [Tensor]
+-- | The category TENS
+-- Objects are tensor-based structures.
+data TensObj a where
+  -- | A list of Tensors
+  TensorList :: TensObj [Tensor]

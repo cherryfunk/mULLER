@@ -1,17 +1,25 @@
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Interpretations.TrafficLight (trafficInterp) where
+module NeSySystem.Interpretations.TrafficLight (trafficInterp) where
 
 import qualified Data.Map as Map
 import Data.Typeable (cast)
+import NeSyFramework.Categories.DATA (DataObj (..))
 import NeSyFramework.Monads.Giry (Giry, categorical)
-import Semantics (DynVal (..), Interpretation (..))
+import Semantics (DynVal (..), Interpretation (..), SomeObj (..))
 
+-- | Interpretation of the TrafficLight signature on DATA with Giry monad.
+-- sort Light -> Finite {"Red", "Green", "Yellow"}
+-- sort Drive -> Booleans
 trafficInterp :: Interpretation Giry Double
 trafficInterp =
   Interpretation
-    { funcs = Map.empty,
+    { sorts =
+        Map.fromList
+          [ ("Light", SomeObj (Finite ["Red" :: String, "Green", "Yellow"])),
+            ("Drive", SomeObj Booleans)
+          ],
+      funcs = Map.empty,
       rels =
         Map.fromList
           [ ( "==",

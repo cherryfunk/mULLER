@@ -6,6 +6,7 @@
 module NeSyFramework.Monads.Giry where
 
 import Control.Monad (ap)
+import NeSyFramework.Categories.DATA (DataObj (..))
 import Numeric.Tools.Integration (QuadParam (..), defQuad, quadBestEst, quadRes, quadRomberg)
 import Statistics.Distribution (ContDistr (density, quantile), Mean (mean), Variance (stdDev))
 import qualified Statistics.Distribution.Beta as B
@@ -59,44 +60,85 @@ instance Monad Giry where
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
--- HIGHLY OPTIMIZED EXPECTATION EVALUATION (VIA CATEGORY: DATA)
+-- EXPECTATION EVALUATION (DRIVEN BY CATEGORY DATA)
 --------------------------------------------------------------------------------
 
--- | The core of the Type-Directed strategy.
--- Every object 'a' in the category DATA must define how it sums or integrates.
-class Integrable a where
-  integrateStrategy :: [(a, Double)] -> (a -> Double) -> Double
+-- | The public API for evaluating expectations.
+-- Takes a DataObj to specify which object of DATA we are computing the expectation on.
+-- This tells the Giry monad how to integrate at the top level.
+--
+-- Information flow: DATA defines objects -> Giry reads them and decides how to integrate.
+--
+-- For compound expressions (Bind chains), the inner measures self-identify via their
+-- constructors (Categorical, Normal, etc.), so the DataObj drives the top-level strategy
+-- while inner layers are handled by the constructor-driven 'eval' function.
+expectation :: DataObj a -> Giry a -> (a -> Double) -> Double
+expectation obj giry f = eval giry f
+  where
+    -- For Categorical at the top level, use the DataObj to choose strategy
+    eval (Categorical xs) g = integrateDiscrete obj xs g
+    -- All other cases delegate to the constructor-driven evaluator
+    eval other g = evalGiry other g
 
--- 1. Finite Objects (Bool, Char)
--- No limit or infinite loop checks needed.
-instance Integrable Bool where
-  integrateStrategy :: [(Bool, Double)] -> (Bool -> Double) -> Double
-  integrateStrategy xs f = sum [p * f x | (x, p) <- xs]
+-- | Constructor-driven evaluator (handles Bind chains and all Giry constructors).
+-- This is the internal workhorse that evaluates the AST recursively.
+-- For Categorical, it defaults to finite summation (safe for Bind-internal categoricals).
+-- For continuous constructors, it uses their built-in distribution information.
+evalGiry :: Giry a -> (a -> Double) -> Double
+evalGiry (Pure x) f = f x
+evalGiry (Bind m k) f =
+  -- Law of Total Expectation: E[E[f(Y) | X]] = E[f(Y)]
+  evalGiry m (\x -> evalGiry (k x) f)
+evalGiry (Categorical xs) f =
+  -- Must use chained strategy since Categorical can hold infinite lazy lists.
+  -- chainedDiscreteStrategy handles both finite and infinite cases correctly.
+  chainedDiscreteStrategy xs f
+evalGiry (Normal mu sigma) f =
+  evalGiry (GenericCont (N.normalDistr mu sigma)) f
+evalGiry (Uniform a b) f =
+  if a == b
+    then 0.0
+    else integrateNT (\x -> (1 / (b - a)) * f x) (a, b)
+evalGiry (Exponential lambda) f =
+  evalGiry (GenericCont (E.exponential lambda)) f
+evalGiry (Beta alpha beta) f =
+  evalGiry (GenericCont (B.betaDistr alpha beta)) f
+evalGiry (Gamma shape scale) f =
+  evalGiry (GenericCont (G.gammaDistr shape scale)) f
+evalGiry (Laplace loc scale) f =
+  evalGiry (GenericCont (L.laplace loc scale)) f
+evalGiry (StudentT ndf) f =
+  -- StudentT often lacks a finite Variance or Mean (e.g., Cauchy when ndf=1),
+  -- so it cannot route through GenericCont's O(1) typeclass bounds.
+  let dist = T.studentT ndf
+      lower = quantile dist 1e-15
+      upper = quantile dist (1 - 1e-15)
+   in integrateNT (\x -> density dist x * f x) (lower, upper)
+evalGiry (GenericCont dist) f =
+  -- Universal Fallback: Inspect the distribution for support limits.
+  let trueMin = quantile dist 0.0
+      trueMax = quantile dist 1.0
+      -- We use O(1) Mean and Variance lookups
+      -- We span 12 standard deviations, strictly bounded by the mathematical reality of the distribution.
+      lower = max trueMin (mean dist - 12 * stdDev dist)
+      upper = min trueMax (mean dist + 12 * stdDev dist)
+   in integrateNT (\x -> density dist x * f x) (lower, upper)
+evalGiry (ContinuousPdf pdf (a, b)) f =
+  integrateNT (\x -> pdf x * f x) (a, b)
 
-instance Integrable Char where
-  integrateStrategy :: [(Char, Double)] -> (Char -> Double) -> Double
-  integrateStrategy xs f = sum [p * f x | (x, p) <- xs]
-
--- 2. Finite Sets (Lists of finite elements)
-instance (Integrable a) => Integrable [a] where
-  integrateStrategy :: (Integrable a) => [([a], Double)] -> ([a] -> Double) -> Double
-  integrateStrategy xs f = sum [p * f x | (x, p) <- xs]
-
--- 3. Countably Infinite Objects (Int)
--- Fallback chain:1. Simplify (CAS) -> 2. Lazy Bounded Loop -> 3. Monte Carlo Approximation
-instance Integrable Int where
-  integrateStrategy :: [(Int, Double)] -> (Int -> Double) -> Double
-  integrateStrategy = chainedDiscreteStrategy
-
--- 4. Continuous Objects (Double)
--- Doubles are evaluated specifically via `Normal` / `Uniform` AST nodes.
-instance Integrable Double where
-  integrateStrategy :: [(Double, Double)] -> (Double -> Double) -> Double
-  integrateStrategy _ _ = error "Continuous expectations over Double must use Normal or Uniform Giry constructors, not Categorical."
-
-instance Integrable String where
-  integrateStrategy :: [(String, Double)] -> (String -> Double) -> Double
-  integrateStrategy = chainedDiscreteStrategy
+-- | Discrete integration strategy, driven by the DataObj.
+-- This is where the category DATA tells the Giry monad HOW to sum.
+integrateDiscrete :: DataObj a -> [(a, Double)] -> (a -> Double) -> Double
+-- Finite objects: direct finite summation (always terminates)
+integrateDiscrete (Finite _) xs f = sum [p * f x | (x, p) <- xs]
+integrateDiscrete Booleans xs f = sum [p * f x | (x, p) <- xs]
+integrateDiscrete UnitObj xs f = sum [p * f x | (x, p) <- xs]
+integrateDiscrete (ProductObj _ _) xs f = sum [p * f x | (x, p) <- xs]
+-- Countably infinite objects: chained fallback strategy
+integrateDiscrete Integers xs f = chainedDiscreteStrategy xs f
+-- Reals with Categorical: likely an error
+integrateDiscrete Reals _ _ =
+  error "Categorical on Reals: use continuous Giry constructors (Normal, Uniform, etc.) instead."
 
 --------------------------------------------------------------------------------
 -- COUNTABLY INFINITE OBJECTS (CHAIN OF FALLBACKS)
@@ -124,21 +166,16 @@ chainedDiscreteStrategy xs f =
        in go 0 0.0 0.0 xs
 
 -- | Fallback 1: Algebraic Simplify (Heuristic Runtime CAS check)
--- In a real Hakaru system, this is an AST-to-AST transformation checking for Geometric/Poisson series.
--- Here, we dynamically introspect the terms of the lazy sequence.
--- If the sequence of expected values exactly matches an infinite geometric progression
--- (t_{i+1} / t_i = r) with |r| < 1, we can bypass the infinite loop entirely and analytically
--- solve it using the closed-form equation: a / (1 - r).
 algebraicSimplify :: [(a, Double)] -> (a -> Double) -> Maybe Double
 algebraicSimplify xs f =
   let numTerms = 10
       terms = take numTerms [p * f x | (x, p) <- xs]
       checkGeometric ts
-        | length ts < numTerms = Nothing -- Only extrapolate if it's genuinely long/infinite
+        | length ts < numTerms = Nothing
         | otherwise =
             let (a : b : rest) = ts
              in if abs a < 1e-14
-                  then Nothing -- Avoid division by zero
+                  then Nothing
                   else
                     let r = b / a
                         isGeometric _ [] = True
@@ -152,19 +189,14 @@ algebraicSimplify xs f =
    in checkGeometric terms
 
 -- | Fallback 3: Strided Monte Carlo Approximation (Quasi-Monte Carlo)
--- When we breach deterministic iteration limits on a heavy tail, we assume evaluating 'f'
--- is extremely expensive (e.g., a Neural layer). We take large deterministic jumps,
--- evaluating 'f' only once every N elements and scaling by the aggregate block mass.
 stridedMonteCarlo :: [(a, Double)] -> Double -> (a -> Double) -> Double
 stridedMonteCarlo tailXs pSumStart f =
   let stride = 50
-      maxSamples = 100 -- Sample 100 blocks (5000 elements total) from the tail
+      maxSamples = 100
       go [] acc _ _ = acc
       go xs acc pSum samples
         | pSum >= 1.0 - giryQuadPrecision = acc
         | samples >= maxSamples =
-            -- Safety Break: We reached the sample limit on a heavy tail.
-            -- Estimate the remaining mass and scale the current average f(x).
             let remainingMass = 1.0 - pSum
                 avgValue = if pSum > pSumStart then acc / (pSum - pSumStart) else 0.0
              in acc + (remainingMass * avgValue)
@@ -172,7 +204,7 @@ stridedMonteCarlo tailXs pSumStart f =
             case splitAt stride xs of
               ([], _) -> acc
               (block, rest) ->
-                let (sampleX, _) = head block -- Take first as representative
+                let (sampleX, _) = head block
                     blockMass = sum (map snd block)
                  in go rest (acc + blockMass * f sampleX) (pSum + blockMass) (samples + 1)
    in go tailXs 0.0 pSumStart 0
@@ -181,20 +213,15 @@ stridedMonteCarlo tailXs pSumStart f =
 -- CONTINUOUS OBJECTS (LEBESGUE INTEGRATION)
 --------------------------------------------------------------------------------
 
--- | 1. Maximum extrapolation steps (Default: 16, bounded by 65,536 evaluations)
--- High enough for precision, low enough to bail out quickly on discontinuities.
 giryQuadMaxIter :: Int
 giryQuadMaxIter = 16
 
--- | 2. Strict error tolerance threshold (Default: 1e-12)
 giryQuadPrecision :: Double
 giryQuadPrecision = 1e-12
 
--- | 3. Distance in σ to bound Lebesgue integrals for Normal distributions (Default: 8.0)
 giryTailSigmas :: Double
 giryTailSigmas = 8.0
 
--- | Normal Probability Density Function
 -- | Robust integration using numeric-tools Romberg rule.
 integrateNT :: (Double -> Double) -> (Double, Double) -> Double
 integrateNT f (a, b) =
@@ -204,86 +231,36 @@ integrateNT f (a, b) =
         Just v -> v
         Nothing -> quadBestEst res
 
--- | The core interpreter.
--- Evaluates the expected value of a function 'f' under the measure 'Giry a'.
--- Strict guarantee: Only elements 'a' in our DATA category (that implement Integrable)
--- are permitted to have an expectation evaluated.
-expectation :: Giry a -> (a -> Double) -> Double
-expectation (Pure x) f = f x
-expectation (Categorical xs) f = chainedDiscreteStrategy xs f
-expectation (Normal mu sigma) f = expectation (GenericCont (N.normalDistr mu sigma)) f
-expectation (Uniform a b) f =
-  if a == b
-    then 0.0
-    else integrateNT (\x -> (1 / (b - a)) * f x) (a, b)
-expectation (Exponential lambda) f = expectation (GenericCont (E.exponential lambda)) f
-expectation (Beta alpha beta) f = expectation (GenericCont (B.betaDistr alpha beta)) f
-expectation (Gamma shape scale) f = expectation (GenericCont (G.gammaDistr shape scale)) f
-expectation (Laplace loc scale) f = expectation (GenericCont (L.laplace loc scale)) f
-expectation (StudentT ndf) f =
-  -- StudentT often lacks a finite Variance or Mean (e.g., Cauchy when ndf=1),
-  -- so it cannot route through GenericCont's $O(1)$ typeclass bounds.
-  -- We fall back to the robust, albeit slower, quantile inversion method just for StudentT.
-  let dist = T.studentT ndf
-      lower = quantile dist 1e-15
-      upper = quantile dist (1 - 1e-15)
-   in integrateNT (\x -> density dist x * f x) (lower, upper)
-expectation (GenericCont dist) f =
-  -- Universal Fallback: Inspect the distribution for support limits.
-  let trueMin = quantile dist 0.0
-      trueMax = quantile dist 1.0
-      -- We now use O(1) Mean and Variance lookups
-      -- We span 12 standard deviations, strictly bounded by the mathematical reality of the distribution.
-      lower = max trueMin (mean dist - 12 * stdDev dist)
-      upper = min trueMax (mean dist + 12 * stdDev dist)
-   in integrateNT (\x -> density dist x * f x) (lower, upper)
-expectation (ContinuousPdf pdf (a, b)) f =
-  integrateNT (\x -> pdf x * f x) (a, b)
-expectation (Bind m k) f =
-  -- Law of Total Expectation: E[E[f(Y) | X]] = E[f(Y)]
-  expectation m (\x -> expectation (k x) f)
-
 --------------------------------------------------------------------------------
 -- HELPER CONSTRUCTORS
 --------------------------------------------------------------------------------
 
--- | Create a discrete distribution from a list of probabilities.
--- Assumes probabilities sum to 1.
 categorical :: [(a, Double)] -> Giry a
 categorical = Categorical
 
--- | Create a Normal distribution.
 normal :: Double -> Double -> Giry Double
 normal = Normal
 
--- | Create a Uniform continuous distribution.
 uniform :: Double -> Double -> Giry Double
 uniform = Uniform
 
--- | Create an Exponential distribution.
 exponential :: Double -> Giry Double
 exponential = Exponential
 
--- | Create a Beta distribution.
 beta :: Double -> Double -> Giry Double
 beta = Beta
 
--- | Create a Gamma distribution.
 gamma :: Double -> Double -> Giry Double
 gamma = Gamma
 
--- | Create a Laplace distribution.
 laplace :: Double -> Double -> Giry Double
 laplace = Laplace
 
--- | Create a Student-T distribution.
 studentT :: Double -> Giry Double
 studentT = StudentT
 
--- | Create a generic continuous distribution from the `statistics` package.
 genericCont :: (ContDistr d, Mean d, Variance d) => d -> Giry Double
 genericCont = GenericCont
 
--- | Create an arbitrary continuous distribution from a PDF and bounds.
 continuousPdf :: (Double -> Double) -> (Double, Double) -> Giry Double
 continuousPdf = ContinuousPdf

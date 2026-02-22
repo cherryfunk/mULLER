@@ -1,12 +1,16 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Interpretations.Weather (weatherInterp) where
+module NeSySystem.Interpretations.Weather (weatherInterp) where
 
 import qualified Data.Map as Map
 import Data.Typeable (cast)
+import NeSyFramework.Categories.DATA (DataObj (..))
 import NeSyFramework.Monads.Giry (Giry, categorical, normal)
-import Semantics (DynVal (..), Interpretation (..))
+import Semantics (DynVal (..), Interpretation (..), SomeObj (..))
 
+-- | Interpretation of the Weather signature on DATA with Giry monad.
+-- sort Humidity    -> Finite {0, 1}
+-- sort Temperature -> Reals
 humid_detector :: Int -> Double
 humid_detector _ = 0.5
 
@@ -16,7 +20,12 @@ temperature_predictor _ = (0.0, 2.0)
 weatherInterp :: Interpretation Giry Double
 weatherInterp =
   Interpretation
-    { funcs =
+    { sorts =
+        Map.fromList
+          [ ("Humidity", SomeObj (Finite [0 :: Int, 1])),
+            ("Temperature", SomeObj Reals)
+          ],
+      funcs =
         Map.fromList
           [ ( "humid_detector",
               \[DynVal d] -> case cast d of

@@ -7,7 +7,7 @@ module Syntax where
 
 import Data.Typeable (Typeable)
 
--- | Symbolsets
+-- | Symbol sets
 type SortSym = String
 
 type FunSym = String
@@ -15,6 +15,14 @@ type FunSym = String
 type RelSym = String
 
 type VarSym = String
+
+-- | A Signature (Schema) declares sorts, function symbols, and relation symbols.
+-- This is purely syntactic — no semantics.
+data Signature = Signature
+  { sortDecls :: [SortSym],
+    funDecls :: [(FunSym, [SortSym], SortSym)], -- f : S_1 x ... x S_n -> S
+    relDecls :: [(RelSym, [SortSym])] -- R : S_1 x ... x S_n
+  }
 
 -- | Terms
 data Term where
