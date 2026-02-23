@@ -2,18 +2,19 @@ module NeSySystem.Signatures.Weather (weatherSig) where
 
 import Syntax (Signature (..))
 
--- | The Weather signature
--- Sorts: Humidity, Temperature
--- Funcs: humid_detector, temperature_predictor
+-- | The Weather signature matching the DeepSeaProbLog example in the paper
+-- Sorts: Worlds, Unit_Interval, Reals2, Humidity, Temperature
+-- Funcs: data1, humid_detector, temperature_predictor
 -- Rels: ==, <, >
 -- MFuncs: bernoulli, normal
 weatherSig :: Signature
 weatherSig =
   Signature
-    { sortDecls = ["Humidity", "Temperature"],
+    { sortDecls = ["Worlds", "Unit_Interval", "Reals2", "Humidity", "Temperature", "Reals"],
       funDecls =
-        [ ("humid_detector", ["Humidity"], "Temperature"),
-          ("temperature_predictor", ["Humidity"], "Temperature")
+        [ ("data1", [], "Worlds"),
+          ("humid_detector", ["Worlds"], "Unit_Interval"),
+          ("temperature_predictor", ["Worlds"], "Reals2")
         ],
       relDecls =
         [ ("==", ["Humidity", "Humidity"]),
@@ -21,8 +22,8 @@ weatherSig =
           (">", ["Temperature", "Temperature"])
         ],
       mFunDecls =
-        [ ("bernoulli", ["Temperature"], "Humidity"),
-          ("normal", ["Temperature"], "Temperature")
+        [ ("bernoulli", ["Unit_Interval"], "Humidity"),
+          ("normal", ["Reals2"], "Temperature")
         ],
       mRelDecls = []
     }

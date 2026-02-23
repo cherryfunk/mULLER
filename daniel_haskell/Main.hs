@@ -51,8 +51,8 @@ trafficSen1 = Compu "l" "light" [] (Rel "==" [Var "l", Con ("Green" :: String)])
 -- (h == 1 /\ t < 0.0) \/ (h == 0 /\ t > 15.0)
 weatherSen1 :: Formula
 weatherSen1 =
-  Compu "h" "bernoulli" [Fun "humid_detector" [Con (1 :: Int)]] $
-    Compu "t" "normal" [Fun "temperature_predictor" [Con (1 :: Int)]] $
+  Compu "h" "bernoulli" [Fun "humid_detector" [Fun "data1" []]] $
+    Compu "t" "normal" [Fun "temperature_predictor" [Fun "data1" []]] $
       Vee
         (Wedge (Rel "==" [Var "h", Con (1 :: Int)]) (Rel "<" [Var "t", Con (0.0 :: Double)]))
         (Wedge (Rel "==" [Var "h", Con (0 :: Int)]) (Rel ">" [Var "t", Con (15.0 :: Double)]))
