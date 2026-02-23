@@ -1,12 +1,13 @@
 from typing import Any, Callable
 
-from muller.monad.distribution import Prob
+from muller.framework.interpretation import _Interpretation, Interpretation
+from muller.monad.distribution import Dist
 from muller.monad.non_empty_powerset import NonEmptyPowerset
-from muller.nesy_framework import Interpretation, SingleArgumentTypeFunction, _Interpretation
+from muller.nesy_framework import SingleArgumentTypeFunction
 
 
 # Argmax transformation
-def maximal_values[T](prob_dist: Prob[T]) -> NonEmptyPowerset[T]:
+def maximal_values[T](prob_dist: Dist[T]) -> NonEmptyPowerset[T]:
     """Extract maximal probability values from distribution"""
     max_vals = prob_dist.argmax()
     return NonEmptyPowerset(max_vals)
@@ -23,10 +24,10 @@ class argmax[A]:
         for name, func in interpretation.mfunctions.items():
 
             def make_argmax_function(
-                original_func: Callable[[list[A]], Prob[A]],
+                original_func: Callable[[list[A]], Dist[A]],
             ) -> SingleArgumentTypeFunction[A, NonEmptyPowerset[A]]:
                 def argmax_wrapper(args: list[A]) -> NonEmptyPowerset[A]:
-                    prob_result: Prob[A] = original_func(args)
+                    prob_result: Dist[A] = original_func(args)
                     return maximal_values(prob_result)
 
                 return argmax_wrapper
@@ -40,12 +41,12 @@ class argmax[A]:
         for name, pred in interpretation.mpredicates.items():
 
             def make_argmax_predicate(
-                original_pred: Callable[[list[A]], Prob[bool]],
+                original_pred: Callable[[list[A]], Dist[bool]],
             ) -> SingleArgumentTypeFunction[A, NonEmptyPowerset[bool]]:
                 def argmax_wrapper(
                     args: list[A],
                 ) -> NonEmptyPowerset[bool]:
-                    prob_result: Prob[bool] = original_pred(args)
+                    prob_result: Dist[bool] = original_pred(args)
                     return maximal_values(prob_result)
 
                 return argmax_wrapper

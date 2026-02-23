@@ -13,14 +13,16 @@ Example:
 
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import Callable, TypeVar
 
 from returns.primitives.hkt import SupportsKind1
+from returns.interfaces.mappable import Mappable1
 
 _T = TypeVar("_T")
+_S = TypeVar("_S")
 
 
-class List(list[_T], SupportsKind1["List", _T]):  # type: ignore[type-arg]
+class List(list[_T], SupportsKind1["List", _T], Mappable1[_T]):  # type: ignore[type-arg]
     """
     HKT-aware list wrapper for use with the returns library.
 
@@ -37,3 +39,9 @@ class List(list[_T], SupportsKind1["List", _T]):  # type: ignore[type-arg]
     """
 
     pass
+
+    def map(
+        self,
+        function: Callable[[_T], _S],
+    ) -> List[_S]:
+        return List([function(x) for x in self])

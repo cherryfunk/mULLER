@@ -1,4 +1,4 @@
-from .distribution import Prob, bernoulli, uniform, weighted
+from .distribution import Dist, bernoulli, uniform, weighted
 from .giry import Giry
 from .giry_sampling import (
     GirySampling,
@@ -35,7 +35,7 @@ from .identity import Identity
 from .non_empty_powerset import NonEmptyPowerset, from_list, singleton
 
 __all__ = [
-    "Prob",
+    "Dist",
     "uniform",
     "weighted",
     "bernoulli",

@@ -13,7 +13,7 @@ from muller.monad import (
 from muller.monad import (
     giry_uniform as uniform,
 )
-from muller.nesy_framework import NeSyFramework
+from muller.framework.nesy import BaseNeSyFramework
 from muller.parser import parse
 
 GIRY = GirySampling
@@ -22,7 +22,7 @@ GIRY = GirySampling
 Universe = Union[int, float, tuple[float, float]]
 
 # Get a framework for bools over the Giry monad and an infinite universe over the Giry monad
-nf: NeSyFramework[GIRY[bool], bool, GIRY[Universe], Universe] = nesy(GIRY, bool, GIRY)
+nf = nesy(GIRY, bool, GIRY)
 
 
 def uniformUniverse() -> GIRY[Universe]:

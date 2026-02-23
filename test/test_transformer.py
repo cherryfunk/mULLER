@@ -4,7 +4,7 @@ from typing import Mapping
 from common import nf as prob_nf, traffic_light_model
 
 from muller.hkt import List
-from muller.monad.distribution import Prob
+from muller.monad.distribution import Dist
 from muller.monad.non_empty_powerset import NonEmptyPowerset
 from muller.nesy_framework import nesy
 from muller.parser import parse
@@ -17,7 +17,7 @@ class TestTransformation(unittest.TestCase):
     def setUp(self):
         """Set up common test data."""
         self.universe = ["alice", "bob", "charlie"]
-        self.prob_nesy = nesy(Prob, bool, List)
+        self.prob_nesy = nesy(Dist, bool, List)
         self.nondet_nesy = nesy(NonEmptyPowerset, bool, List)
 
     def test_argmax_basic_functionality(self):
@@ -26,11 +26,11 @@ class TestTransformation(unittest.TestCase):
             sort=List(self.universe),
             mpredicates={
                 "uncertain_pred": lambda args: (
-                    Prob({True: 0.7, False: 0.3})
+                    Dist({True: 0.7, False: 0.3})
                     if args[0] == "alice"
-                    else Prob({True: 0.2, False: 0.8})
+                    else Dist({True: 0.2, False: 0.8})
                 ),
-                "tie_pred": lambda _args: Prob(
+                "tie_pred": lambda _args: Dist(
                     {True: 0.5, False: 0.5}
                 ),
             },
@@ -68,10 +68,10 @@ class TestTransformation(unittest.TestCase):
         prob_interpretation = self.prob_nesy.create_interpretation(
             sort=List(self.universe),
             mfunctions={
-                "random_choice": lambda _args: Prob(
+                "random_choice": lambda _args: Dist(
                     {"alice": 0.6, "bob": 0.4}
                 ),
-                "uniform_choice": lambda _args: Prob(
+                "uniform_choice": lambda _args: Dist(
                     {"alice": 0.33, "bob": 0.33, "charlie": 0.34}
                 ),
             },
@@ -103,7 +103,7 @@ class TestTransformation(unittest.TestCase):
                 ),
             },
             mfunctions={
-                "m_func": lambda _args: Prob({"result": 1.0}),
+                "m_func": lambda _args: Dist({"result": 1.0}),
             },
             predicates={
                 "human": lambda args: args[0] in self.universe,
@@ -111,7 +111,7 @@ class TestTransformation(unittest.TestCase):
                 and args[1] == "alice",
             },
             mpredicates={
-                "m_pred": lambda _args: Prob({True: 0.8, False: 0.2}),
+                "m_pred": lambda _args: Dist({True: 0.8, False: 0.2}),
             },
         )
 
@@ -152,8 +152,8 @@ class TestTransformation(unittest.TestCase):
         prob_interpretation = self.prob_nesy.create_interpretation(
             sort=List(self.universe),
             mpredicates={
-                "certain_true": lambda _args: Prob({True: 1.0}),
-                "certain_false": lambda _args: Prob({False: 1.0}),
+                "certain_true": lambda _args: Dist({True: 1.0}),
+                "certain_false": lambda _args: Dist({False: 1.0}),
             },
         )
 

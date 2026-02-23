@@ -66,9 +66,13 @@ jobs:
       run: |
         uv run ruff check muller/ test/ || echo "Linting issues found - please review"
 
-    - name: Check code formatting with ruff format (informational) 
+    - name: Check code formatting with ruff format (informational)
       run: |
         uv run ruff format --check muller/ test/ || echo "Formatting issues found - please review"
+
+    - name: Type check with mypy (informational)
+      run: |
+        uv run mypy muller/ || echo "Type checking issues found - please review"
 
   build:
     runs-on: ubuntu-latest

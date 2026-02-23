@@ -10,7 +10,7 @@ from typing import Any, Literal, TypeVar
 from returns.interfaces.container import Container1
 from returns.primitives.hkt import Kind1
 
-from muller.logics.aggr2sgrpblat import DblSGrpBLat  # GirySamplingAggregationMixin,,
+from muller.logics.aggr2monblat import TwoMonBLat  # GirySamplingAggregationMixin,,
 
 _ObjectType = TypeVar("_ObjectType")
 _MonadType = TypeVar("_MonadType", bound=Container1[Any])
@@ -49,7 +49,7 @@ def priest_implication(a: Priest, b: Priest) -> Priest:
 # =============================================================================
 
 
-class PriestLogic(DblSGrpBLat[_MonadType, Priest]):
+class PriestLogic(TwoMonBLat[_MonadType, Priest]):
     """Classical Priest logic with Identity monad (deterministic)."""
 
     def top(self) -> Kind1[_MonadType, Priest]:

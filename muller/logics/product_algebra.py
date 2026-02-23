@@ -5,12 +5,12 @@ import torch
 from returns.interfaces.container import Container1
 from returns.primitives.hkt import Kind1
 
-from muller.logics.aggr2sgrpblat import DblSGrpBLat
+from muller.logics.aggr2monblat import TwoMonBLat
 
 _MonadType = TypeVar("_MonadType", bound=Container1[Any])
 
 
-class ProductAlgebraLogic(DblSGrpBLat[_MonadType, float]):
+class ProductAlgebraLogic(TwoMonBLat[_MonadType, float]):
     """
     Product algebra on [0, 1] with:
     - Conjunction: a · b
@@ -59,7 +59,7 @@ class ProductAlgebraLogic(DblSGrpBLat[_MonadType, float]):
         return self.monad_from_value(min(1.0, y / x))
 
 
-class ProductTorchAlgebraLogic(DblSGrpBLat[_MonadType, torch.Tensor]):
+class ProductTorchAlgebraLogic(TwoMonBLat[_MonadType, torch.Tensor]):
     """
     Product algebra on [0, 1] with:
     - Conjunction: a · b

@@ -1,21 +1,21 @@
 from typing import Any, Callable
 
-from muller import List, Prob, nesy, parse, uniform
+from muller import Dist, List, nesy, parse, uniform
 
 
 def const[T](value: T) -> Callable[[list[Any]], T]:
     """Helper to create constant functions for interpretation."""
     return lambda _: value
 
-nf = nesy(Prob, bool, List, int)
+nf = nesy(Dist, bool, List)
 
 i = nf.create_interpretation(
-    sort=List(range(1, 7))
+    List(range(1, 7)),
 )
 i.functions = {str(n): const(n) for n in range(1, 7)}
 
 @i.comp_fn()
-def die() -> Prob[int]:
+def die() -> Dist[int]:
     return uniform(list(range(1, 7)))
 
 @i.pred()

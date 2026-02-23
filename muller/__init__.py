@@ -1,17 +1,21 @@
 from collections.abc import Callable
 
+from .framework.nesy import BaseNeSyFramework
+
+from .framework.interpretation import Interpretation
+
 from .hkt import List
 from .monad import (
     Identity,
     NonEmptyPowerset,
-    Prob,
+    Dist,
     bernoulli,
     from_list,
     singleton,
     uniform,
     weighted,
 )
-from .nesy_framework import Interpretation, NeSyFramework, nesy, nesy_for_logic
+from .nesy_framework import nesy, nesy_for_logic
 from .parser import parse
 
 
@@ -44,12 +48,12 @@ __all__ = [
     "compfn",
     "pred",
     "comppred",
-    "NeSyFramework",
+    "BaseNeSyFramework",
     "Interpretation",
     "nesy",
     "nesy_for_logic",
     "parse",
-    "Prob",
+    "Dist",
     "NonEmptyPowerset",
     "Identity",
     "List",

@@ -15,9 +15,9 @@ _NewValueType = TypeVar("_NewValueType")
 
 
 @final
-class Prob(
+class Dist(
     BaseContainer,
-    SupportsKind1["Prob", _ValueType],  # type: ignore[type-arg]
+    SupportsKind1["Dist", _ValueType],  # type: ignore[type-arg]
     Container1[_ValueType],
 ):
     """
@@ -41,7 +41,7 @@ class Prob(
         super().__init__({k: v / total for k, v in dist.items()})
 
     @classmethod
-    def from_value(cls, value: _NewValueType) -> Prob[_NewValueType]:
+    def from_value(cls, value: _NewValueType) -> Dist[_NewValueType]:
         """
         Create a distribution with certainty for a single value.
         Also known as 'return' or 'pure' in Haskell.
@@ -52,12 +52,12 @@ class Prob(
         Returns:
             Prob distribution with single value
         """
-        return Prob({value: 1.0})
+        return Dist({value: 1.0})
 
     def bind(
         self,
-        function: Callable[[_ValueType], Kind1["Prob", _NewValueType]],  # type: ignore[type-arg]
-    ) -> Prob[_NewValueType]:
+        function: Callable[[_ValueType], Kind1["Dist", _NewValueType]],  # type: ignore[type-arg]
+    ) -> Dist[_NewValueType]:
         """
         Monadic bind operation (>>=).
 
@@ -77,12 +77,12 @@ class Prob(
             for new_val, new_prob in new_dist._inner_value.items():
                 result[new_val] += prob * new_prob
 
-        return Prob(dict(result))
+        return Dist(dict(result))
 
     def map(
         self,
         function: Callable[[_ValueType], _NewValueType],
-    ) -> Prob[_NewValueType]:
+    ) -> Dist[_NewValueType]:
         """
         Apply a function to all values in the distribution.
 
@@ -95,7 +95,7 @@ class Prob(
         result: Dict[_NewValueType, float] = defaultdict(float)
         for value, prob in self._inner_value.items():
             result[function(value)] += prob
-        return Prob(dict(result))
+        return Dist(dict(result))
 
     apply = monad_apply
 
@@ -115,10 +115,10 @@ class Prob(
         probs = list(self._inner_value.values())
         return random.choices(values, weights=probs)[0]
 
-    def filter(self, predicate: Callable[[_ValueType], bool]) -> Prob[_ValueType]:
+    def filter(self, predicate: Callable[[_ValueType], bool]) -> Dist[_ValueType]:
         """Filter distribution keeping only values satisfying predicate."""
         filtered = {v: p for v, p in self._inner_value.items() if predicate(v)}
-        return Prob(filtered)
+        return Dist(filtered)
 
     def max_probability(self) -> float:
         """Get the maximum probability value"""
@@ -135,23 +135,23 @@ class Prob(
 # Convenience functions for creating common distributions
 
 
-def uniform(values: list[_ValueType]) -> Prob[_ValueType]:
+def uniform(values: list[_ValueType]) -> Dist[_ValueType]:
     """Create uniform distribution over given values."""
     if not values:
-        return Prob({})
+        return Dist({})
     prob = 1.0 / len(values)
-    return Prob({v: prob for v in values})
+    return Dist({v: prob for v in values})
 
 
-def weighted(_ValueType_pairs: list[Tuple[_ValueType, float]]) -> Prob[_ValueType]:
+def weighted(_ValueType_pairs: list[Tuple[_ValueType, float]]) -> Dist[_ValueType]:
     """Create distribution from (value, weight) pairs."""
-    return Prob(dict(_ValueType_pairs))
+    return Dist(dict(_ValueType_pairs))
 
 
 def bernoulli(
     p: float,
     true_val: bool = True,
     false_val: bool = False,
-) -> Prob[bool]:
+) -> Dist[bool]:
     """Create Bernoulli distribution."""
-    return Prob({true_val: p, false_val: 1 - p})
+    return Dist({true_val: p, false_val: 1 - p})

@@ -1,16 +1,18 @@
 from typing import Literal
 
+from muller.framework.interpretation import Interpretation
+from muller.framework.nesy import BaseNeSyFramework
 from muller.hkt import List
-from muller.monad.distribution import Prob, weighted
-from muller.nesy_framework import Interpretation, nesy
+from muller.monad.distribution import Dist, weighted
+from muller.nesy_framework import nesy
 
 Universe = Literal["red", "green", "yellow", False, True]
 universe: list[Universe] = ["red", "green", "yellow", False, True]
 
-nf = nesy(Prob, bool, List, Universe)
+nf: BaseNeSyFramework[Dist[bool], bool, List[Universe], Universe] = nesy(Dist, bool, List, Universe)
 
 
-def _drive(light: Universe) -> Prob[bool]:
+def _drive(light: Universe) -> Dist[bool]:
     """Drive function based on traffic light color."""
     if light == "red":
         return weighted([(True, 0.1), (False, 0.9)])
@@ -19,11 +21,11 @@ def _drive(light: Universe) -> Prob[bool]:
     elif light == "green":
         return weighted([(True, 0.9), (False, 0.1)])
     else:
-        return Prob({})
+        return Dist({})
 
 
 traffic_light_model: Interpretation[
-    Prob[bool], bool, List[Universe], Universe
+    Dist[bool], bool, List[Universe], Universe
 ] = nf.create_interpretation(
     sort=List(universe),
     functions={

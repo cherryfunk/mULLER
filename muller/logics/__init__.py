@@ -10,9 +10,9 @@ from returns.primitives.hkt import Kind1
 import muller.logics
 from muller.monad.giry_sampling import GirySampling
 
-from .aggr2sgrpblat import (
-    Aggr2SGrpBLat,
-    DblSGrpBLat,
+from .aggr2monblat import (
+    Aggr2MonBLat,
+    TwoMonBLat,
     GirySamplingAggregationMixin,
     ListAggregationMixin,
 )
@@ -96,10 +96,14 @@ def _structure_matches(cls: type, structure: type) -> bool:
 
 
 def _get_truth_type_from_class(cls: type) -> type | None:
-    if any(c is DblSGrpBLat for c in cls.__bases__):
+    if any(c is TwoMonBLat for c in cls.__bases__):
         try:
-            _monad, dblsgrpblat = get_original_bases(cls)
-            args = getattr(dblsgrpblat, "__args__", None)
+            bases = get_original_bases(cls)
+            if len(bases) < 2:
+                return None
+            
+            twomonblat = bases[1]
+            args = getattr(twomonblat, "__args__", None)
 
             if args and len(args) == 2 and isinstance(args[1], type):
                 return args[1]  # M, O
@@ -119,13 +123,14 @@ def get_logic(
     monad_type: type[_MonadType],
     truth_type: type[_TruthValueType],
     structure_type: type[_StructureType],
-) -> Aggr2SGrpBLat[_MonadType, _TruthValueType, _StructureType, _ObjectType]:
-    mixin: type[Aggr2SGrpBLat[_MonadType, _TruthValueType, Any, _ObjectType]] | None
+    mixins: list[type] = [],
+) -> Aggr2MonBLat[_MonadType, _TruthValueType, _StructureType, _ObjectType]:
+    mixin: type[Aggr2MonBLat[_MonadType, _TruthValueType, Any, _ObjectType]] | None
     if issubclass(structure_type, list):
         mixin = ListAggregationMixin
     elif structure_type is GirySampling:
         mixin = GirySamplingAggregationMixin
-    elif issubclass(structure_type, Aggr2SGrpBLat):
+    elif issubclass(structure_type, Aggr2MonBLat):
         mixin = structure_type
     else:
         raise ValueError(
@@ -153,14 +158,14 @@ def get_logic(
 
         # Skip abstract base classes
         if val in (
-            DblSGrpBLat,
-            Aggr2SGrpBLat,
+            TwoMonBLat,
+            Aggr2MonBLat,
         ):
             continue
 
         # Check if it's a subclass of DblSGrpBLat
         try:
-            if not issubclass(val, DblSGrpBLat):
+            if not issubclass(val, TwoMonBLat):
                 continue
         except TypeError:
             continue
@@ -176,8 +181,8 @@ def get_logic(
 
         # create instance
         _LogicInstance: type[
-            Aggr2SGrpBLat[_MonadType, _TruthValueType, _StructureType, _ObjectType]
-        ] = type(f"LogicInstance_{val.__name__}", (mixin, val), {})
+            Aggr2MonBLat[_MonadType, _TruthValueType, _StructureType, _ObjectType]
+        ] = type(f"LogicInstance_{val.__name__}", (mixin, *mixins, val), {})
 
         # Found a match - return an instance
         return _LogicInstance(monad_from_value=monad_type.from_value)
@@ -187,7 +192,7 @@ def get_logic(
 
 
 __all__ = [
-    "Aggr2SGrpBLat",
+    "Aggr2MonBLat",
     "get_logic",
     "BooleanLogic",
     # "NonDeterministicBooleanLogic",
@@ -214,8 +219,8 @@ __all__ = [
     # "ProbabilisticPriestLogicProb",
     "ProductAlgebraLogic",
     "GiryProductAlgebraLogic",
-    "DblSGrpBLat",
-    "Aggr2SGrpBLat",
+    "TwoMonBLat",
+    "Aggr2MonBLat",
     "with_prob_structure",
     "with_list_structure",
 ]

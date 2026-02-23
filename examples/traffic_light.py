@@ -1,21 +1,19 @@
-import random
-from typing import Any, Literal, get_args
+from typing import Any, Literal
 
-from muller import Prob, nesy, parse, weighted
-from muller.monad.giry_sampling import GirySampling
-from muller.nesy_framework import NeSyFramework
-
-Universe = Literal["red", "green", "yellow", False, True]
-universe: list[Universe] = list(get_args(Universe))
-
-nf: NeSyFramework[Prob[bool], bool, GirySampling[Universe], Universe] = nesy(
-    Prob, bool, GirySampling
-)
-
-model = nf.create_interpretation(sort=GirySampling(lambda: random.choice(universe)))
+from muller import Dist, nesy, parse, weighted
+from muller.hkt import List
+from muller.framework.nesy import BaseNeSyFramework
 
 
-def _drive(l: Universe) -> Prob[bool]:
+Signature = Literal["red", "green", "yellow"] | bool
+sort: List[Signature] = List(["red", "green", "yellow", False, True])
+
+nf = nesy(Dist, bool, List)
+
+model = nf.create_interpretation(sort=sort)
+
+
+def _drive(l: Signature) -> Dist[Signature]:
     """Drive function based on traffic light color."""
     match l:
         case "red":
@@ -25,41 +23,41 @@ def _drive(l: Universe) -> Prob[bool]:
         case "green":
             return weighted([(True, 0.9), (False, 0.1)])
         case _:
-            return Prob({})
+            return Dist({})
 
 
 @model.comp_fn()
-def driveF(l: Universe) -> Prob[bool]:
+def driveF(l: Signature) -> Dist[Signature]:
     return _drive(l)
 
 
 @model.comp_fn()
-def light() -> Prob[Universe]:
+def light() -> Dist[Signature]:
     return weighted([("red", 0.6), ("green", 0.3), ("yellow", 0.1)])
 
 
 @model.fn()
-def green() -> Universe:
+def green() -> Signature:
     return "green"
 
 
 @model.fn()
-def red() -> Universe:
+def red() -> Signature:
     return "red"
 
 
 @model.fn()
-def yellow() -> Universe:
+def yellow() -> Signature:
     return "yellow"
 
 
 @model.pred()
-def equals(a: Universe, b: Universe) -> bool:
+def equals(a: Signature, b: Signature) -> bool:
     return a == b
 
 
 @model.pred()
-def eval(x: Universe) -> bool:
+def eval(x: Signature) -> bool:
     if isinstance(x, bool):
         return x
 
@@ -67,8 +65,10 @@ def eval(x: Universe) -> bool:
 
 
 @model.comp_pred()
-def driveP(l: Universe) -> Prob[bool]:
-    return _drive(l)
+def driveP(l: Signature) -> Dist[bool]:
+    return _drive(l).bind(
+        lambda x: Dist.from_value(x) if isinstance(x, bool) else Dist({})
+    )
 
 
 # model = Interpretation[Universe, bool, list[Universe]](

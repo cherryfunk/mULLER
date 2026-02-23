@@ -3,12 +3,12 @@ from typing import Literal, Mapping
 
 from common import nf as prob_nf, traffic_light_model
 
+from muller.framework.interpretation import Interpretation
+from muller.framework.nesy import BaseNeSyFramework
 from muller.hkt import List
-from muller.monad.distribution import Prob, uniform
+from muller.monad.distribution import Dist, uniform
 from muller.monad.non_empty_powerset import NonEmptyPowerset, from_list, singleton
 from muller.nesy_framework import (
-    Interpretation,
-    NeSyFramework,
     nesy,
 )
 from muller.parser import (
@@ -40,7 +40,7 @@ class TestNeSyFramework(unittest.TestCase):
         self.universe = ["alice", "bob", "charlie"]
 
         # Probabilistic NeSy system
-        self.prob_nesy = nesy(Prob, bool, List)
+        self.prob_nesy = nesy(Dist, bool, List)
 
         # Non-deterministic NeSy system
         self.nondet_nesy = nesy(NonEmptyPowerset, bool, List)
@@ -66,7 +66,7 @@ class TestNeSyFramework(unittest.TestCase):
         # Test True formula
         true_formula = TrueFormula()
         result = self.prob_nesy.eval(true_formula, interpretation, valuation)
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(result._inner_value[True], 1.0)
 
         # Test False formula
@@ -74,7 +74,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = self.prob_nesy.eval(
             false_formula, interpretation, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(result._inner_value[False], 1.0)
 
         # Test predicate
@@ -82,7 +82,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = self.prob_nesy.eval(
             human_formula, interpretation, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(
             result._inner_value[True], 1.0
         )  # alice is human
@@ -113,7 +113,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = self.prob_nesy.eval(
             conj_formula, interpretation, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(
             result._inner_value[True], 1.0
         )  # Both parent(bob, alice) and male(bob) are true
@@ -121,7 +121,7 @@ class TestNeSyFramework(unittest.TestCase):
         # Test negation
         not_male = Negation(Predicate("male", [Variable("X")]))
         result = self.prob_nesy.eval(not_male, interpretation, valuation)
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(
             result._inner_value[True], 1.0
         )  # alice is not male
@@ -149,7 +149,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = self.prob_nesy.eval(
             forall_formula, interpretation, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(result._inner_value[True], 1.0)  # All are human
 
         # Test existential quantification: exists X likes(X alice)
@@ -163,7 +163,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = self.prob_nesy.eval(
             exists_formula, interpretation, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(
             result._inner_value[True], 1.0
         )  # alice likes alice
@@ -173,15 +173,15 @@ class TestNeSyFramework(unittest.TestCase):
         interpretation = self.prob_nesy.create_interpretation(
             sort=List(["alice", "bob"]),
             mfunctions={
-                "coin_flip": lambda _args: Prob(
+                "coin_flip": lambda _args: Dist(
                     {"alice": 0.5, "bob": 0.5}
                 ),
             },
             mpredicates={
                 "probably_tall": lambda args: (
-                    Prob({True: 0.8, False: 0.2})
+                    Dist({True: 0.8, False: 0.2})
                     if args[0] == "alice"
-                    else Prob({True: 0.3, False: 0.7})
+                    else Dist({True: 0.3, False: 0.7})
                 )
             },
         )
@@ -195,7 +195,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = self.prob_nesy.eval(
             prob_formula, interpretation, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertAlmostEqual(
             result._inner_value[True], 0.8, places=2
         )
@@ -210,7 +210,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = self.prob_nesy.eval(
             comp_formula, interpretation, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         # Expected: 0.5 * 0.8 + 0.5 * 0.3 = 0.55
         expected_true_prob = 0.5 * 0.8 + 0.5 * 0.3
         self.assertAlmostEqual(
@@ -270,15 +270,15 @@ class TestNeSyFramework(unittest.TestCase):
         interpretation = self.prob_nesy.create_interpretation(
             sort=List(["alice", "bob"]),
             mfunctions={
-                "random_person": lambda _args: Prob(
+                "random_person": lambda _args: Dist(
                     {"alice": 0.6, "bob": 0.4}
                 ),
             },
             mpredicates={
                 "tall": lambda args: (
-                    Prob({True: 0.7, False: 0.3})
+                    Dist({True: 0.7, False: 0.3})
                     if args[0] == "alice"
-                    else Prob({True: 0.4, False: 0.6})
+                    else Dist({True: 0.4, False: 0.6})
                 )
             },
         )
@@ -288,7 +288,7 @@ class TestNeSyFramework(unittest.TestCase):
         # Test monadic predicate parsing (using $ prefix)
         formula = parse("$tall(X)")
         result = self.prob_nesy.eval(formula, interpretation, valuation)
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertAlmostEqual(
             result._inner_value[True], 0.7, places=2
         )
@@ -296,7 +296,7 @@ class TestNeSyFramework(unittest.TestCase):
         # Test computation parsing
         formula = parse("Y := $random_person()($tall(Y))")
         result = self.prob_nesy.eval(formula, interpretation, valuation)
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         expected = 0.6 * 0.7 + 0.4 * 0.4  # 0.58
         self.assertAlmostEqual(
             result._inner_value[True], expected, places=2
@@ -325,19 +325,19 @@ class TestNeSyFramework(unittest.TestCase):
         # Test simple predicate parsing
         formula = parse("human(alice)")
         result = self.prob_nesy.eval(formula, interpretation, valuation)
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(result._inner_value[True], 1.0)
 
         # Test complex formula parsing
         formula = parse("human(X) and parent(Y, X)")
         result = self.prob_nesy.eval(formula, interpretation, valuation)
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(result._inner_value[True], 1.0)
 
         # Test implication
         formula = parse("human(X) -> parent(Y, X)")
         result = self.prob_nesy.eval(formula, interpretation, valuation)
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(result._inner_value[True], 1.0)
 
     def test_parser_integration_quantifiers(self):
@@ -355,13 +355,13 @@ class TestNeSyFramework(unittest.TestCase):
         # Test universal quantification
         formula = parse("![X]: (human(X) -> mortal(X))")
         result = self.prob_nesy.eval(formula, interpretation, valuation)
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(result._inner_value[True], 1.0)
 
         # Test existential quantification
         formula = parse("?[X]: human(X)")
         result = self.prob_nesy.eval(formula, interpretation, valuation)
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(result._inner_value[True], 1.0)
 
     def test_function_applications(self):
@@ -389,7 +389,7 @@ class TestNeSyFramework(unittest.TestCase):
         # Test function application in predicate
         formula = parse("human(father(X))")
         result = self.prob_nesy.eval(formula, interpretation, valuation)
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(
             result._inner_value[True], 1.0
         )  # human(father(alice)) = human(bob) = True
@@ -407,7 +407,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = self.prob_nesy.eval(
             forall_formula, interpretation, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(
             result._inner_value[True], 1.0
         )  # Vacuously true
@@ -416,7 +416,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = self.prob_nesy.eval(
             exists_formula, interpretation, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(
             result._inner_value[False], 1.0
         )  # No elements to satisfy
@@ -429,7 +429,7 @@ class TestNeSyFramework(unittest.TestCase):
                 "outcome": lambda _args: "good",
             },  # Deterministic function
             mfunctions={
-                "random_outcome": lambda _args: Prob(
+                "random_outcome": lambda _args: Dist(
                     {"good": 0.8, "bad": 0.2}
                 ),
             },
@@ -438,9 +438,9 @@ class TestNeSyFramework(unittest.TestCase):
             },
             mpredicates={
                 "likely_positive": lambda args: (
-                    Prob({True: 0.9, False: 0.1})
+                    Dist({True: 0.9, False: 0.1})
                     if args[0] == "good"
-                    else Prob({True: 0.1, False: 0.9})
+                    else Dist({True: 0.1, False: 0.9})
                 )
             },
         )
@@ -450,7 +450,7 @@ class TestNeSyFramework(unittest.TestCase):
         # Test deterministic function with probabilistic predicate
         formula = parse("positive(outcome)")
         result = self.prob_nesy.eval(formula, interpretation, valuation)
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertEqual(result._inner_value[True], 1.0)
 
         # Test probabilistic computation with deterministic predicate
@@ -463,7 +463,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = self.prob_nesy.eval(
             comp_formula, interpretation, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         # Expected: 0.8 * 1.0 + 0.2 * 0.0 = 0.8
         self.assertAlmostEqual(
             result._inner_value[True], 0.8, places=2
@@ -474,20 +474,20 @@ class TestNeSyFramework(unittest.TestCase):
         interpretation = self.prob_nesy.create_interpretation(
             sort=List(["low", "medium", "high"]),
             mfunctions={
-                "confidence_level": lambda _args: Prob(
+                "confidence_level": lambda _args: Dist(
                     {"low": 0.3, "medium": 0.5, "high": 0.2}
                 ),
                 "adjust_confidence": lambda args: (
-                    Prob(
+                    Dist(
                         {"low": 0.8, "medium": 0.15, "high": 0.05}
                     )
                     if args[0] == "low"
                     else (
-                        Prob(
+                        Dist(
                             {"low": 0.1, "medium": 0.3, "high": 0.6}
                         )
                         if args[0] == "medium"
-                        else Prob(
+                        else Dist(
                             {"low": 0.05, "medium": 0.25, "high": 0.7}
                         )
                     )
@@ -495,12 +495,12 @@ class TestNeSyFramework(unittest.TestCase):
             },
             mpredicates={
                 "high_confidence": lambda args: (
-                    Prob({True: 0.9, False: 0.1})
+                    Dist({True: 0.9, False: 0.1})
                     if args[0] == "high"
                     else (
-                        Prob({True: 0.5, False: 0.5})
+                        Dist({True: 0.5, False: 0.5})
                         if args[0] == "medium"
-                        else Prob({True: 0.1, False: 0.9})
+                        else Dist({True: 0.1, False: 0.9})
                     )
                 )
             },
@@ -528,7 +528,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = self.prob_nesy.eval(
             nested_formula, interpretation, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         # This should compute the probability through all
         # the nested transformations
         self.assertTrue(0.0 <= result._inner_value[True] <= 1.0)
@@ -611,7 +611,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = self.prob_nesy.eval(
             dice_formula, interpretation, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         # P(X == 6 ∧ even(X))  = 1/6 * 1 = 1/6
         expected_prob = 1 / 6
         self.assertAlmostEqual(
@@ -643,7 +643,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = self.prob_nesy.eval(
             dice_formula, interpretation, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         # P(X == 6) * P(even(X)) = 1/6 * 3/6 = 1/12
         expected_prob = 1 / 12
         self.assertAlmostEqual(
@@ -663,7 +663,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = prob_nf.eval(
             light_formula, traffic_light_model, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertAlmostEqual(
             result._inner_value[True], 0.92, places=5
         )
@@ -679,7 +679,7 @@ class TestNeSyFramework(unittest.TestCase):
         result = prob_nf.eval(
             light_formula, traffic_light_model, valuation
         )
-        self.assertIsInstance(result, Prob)
+        self.assertIsInstance(result, Dist)
         self.assertAlmostEqual(
             result._inner_value[True], 0.92, places=5
         )
