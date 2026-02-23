@@ -4,8 +4,9 @@ import Syntax (Signature (..))
 
 -- | The Weather signature
 -- Sorts: Humidity, Temperature
--- Functions: humid_detector, temperature_predictor
--- Relations: ==, <, >
+-- Funcs: humid_detector, temperature_predictor
+-- Rels: ==, <, >
+-- MFuncs: bernoulli, normal
 weatherSig :: Signature
 weatherSig =
   Signature
@@ -18,5 +19,10 @@ weatherSig =
         [ ("==", ["Humidity", "Humidity"]),
           ("<", ["Temperature", "Temperature"]),
           (">", ["Temperature", "Temperature"])
-        ]
+        ],
+      mFunDecls =
+        [ ("bernoulli", ["Temperature"], "Humidity"),
+          ("normal", ["Temperature"], "Temperature")
+        ],
+      mRelDecls = []
     }

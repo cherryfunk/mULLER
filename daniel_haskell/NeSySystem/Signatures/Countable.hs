@@ -4,7 +4,8 @@ import Syntax (Signature (..))
 
 -- | The Countable signature
 -- Sorts: Nat, CoinSeq
--- Relations: >3, startsTT, isEven, isAnything
+-- Rels: >3, startsTT, isEven, isAnything
+-- MFuncs: drawInt, drawStr, drawLazy, drawHeavy
 countableSig :: Signature
 countableSig =
   Signature
@@ -15,5 +16,12 @@ countableSig =
           ("startsTT", ["CoinSeq"]),
           ("isEven", ["Nat"]),
           ("isAnything", ["Nat"])
-        ]
+        ],
+      mFunDecls =
+        [ ("drawInt", [], "Nat"),
+          ("drawStr", [], "CoinSeq"),
+          ("drawLazy", [], "Nat"),
+          ("drawHeavy", [], "Nat")
+        ],
+      mRelDecls = []
     }

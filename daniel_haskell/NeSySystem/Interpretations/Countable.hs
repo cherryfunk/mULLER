@@ -1,17 +1,14 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module NeSySystem.Interpretations.Countable (countableInterp) where
 
 import Data.List (isPrefixOf)
-import qualified Data.Map as Map
 import Data.Typeable (cast)
 import NeSyFramework.Categories.DATA (DataObj (..))
 import NeSyFramework.Monads.Giry (Giry, categorical)
+import NeSySystem.Signatures.Countable (countableSig)
 import Semantics (DynVal (..), Interpretation (..), SomeObj (..))
-
--- | Interpretation of the Countable signature on DATA with Giry monad.
--- sort Nat     -> Integers
--- sort CoinSeq -> Integers
 
 -- | Infinite geometric distribution over Int
 drawIntMeasure :: Giry DynVal
@@ -45,39 +42,29 @@ drawHeavyMeasure =
 countableInterp :: Interpretation Giry Double
 countableInterp =
   Interpretation
-    { sorts =
-        Map.fromList
-          [ ("Nat", SomeObj Integers),
-            ("CoinSeq", SomeObj Integers)
-          ],
-      funcs = Map.empty,
-      rels =
-        Map.fromList
-          [ ( ">3",
-              \[DynVal x] -> case cast x of
-                Just (a :: Int) -> if a > 3 then 1.0 else 0.0
-                _ -> 0.0
-            ),
-            ( "startsTT",
-              \[DynVal s] -> case cast s of
-                Just (str :: String) -> if "TT" `isPrefixOf` str then 1.0 else 0.0
-                _ -> 0.0
-            ),
-            ( "isEven",
-              \[DynVal x] -> case cast x of
-                Just (a :: Int) -> if even a then 1.0 else 0.0
-                _ -> 0.0
-            ),
-            ( "isAnything",
-              \[_] -> 1.0
-            )
-          ],
-      mfuncs =
-        Map.fromList
-          [ ("drawInt", \[] -> drawIntMeasure),
-            ("drawStr", \[] -> drawStrMeasure),
-            ("drawLazy", \[] -> drawLazyMeasure),
-            ("drawHeavy", \[] -> drawHeavyMeasure)
-          ],
-      mrels = Map.empty
+    { sig = countableSig,
+      interpSort = \case
+        "Nat" -> SomeObj Integers
+        "CoinSeq" -> SomeObj Integers
+        s -> error $ "Countable: unknown sort " ++ s,
+      interpFunc = \f _ -> error $ "Countable: unknown func " ++ f,
+      interpRel = \case
+        ">3" -> \[DynVal x] -> case cast x of
+          Just (a :: Int) -> if a > 3 then 1.0 else 0.0
+          _ -> 0.0
+        "startsTT" -> \[DynVal s] -> case cast s of
+          Just (str :: String) -> if "TT" `isPrefixOf` str then 1.0 else 0.0
+          _ -> 0.0
+        "isEven" -> \[DynVal x] -> case cast x of
+          Just (a :: Int) -> if even a then 1.0 else 0.0
+          _ -> 0.0
+        "isAnything" -> \[_] -> 1.0
+        r -> error $ "Countable: unknown rel " ++ r,
+      interpMFunc = \case
+        "drawInt" -> \[] -> drawIntMeasure
+        "drawStr" -> \[] -> drawStrMeasure
+        "drawLazy" -> \[] -> drawLazyMeasure
+        "drawHeavy" -> \[] -> drawHeavyMeasure
+        mf -> error $ "Countable: unknown mfunc " ++ mf,
+      interpMRel = \mr _ -> error $ "Countable: unknown mrel " ++ mr
     }

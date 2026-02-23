@@ -19,26 +19,27 @@ data SomeObj where
 
 type Valuation = Map.Map VarSym DynVal
 
+-- | An Interpretation of a Signature in a category with monad m and truth type tau.
+-- Each field is a function that maps a declared symbol to its semantic meaning.
+-- The Signature provides the symbols; the functions provide the mappings.
 data Interpretation m tau = Interpretation
-  { sorts :: Map.Map SortSym SomeObj, -- sort -> object of DATA
-    funcs :: Map.Map FunSym ([DynVal] -> DynVal),
-    rels :: Map.Map RelSym ([DynVal] -> tau),
-    mfuncs :: Map.Map FunSym ([DynVal] -> m DynVal),
-    mrels :: Map.Map RelSym ([DynVal] -> m tau)
+  { sig :: Signature,
+    interpSort :: SortSym -> SomeObj,
+    interpFunc :: FunSym -> [DynVal] -> DynVal,
+    interpRel :: RelSym -> [DynVal] -> tau,
+    interpMFunc :: MFunSym -> [DynVal] -> m DynVal,
+    interpMRel :: MRelSym -> [DynVal] -> m tau
   }
 
-look :: String -> Map.Map String v -> v
-look k m = Map.findWithDefault (error $ "Missing: " ++ k) k m
-
 evalTerm :: Interpretation m tau -> Valuation -> Term -> DynVal
-evalTerm _ val (Var x) = look x val
+evalTerm _ val (Var x) = Map.findWithDefault (error $ "Missing var: " ++ x) x val
 evalTerm _ _ (Con c) = DynVal c
-evalTerm i val (Fun f args) = look f (funcs i) (map (evalTerm i val) args)
+evalTerm i val (Fun f args) = interpFunc i f (map (evalTerm i val) args)
 
 evalFormula :: (Monad m, TwoMonBLat tau) => Interpretation m tau -> Valuation -> Formula -> m tau
 evalFormula i val f = case f of
-  Rel r args -> return $ look r (rels i) (map (evalTerm i val) args)
-  MRel r args -> look r (mrels i) (map (evalTerm i val) args)
+  Rel r args -> return $ interpRel i r (map (evalTerm i val) args)
+  MRel r args -> interpMRel i r (map (evalTerm i val) args)
   Bot -> return Truth.bot
   Top -> return Truth.top
   V0 -> return Truth.v0
@@ -49,7 +50,7 @@ evalFormula i val f = case f of
   Otimes p q -> liftB Truth.otimes p q
   Subst ss phi -> evalFormula i (foldl (\v (x, t) -> Map.insert x (evalTerm i val t) v) val ss) phi
   Compu x m_sym as phi -> do
-    valM <- look m_sym (mfuncs i) (map (evalTerm i val) as)
+    valM <- interpMFunc i m_sym (map (evalTerm i val) as)
     evalFormula i (Map.insert x valM val) phi
   where
     liftB op p q = do

@@ -4,7 +4,9 @@ import Syntax (Signature (..))
 
 -- | The Traffic Light signature
 -- Sorts: Light, Drive
--- Relations: ==, eval
+-- Rels: ==, eval
+-- MFuncs: light, driveF
+-- MRels: driveP
 trafficSig :: Signature
 trafficSig =
   Signature
@@ -13,5 +15,12 @@ trafficSig =
       relDecls =
         [ ("==", ["Light", "Light"]),
           ("eval", ["Drive"])
+        ],
+      mFunDecls =
+        [ ("light", [], "Light"),
+          ("driveF", ["Light"], "Drive")
+        ],
+      mRelDecls =
+        [ ("driveP", ["Light"])
         ]
     }

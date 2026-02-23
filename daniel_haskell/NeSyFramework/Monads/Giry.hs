@@ -15,6 +15,7 @@ import qualified Statistics.Distribution.Gamma as G
 import qualified Statistics.Distribution.Laplace as L
 import qualified Statistics.Distribution.Normal as N
 import qualified Statistics.Distribution.StudentT as T
+import qualified Statistics.Distribution.Uniform as U
 
 -- | The Giry Monad represented as an Abstract Syntax Tree (Free Monad).
 -- This separates the monadic structure from the concrete evaluation, allowing
@@ -96,9 +97,7 @@ evalGiry (Categorical xs) f =
 evalGiry (Normal mu sigma) f =
   evalGiry (GenericCont (N.normalDistr mu sigma)) f
 evalGiry (Uniform a b) f =
-  if a == b
-    then 0.0
-    else integrateNT (\x -> (1 / (b - a)) * f x) (a, b)
+  evalGiry (GenericCont (U.uniformDistr a b)) f
 evalGiry (Exponential lambda) f =
   evalGiry (GenericCont (E.exponential lambda)) f
 evalGiry (Beta alpha beta) f =
@@ -155,12 +154,12 @@ chainedDiscreteStrategy xs f =
   case algebraicSimplify xs f of
     Just exactVal -> exactVal
     Nothing ->
-      -- Fallback 2: Lazy Evaluated Bounded Convergence
+      -- Fallback 1: Lazy Evaluated Bounded Convergence
       let go _ _ acc [] = acc
           go iter pSum acc ((x, p) : rest)
             | pSum >= 1.0 - giryQuadPrecision = acc + p * f x
             | iter >= giryMaxDiscreteIter =
-                -- Fallback 3: Monte Carlo Quasi-Sampling of the infinite heavy tail
+                -- Fallback 2: Monte Carlo Quasi-Sampling of the infinite heavy tail
                 acc + p * f x + stridedMonteCarlo rest (pSum + p) f
             | otherwise = go (iter + 1) (pSum + p) (acc + p * f x) rest
        in go 0 0.0 0.0 xs
@@ -188,7 +187,7 @@ algebraicSimplify xs f =
                           else Nothing
    in checkGeometric terms
 
--- | Fallback 3: Strided Monte Carlo Approximation (Quasi-Monte Carlo)
+-- | Fallback 2: Strided Monte Carlo Approximation (Quasi-Monte Carlo)
 stridedMonteCarlo :: [(a, Double)] -> Double -> (a -> Double) -> Double
 stridedMonteCarlo tailXs pSumStart f =
   let stride = 50
