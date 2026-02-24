@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs #-}
 
-module NeSyFramework.Categories.TENS where
+module NonLogical.Categories.TENS where
 
 import Torch (Tensor)
 

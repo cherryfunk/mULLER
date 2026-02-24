@@ -3,10 +3,10 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module NeSyFramework.Monads.Giry where
+module NonLogical.Monads.Giry where
 
 import Control.Monad (ap)
-import NeSyFramework.Categories.DATA (DataObj (..))
+import NonLogical.Categories.DATA (DATA (..))
 import Numeric.Tools.Integration (QuadParam (..), defQuad, quadBestEst, quadRes, quadRomberg)
 import Statistics.Distribution (ContDistr (density, quantile), Mean (mean), Variance (stdDev))
 import qualified Statistics.Distribution.Beta as B
@@ -65,18 +65,18 @@ instance Monad Giry where
 --------------------------------------------------------------------------------
 
 -- | The public API for evaluating expectations.
--- Takes a DataObj to specify which object of DATA we are computing the expectation on.
+-- Takes a DATA to specify which object of DATA we are computing the expectation on.
 -- This tells the Giry monad how to integrate at the top level.
 --
 -- Information flow: DATA defines objects -> Giry reads them and decides how to integrate.
 --
 -- For compound expressions (Bind chains), the inner measures self-identify via their
--- constructors (Categorical, Normal, etc.), so the DataObj drives the top-level strategy
+-- constructors (Categorical, Normal, etc.), so the DATA drives the top-level strategy
 -- while inner layers are handled by the constructor-driven 'eval' function.
-expectation :: DataObj a -> Giry a -> (a -> Double) -> Double
+expectation :: DATA a -> Giry a -> (a -> Double) -> Double
 expectation obj giry f = eval giry f
   where
-    -- For Categorical at the top level, use the DataObj to choose strategy
+    -- For Categorical at the top level, use the DATA to choose strategy
     eval (Categorical xs) g = integrateDiscrete obj xs g
     -- All other cases delegate to the constructor-driven evaluator
     eval other g = evalGiry other g
@@ -125,9 +125,9 @@ evalGiry (GenericCont dist) f =
 evalGiry (ContinuousPdf pdf (a, b)) f =
   integrateNT (\x -> pdf x * f x) (a, b)
 
--- | Discrete integration strategy, driven by the DataObj.
+-- | Discrete integration strategy, driven by the DATA.
 -- This is where the category DATA tells the Giry monad HOW to sum.
-integrateDiscrete :: DataObj a -> [(a, Double)] -> (a -> Double) -> Double
+integrateDiscrete :: DATA a -> [(a, Double)] -> (a -> Double) -> Double
 -- Finite objects: direct finite summation (always terminates)
 integrateDiscrete (Finite _) xs f = sum [p * f x | (x, p) <- xs]
 integrateDiscrete Booleans xs f = sum [p * f x | (x, p) <- xs]

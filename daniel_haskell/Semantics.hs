@@ -4,9 +4,9 @@ module Semantics where
 
 import qualified Data.Map as Map
 import Data.Typeable (Typeable)
-import NeSyFramework.Categories.DATA (DataObj)
-import NeSyFramework.TruthSpaces.TwoMonBLat (TwoMonBLat)
-import qualified NeSyFramework.TruthSpaces.TwoMonBLat as Truth
+import NonLogical.Categories.DATA (DATA)
+import Logical.Signatures.TwoMonBLat (TwoMonBLat)
+import qualified Logical.Signatures.TwoMonBLat as Truth
 import Syntax
 
 data DynVal where
@@ -15,7 +15,7 @@ data DynVal where
 -- | Existential wrapper for heterogeneous collections (e.g., mapping sort symbols to objects).
 -- This is interpretation plumbing, not part of the category definition itself.
 data SomeObj where
-  SomeObj :: (Typeable a) => DataObj a -> SomeObj
+  SomeObj :: (Typeable a) => DATA a -> SomeObj
 
 type Valuation = Map.Map VarSym DynVal
 
