@@ -11,7 +11,7 @@ except ImportError:
     subprocess.run([sys.executable, "-m", "pip", "install", "matplotlib", "--user"])
     import matplotlib.pyplot as plt
 
-GIRY_PATH = "daniel_haskell/NeSyFramework/Monads/Giry.hs"
+GIRY_PATH = "daniel_haskell/NonLogical/Monads/Giry.hs"
 NESY_PATH = "Haskell/NeSy.hs"
 
 giry_configs = [
