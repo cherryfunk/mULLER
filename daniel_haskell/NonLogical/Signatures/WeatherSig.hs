@@ -8,6 +8,7 @@ module NonLogical.Signatures.WeatherSig where
 
 import Logical.Interpretations.Real (Omega)
 import Logical.Signatures.TwoMonBLat (TwoMonBLat)
+import NonLogical.Categories.DATA (MonadOver)
 
 -- | Table Sorts
 type Worlds = String
@@ -25,7 +26,7 @@ data WorldsRow = WorldsRow
     tempStd :: Double
   }
 
-class (TwoMonBLat Omega) => WeatherSig cat t where
+class (TwoMonBLat Omega, MonadOver cat t) => WeatherSig cat t where
   -- Sor (all sorts used in this signature, proven to be in cat)
   worldsObj :: cat Worlds
   humidDetectorObj :: cat Double

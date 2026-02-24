@@ -10,8 +10,9 @@ module NonLogical.Signatures.CountableSig where
 import Data.Kind (Type)
 import Logical.Interpretations.Real (Omega)
 import Logical.Signatures.TwoMonBLat (TwoMonBLat)
+import NonLogical.Categories.DATA (MonadOver)
 
-class (TwoMonBLat Omega) => CountableSig (cat :: Type -> Type) t where
+class (TwoMonBLat Omega, MonadOver cat t) => CountableSig (cat :: Type -> Type) t where
   -- Sor
 
   -- Const

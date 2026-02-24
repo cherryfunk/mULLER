@@ -32,38 +32,38 @@ evalTerm val (Fun f arg) =
 
 -- | Evaluate a formula. Logical connectives come from the TwoMonBLat constraint.
 evalFormula :: forall m r tau. (TwoMonBLat tau, Typeable m, Monad m, Typeable r, Typeable tau) => Valuation -> Formula r -> m r
-evalFormula _ Top = case eqT @r @tau of
+evalFormula _ Top_ = case eqT @r @tau of
   Just Refl -> return top
   Nothing -> error "Type mismatch: Top"
-evalFormula _ Bot = case eqT @r @tau of
+evalFormula _ Bot_ = case eqT @r @tau of
   Just Refl -> return bot
   Nothing -> error "Type mismatch: Bot"
-evalFormula _ V0 = case eqT @r @tau of
+evalFormula _ V0_ = case eqT @r @tau of
   Just Refl -> return v0
   Nothing -> error "Type mismatch: V0"
-evalFormula _ V1 = case eqT @r @tau of
+evalFormula _ V1_ = case eqT @r @tau of
   Just Refl -> return v1
   Nothing -> error "Type mismatch: V1"
 evalFormula val (Rel term) = return (evalTerm val term)
-evalFormula val (Wedge p q) = case eqT @r @tau of
+evalFormula val (Wedge_ p q) = case eqT @r @tau of
   Just Refl -> do
     p' <- evalFormula @m @r @tau val p
     q' <- evalFormula @m @r @tau val q
     return (wedge p' q')
   Nothing -> error "Type mismatch in Wedge"
-evalFormula val (Vee p q) = case eqT @r @tau of
+evalFormula val (Vee_ p q) = case eqT @r @tau of
   Just Refl -> do
     p' <- evalFormula @m @r @tau val p
     q' <- evalFormula @m @r @tau val q
     return (vee p' q')
   Nothing -> error "Type mismatch in Vee"
-evalFormula val (Oplus p q) = case eqT @r @tau of
+evalFormula val (Oplus_ p q) = case eqT @r @tau of
   Just Refl -> do
     p' <- evalFormula @m @r @tau val p
     q' <- evalFormula @m @r @tau val q
     return (oplus p' q')
   Nothing -> error "Type mismatch in Oplus"
-evalFormula val (Otimes p q) = case eqT @r @tau of
+evalFormula val (Otimes_ p q) = case eqT @r @tau of
   Just Refl -> do
     p' <- evalFormula @m @r @tau val p
     q' <- evalFormula @m @r @tau val q
@@ -82,7 +82,7 @@ evalFormula val (Compu x (mTerm :: Term (m1 a)) phi) = do
 
 -- | Evaluate a comparison
 evalComparison :: forall tau m. (TwoMonBLat tau, Typeable m, Monad m, Typeable tau) => Valuation -> Comparison tau -> m Bool
-evalComparison val (Comparison p q) = do
+evalComparison val (Comparison_ p q) = do
   p' <- evalFormula @m @tau @tau val p
   q' <- evalFormula @m @tau @tau val q
   return (vdash p' q')

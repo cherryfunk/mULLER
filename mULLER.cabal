@@ -49,7 +49,10 @@ executable daniel-haskell
     NonLogical.Interpretations.TrafficLight,
     NonLogical.Interpretations.Countable,
     Logical.Interpretations.Real,
-    Logical.Interpretations.Boolean
+    Logical.Interpretations.Boolean,
+    Logical.Interpretations.Product,
+    Logical.Interpretations.Goedel,
+    Logical.Interpretations.Lukasiewicz
   build-depends:
     base >=4.16,
     containers,

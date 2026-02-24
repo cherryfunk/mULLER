@@ -1,8 +1,10 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module NonLogical.Monads.Dist where
 
 import Control.Monad (ap, liftM)
+import NonLogical.Categories.DATA (DATA, MonadOver (..))
 
 -- | The Distribution Monad.
 -- We use newtype to define our custom probability logic for >>=
@@ -30,6 +32,9 @@ instance Monad Dist where
     Dist $
       concat
         [[(y, p * q) | (y, q) <- runDist (f x)] | (x, p) <- xs]
+
+-- | Dist is a monad ON the DATA category.
+instance MonadOver DATA Dist
 
 -- | Compute expectation of a function over a distribution
 expectDist :: Dist a -> (a -> Double) -> Double

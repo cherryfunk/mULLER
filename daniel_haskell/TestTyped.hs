@@ -14,7 +14,7 @@ import TypedSyntax
 testFormula :: Formula Omega
 testFormula =
   let boolEmbed b = if b then (v1 :: Omega) else (v0 :: Omega)
-   in Wedge
+   in wedge
         (Rel (Con boolEmbed `Fun` (Con even `Fun` Con (3 :: Int))))
         (Rel (Con boolEmbed `Fun` (Con ((==) @Int) `Fun` Con (3 :: Int) `Fun` Con (4 :: Int))))
 

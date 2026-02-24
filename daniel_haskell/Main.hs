@@ -6,6 +6,7 @@ module Main where
 
 import qualified Data.Map as Map
 import Logical.Interpretations.Real (Omega)
+import Logical.Signatures.TwoMonBLat (TwoMonBLat (..))
 import NonLogical.Categories.DATA (DATA (..))
 import NonLogical.Interpretations.Countable ()
 import NonLogical.Interpretations.Dice ()
@@ -27,13 +28,13 @@ import TypedSyntax
 dieSen1 :: Formula Omega
 dieSen1 =
   Compu "x" (Con (die @DATA @Dist)) $
-    Wedge
+    wedge
       (Rel (Con (eqDie @DATA @Dist) `Fun` Var @Int "x" `Fun` Con (6 :: Int)))
       (Rel (Con (evenDie @DATA @Dist) `Fun` Var @Int "x"))
 
 dieSen2 :: Formula Omega
 dieSen2 =
-  Wedge
+  wedge
     (Compu "x" (Con (die @DATA @Dist)) (Rel (Con (eqDie @DATA @Dist) `Fun` Var @Int "x" `Fun` Con (6 :: Int))))
     (Compu "x" (Con (die @DATA @Dist)) (Rel (Con (evenDie @DATA @Dist) `Fun` Var @Int "x")))
 
@@ -52,12 +53,12 @@ weatherSen1 :: Formula Omega
 weatherSen1 =
   Compu "h" (Con (bernoulli @DATA @Giry) `Fun` (Con (humid_detector @DATA @Giry) `Fun` Con (data1 @DATA @Giry))) $
     Compu "t" (Con (normalDist @DATA @Giry) `Fun` (Con (temperature_predictor @DATA @Giry) `Fun` Con (data1 @DATA @Giry))) $
-      Vee
-        ( Wedge
+      vee
+        ( wedge
             (Rel (Con (eqInt @DATA @Giry) `Fun` Var @Int "h" `Fun` Con (1 :: Int)))
             (Rel (Con (ltDouble @DATA @Giry) `Fun` Var @Double "t" `Fun` Con (0.0 :: Double)))
         )
-        ( Wedge
+        ( wedge
             (Rel (Con (eqInt @DATA @Giry) `Fun` Var @Int "h" `Fun` Con (0 :: Int)))
             (Rel (Con (gtDouble @DATA @Giry) `Fun` Var @Double "t" `Fun` Con (15.0 :: Double)))
         )
@@ -69,7 +70,7 @@ countableSen1 :: Formula Omega
 countableSen1 =
   Compu "x" (Con (drawInt @DATA @Giry)) $
     Compu "y" (Con (drawStr @DATA @Giry)) $
-      Wedge
+      wedge
         (Rel (Con (gt3 @DATA @Giry) `Fun` Var @Int "x"))
         (Rel (Con (startsTT @DATA @Giry) `Fun` Var @String "y"))
 
@@ -118,10 +119,10 @@ main = do
       let t1 = evalFormula @Giry @Omega @Omega Map.empty trafficSen1
       print (expectation Reals t1 id)
 
-      putStrLn "\n[WEATHER] Evaluating P((h=1 /\\ t<0) \\/ (h=0 /\\ t>15))"
+      putStrLn "\n[WEATHER] Evaluating P(vee (wedge (h=1) (t<0)) (wedge (h=0) (t>15)))"
       let w1 = evalFormula @Giry @Omega @Omega Map.empty weatherSen1
       print (expectation Reals w1 id)
 
-      putStrLn "\n[COUNTABLE] Evaluating P(int > 3 /\\ string starts with TT)"
+      putStrLn "\n[COUNTABLE] Evaluating P(wedge (int > 3) (string starts with TT))"
       let c1 = evalFormula @Giry @Omega @Omega Map.empty countableSen1
       print (expectation Reals c1 id)

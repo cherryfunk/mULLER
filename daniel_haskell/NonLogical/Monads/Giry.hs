@@ -1,12 +1,13 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module NonLogical.Monads.Giry where
 
 import Control.Monad (ap)
-import NonLogical.Categories.DATA (DATA (..))
+import NonLogical.Categories.DATA (DATA (..), MonadOver (..))
 import Numeric.Tools.Integration (QuadParam (..), defQuad, quadBestEst, quadRes, quadRomberg)
 import Statistics.Distribution (ContDistr (density, quantile), Mean (mean), Variance (stdDev))
 import qualified Statistics.Distribution.Beta as B
@@ -16,6 +17,9 @@ import qualified Statistics.Distribution.Laplace as L
 import qualified Statistics.Distribution.Normal as N
 import qualified Statistics.Distribution.StudentT as T
 import qualified Statistics.Distribution.Uniform as U
+
+-- | Giry is a monad ON the DATA category.
+instance MonadOver DATA Giry
 
 -- | The Giry Monad represented as an Abstract Syntax Tree (Free Monad).
 -- This separates the monadic structure from the concrete evaluation, allowing
@@ -61,86 +65,111 @@ instance Monad Giry where
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
--- EXPECTATION EVALUATION (DRIVEN BY CATEGORY DATA)
+-- EXPECTATION EVALUATION
+-- Giry is a monad ON DATA. For EACH OBJECT of DATA, we define how to integrate.
+-- The DATA object drives the strategy for Categorical (discrete) distributions.
+-- Continuous distributions (Normal, GenericCont, etc.) self-evaluate via their
+-- built-in distribution information.
+-- Bind chains use the Law of Total Expectation: E[f(Y)] = E[E[f(Y)|X]].
 --------------------------------------------------------------------------------
 
--- | The public API for evaluating expectations.
--- Takes a DATA to specify which object of DATA we are computing the expectation on.
--- This tells the Giry monad how to integrate at the top level.
---
--- Information flow: DATA defines objects -> Giry reads them and decides how to integrate.
---
--- For compound expressions (Bind chains), the inner measures self-identify via their
--- constructors (Categorical, Normal, etc.), so the DATA drives the top-level strategy
--- while inner layers are handled by the constructor-driven 'eval' function.
+-- | The public API: compute E_μ[f] where μ : Giry a, for object (DATA a).
+-- This is THE contract: for every constructor of DATA, we specify the strategy.
 expectation :: DATA a -> Giry a -> (a -> Double) -> Double
-expectation obj giry f = eval giry f
-  where
-    -- For Categorical at the top level, use the DATA to choose strategy
-    eval (Categorical xs) g = integrateDiscrete obj xs g
-    -- All other cases delegate to the constructor-driven evaluator
-    eval other g = evalGiry other g
+-- Pure: structural, same for all objects
+expectation _ (Pure x) f = f x
+-- Bind: Law of Total Expectation E[f(Y)] = E_x[E[f(Y)|X=x]]
+-- The intermediate type x is existentially hidden, so we recurse generically.
+-- The inner computation (k x) will hit the correct object-specific branch when
+-- it reaches a Categorical leaf.
+expectation obj (Bind m k) f = evalBind m (\x -> expectation obj (k x) f)
+-- 1. Reals (ℝ) — Categorical on Reals is an error. Use continuous constructors.
+expectation Reals (Categorical _) _ = error "Giry: Categorical on Reals — use Normal, Uniform, GenericCont, etc."
+expectation Reals giry f = evalContinuous giry f
+-- 2. Integers (ℤ) — countably infinite: chained convergence strategy.
+expectation Integers (Categorical xs) f = chainedDiscreteStrategy xs f
+-- 3. Strings (countably infinite, like Integers).
+expectation Strings (Categorical xs) f = chainedDiscreteStrategy xs f
+-- 4. Booleans ({True, False}) — finite set with exactly 2 elements.
+expectation Booleans (Categorical xs) f = sum [p * f x | (x, p) <- xs]
+-- 5. Finite sets ({x₁, ..., xₙ}) — finite direct summation.
+expectation (Finite _) (Categorical xs) f = sum [p * f x | (x, p) <- xs]
+-- 6. Unit ({()}) — trivial: only one element.
+expectation UnitObj _ f = f ()
+-- 6. Products (A × B) — Categorical on products: finite summation.
+--    For continuous products (ℝ × ℝ), one would need iterated quadrature (Fubini).
+--    Currently, products are constructed via Bind chains which decompose them.
+expectation (ProductObj _ _) (Categorical xs) f = sum [p * f x | (x, p) <- xs]
 
--- | Constructor-driven evaluator (handles Bind chains and all Giry constructors).
--- This is the internal workhorse that evaluates the AST recursively.
--- For Categorical, it defaults to finite summation (safe for Bind-internal categoricals).
--- For continuous constructors, it uses their built-in distribution information.
-evalGiry :: Giry a -> (a -> Double) -> Double
-evalGiry (Pure x) f = f x
-evalGiry (Bind m k) f =
-  -- Law of Total Expectation: E[E[f(Y) | X]] = E[f(Y)]
-  evalGiry m (\x -> evalGiry (k x) f)
-evalGiry (Categorical xs) f =
-  -- Must use chained strategy since Categorical can hold infinite lazy lists.
-  -- chainedDiscreteStrategy handles both finite and infinite cases correctly.
-  chainedDiscreteStrategy xs f
-evalGiry (Normal mu sigma) f =
-  evalGiry (GenericCont (N.normalDistr mu sigma)) f
-evalGiry (Uniform a b) f =
-  evalGiry (GenericCont (U.uniformDistr a b)) f
-evalGiry (Exponential lambda) f =
-  evalGiry (GenericCont (E.exponential lambda)) f
-evalGiry (Beta alpha beta) f =
-  evalGiry (GenericCont (B.betaDistr alpha beta)) f
-evalGiry (Gamma shape scale) f =
-  evalGiry (GenericCont (G.gammaDistr shape scale)) f
-evalGiry (Laplace loc scale) f =
-  evalGiry (GenericCont (L.laplace loc scale)) f
-evalGiry (StudentT ndf) f =
-  -- StudentT often lacks a finite Variance or Mean (e.g., Cauchy when ndf=1),
-  -- so it cannot route through GenericCont's O(1) typeclass bounds.
+--------------------------------------------------------------------------------
+-- INTERNAL: Generic Bind evaluator
+-- Handles the existential type in Bind :: Giry x -> (x -> Giry a) -> Giry a
+-- The intermediate type x is unknown, so we evaluate m generically and pass
+-- the result to the continuation.
+--------------------------------------------------------------------------------
+
+evalBind :: Giry x -> (x -> Double) -> Double
+evalBind (Pure x) f = f x
+evalBind (Bind m k) f = evalBind m (\x -> evalBind (k x) f)
+evalBind (Categorical xs) f = chainedDiscreteStrategy xs f
+evalBind (Normal mu sigma) f =
+  evalBind (GenericCont (N.normalDistr mu sigma)) f
+evalBind (Uniform a b) f =
+  evalBind (GenericCont (U.uniformDistr a b)) f
+evalBind (Exponential lambda) f =
+  evalBind (GenericCont (E.exponential lambda)) f
+evalBind (Beta alpha beta) f =
+  evalBind (GenericCont (B.betaDistr alpha beta)) f
+evalBind (Gamma shape scale) f =
+  evalBind (GenericCont (G.gammaDistr shape scale)) f
+evalBind (Laplace loc scale) f =
+  evalBind (GenericCont (L.laplace loc scale)) f
+evalBind (StudentT ndf) f =
   let dist = T.studentT ndf
       lower = quantile dist 1e-15
       upper = quantile dist (1 - 1e-15)
    in integrateNT (\x -> density dist x * f x) (lower, upper)
-evalGiry (GenericCont dist) f =
-  -- Universal Fallback: Inspect the distribution for support limits.
+evalBind (GenericCont dist) f =
   let trueMin = quantile dist 0.0
       trueMax = quantile dist 1.0
-      -- We use O(1) Mean and Variance lookups
-      -- We span 12 standard deviations, strictly bounded by the mathematical reality of the distribution.
       lower = max trueMin (mean dist - 12 * stdDev dist)
       upper = min trueMax (mean dist + 12 * stdDev dist)
    in integrateNT (\x -> density dist x * f x) (lower, upper)
-evalGiry (ContinuousPdf pdf (a, b)) f =
+evalBind (ContinuousPdf pdf (a, b)) f =
   integrateNT (\x -> pdf x * f x) (a, b)
 
--- | Discrete integration strategy, driven by the DATA.
--- This is where the category DATA tells the Giry monad HOW to sum.
-integrateDiscrete :: DATA a -> [(a, Double)] -> (a -> Double) -> Double
--- Finite objects: direct finite summation (always terminates)
-integrateDiscrete (Finite _) xs f = sum [p * f x | (x, p) <- xs]
-integrateDiscrete Booleans xs f = sum [p * f x | (x, p) <- xs]
-integrateDiscrete UnitObj xs f = sum [p * f x | (x, p) <- xs]
-integrateDiscrete (ProductObj _ _) xs f = sum [p * f x | (x, p) <- xs]
--- Countably infinite objects: chained fallback strategy
-integrateDiscrete Integers xs f = chainedDiscreteStrategy xs f
--- Reals with Categorical: likely an error
-integrateDiscrete Reals _ _ =
-  error "Categorical on Reals: use continuous Giry constructors (Normal, Uniform, etc.) instead."
-
 --------------------------------------------------------------------------------
--- COUNTABLY INFINITE OBJECTS (CHAIN OF FALLBACKS)
+-- INTERNAL: Continuous distribution evaluator (only for Reals)
+--------------------------------------------------------------------------------
+
+evalContinuous :: Giry Double -> (Double -> Double) -> Double
+evalContinuous (Normal mu sigma) f =
+  evalContinuous (GenericCont (N.normalDistr mu sigma)) f
+evalContinuous (Uniform a b) f =
+  evalContinuous (GenericCont (U.uniformDistr a b)) f
+evalContinuous (Exponential lambda) f =
+  evalContinuous (GenericCont (E.exponential lambda)) f
+evalContinuous (Beta alpha beta) f =
+  evalContinuous (GenericCont (B.betaDistr alpha beta)) f
+evalContinuous (Gamma shape scale) f =
+  evalContinuous (GenericCont (G.gammaDistr shape scale)) f
+evalContinuous (Laplace loc scale) f =
+  evalContinuous (GenericCont (L.laplace loc scale)) f
+evalContinuous (StudentT ndf) f =
+  let dist = T.studentT ndf
+      lower = quantile dist 1e-15
+      upper = quantile dist (1 - 1e-15)
+   in integrateNT (\x -> density dist x * f x) (lower, upper)
+evalContinuous (GenericCont dist) f =
+  let trueMin = quantile dist 0.0
+      trueMax = quantile dist 1.0
+      lower = max trueMin (mean dist - 12 * stdDev dist)
+      upper = min trueMax (mean dist + 12 * stdDev dist)
+   in integrateNT (\x -> density dist x * f x) (lower, upper)
+evalContinuous (ContinuousPdf pdf (a, b)) f =
+  integrateNT (\x -> pdf x * f x) (a, b)
+evalContinuous giry f = evalBind giry f -- Pure, Bind, Categorical fallback
+
 --------------------------------------------------------------------------------
 
 -- | Maximum discrete iterations for infinite support like Countable Sets

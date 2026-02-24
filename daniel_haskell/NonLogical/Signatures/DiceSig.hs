@@ -8,11 +8,12 @@ module NonLogical.Signatures.DiceSig where
 
 import Logical.Interpretations.Real (Omega)
 import Logical.Signatures.TwoMonBLat (TwoMonBLat)
+import NonLogical.Categories.DATA (MonadOver)
 
 -- | Sor
 type DieResult = Int
 
-class (TwoMonBLat Omega) => DiceSig cat t where
+class (TwoMonBLat Omega, MonadOver cat t) => DiceSig cat t where
   -- Sor (prove sorts are objects in cat)
   dieResultObj :: cat DieResult
 

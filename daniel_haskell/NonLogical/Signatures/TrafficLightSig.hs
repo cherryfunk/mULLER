@@ -8,11 +8,12 @@ module NonLogical.Signatures.TrafficLightSig where
 
 import Logical.Interpretations.Real (Omega)
 import Logical.Signatures.TwoMonBLat (TwoMonBLat)
+import NonLogical.Categories.DATA (MonadOver)
 
 -- | Sor
 type LightColor = String
 
-class (TwoMonBLat Omega) => TrafficLightSig cat t where
+class (TwoMonBLat Omega, MonadOver cat t) => TrafficLightSig cat t where
   -- Sor (prove sorts are objects in cat)
   lightColorObj :: cat LightColor
 
