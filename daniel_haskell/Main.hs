@@ -8,87 +8,67 @@ import qualified Data.Map as Map
 import Logical.Interpretations.Real (Omega)
 import Logical.Signatures.TwoMonBLat (TwoMonBLat (..))
 import NonLogical.Categories.DATA (DATA (..))
-import NonLogical.Interpretations.Countable ()
-import NonLogical.Interpretations.Dice ()
-import NonLogical.Interpretations.TrafficLight ()
-import NonLogical.Interpretations.Weather ()
+import NonLogical.Interpretations.Countable (drawHeavy', drawInt', drawLazy', drawStr', gt3', isAnything', isEven', startsTT')
+import NonLogical.Interpretations.Dice (die', eqDie', evenDie')
+import NonLogical.Interpretations.TrafficLight (eqLight', light')
+import NonLogical.Interpretations.Weather (eqI', gtD', humid', ltD', temp')
 import NonLogical.Monads.Dist (Dist, expectDist)
 import NonLogical.Monads.Giry (Giry, expectation)
-import NonLogical.Signatures.CountableSig
-import NonLogical.Signatures.DiceSig
-import NonLogical.Signatures.TrafficLightSig
-import NonLogical.Signatures.WeatherSig
 import System.Environment (getArgs)
 import TypedSemantics
 import TypedSyntax
 
 --------------------------------------------------------------------------------
--- 1. DICE EXAMPLE (in DATA, with Dist)
+-- 1. DICE
 --------------------------------------------------------------------------------
 dieSen1 :: Formula Omega
 dieSen1 =
-  Compu "x" (Con (die @DATA @Dist)) $
-    BinConn
-      wedge
-      (Rel (Con (eqDie @DATA @Dist) `Fun` Var @Int "x" `Fun` Con (6 :: Int)))
-      (Rel (Con (evenDie @DATA @Dist) `Fun` Var @Int "x"))
+  bind "x" die' $
+    wedge (eqDie' (var "x") 6) (evenDie' (var "x"))
 
 dieSen2 :: Formula Omega
 dieSen2 =
-  BinConn
-    wedge
-    (Compu "x" (Con (die @DATA @Dist)) (Rel (Con (eqDie @DATA @Dist) `Fun` Var @Int "x" `Fun` Con (6 :: Int))))
-    (Compu "x" (Con (die @DATA @Dist)) (Rel (Con (evenDie @DATA @Dist) `Fun` Var @Int "x")))
+  wedge
+    (bind "x" die' (eqDie' (var "x") 6))
+    (bind "x" die' (evenDie' (var "x")))
 
 --------------------------------------------------------------------------------
--- 2. TRAFFIC LIGHT EXAMPLE (in DATA, with Giry)
+-- 2. TRAFFIC LIGHT
 --------------------------------------------------------------------------------
 trafficSen1 :: Formula Omega
 trafficSen1 =
-  Compu "l" (Con (light @DATA @Giry)) $
-    Rel (Con (eqLight @DATA @Giry) `Fun` Var @String "l" `Fun` Con ("Green" :: String))
+  bind "l" light' $
+    eqLight' (var "l") (con "Green")
 
 --------------------------------------------------------------------------------
--- 3. WEATHER EXAMPLE (in DATA, with Giry)
+-- 3. WEATHER
 --------------------------------------------------------------------------------
 weatherSen1 :: Formula Omega
 weatherSen1 =
-  Compu "h" (Con (bernoulli @DATA @Giry) `Fun` (Con (humid_detector @DATA @Giry) `Fun` Con (data1 @DATA @Giry))) $
-    Compu "t" (Con (normalDist @DATA @Giry) `Fun` (Con (temperature_predictor @DATA @Giry) `Fun` Con (data1 @DATA @Giry))) $
-      BinConn
-        vee
-        ( BinConn
-            wedge
-            (Rel (Con (eqInt @DATA @Giry) `Fun` Var @Int "h" `Fun` Con (1 :: Int)))
-            (Rel (Con (ltDouble @DATA @Giry) `Fun` Var @Double "t" `Fun` Con (0.0 :: Double)))
-        )
-        ( BinConn
-            wedge
-            (Rel (Con (eqInt @DATA @Giry) `Fun` Var @Int "h" `Fun` Con (0 :: Int)))
-            (Rel (Con (gtDouble @DATA @Giry) `Fun` Var @Double "t" `Fun` Con (15.0 :: Double)))
-        )
+  bind "h" humid' $
+    bind "t" temp' $
+      vee
+        (wedge (eqI' (var "h") 1) (ltD' (var "t") (con 0.0)))
+        (wedge (eqI' (var "h") 0) (gtD' (var "t") (con 15.0)))
 
 --------------------------------------------------------------------------------
--- 4. COUNTABLE SETS EXAMPLE (in DATA, with Giry)
+-- 4. COUNTABLE SETS
 --------------------------------------------------------------------------------
 countableSen1 :: Formula Omega
 countableSen1 =
-  Compu "x" (Con (drawInt @DATA @Giry)) $
-    Compu "y" (Con (drawStr @DATA @Giry)) $
-      BinConn
-        wedge
-        (Rel (Con (gt3 @DATA @Giry) `Fun` Var @Int "x"))
-        (Rel (Con (startsTT @DATA @Giry) `Fun` Var @String "y"))
+  bind "x" drawInt' $
+    bind "y" drawStr' $
+      wedge (gt3' (var "x")) (startsTT' (var "y"))
 
 countableSenLazy :: Formula Omega
 countableSenLazy =
-  Compu "x" (Con (drawLazy @DATA @Giry)) $
-    Rel (Con (isEven @DATA @Giry) `Fun` Var @Int "x")
+  bind "x" drawLazy' $
+    isEven' (var "x")
 
 countableSenHeavy :: Formula Omega
 countableSenHeavy =
-  Compu "x" (Con (drawHeavy @DATA @Giry)) $
-    Rel (Con (isAnything @DATA @Giry) `Fun` Var @Int "x")
+  bind "x" drawHeavy' $
+    isAnything' (var "x")
 
 --------------------------------------------------------------------------------
 -- EXECUTION
