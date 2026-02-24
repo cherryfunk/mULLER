@@ -32,43 +32,21 @@ evalTerm val (Fun f arg) =
 
 -- | Evaluate a formula. Logical connectives come from the TwoMonBLat constraint.
 evalFormula :: forall m r tau. (TwoMonBLat tau, Typeable m, Monad m, Typeable r, Typeable tau) => Valuation -> Formula r -> m r
-evalFormula _ Top_ = case eqT @r @tau of
-  Just Refl -> return top
-  Nothing -> error "Type mismatch: Top"
-evalFormula _ Bot_ = case eqT @r @tau of
-  Just Refl -> return bot
-  Nothing -> error "Type mismatch: Bot"
-evalFormula _ V0_ = case eqT @r @tau of
-  Just Refl -> return v0
-  Nothing -> error "Type mismatch: V0"
-evalFormula _ V1_ = case eqT @r @tau of
-  Just Refl -> return v1
-  Nothing -> error "Type mismatch: V1"
 evalFormula val (Rel term) = return (evalTerm val term)
-evalFormula val (Wedge_ p q) = case eqT @r @tau of
+evalFormula val (BinConn op p q) = case eqT @r @tau of
   Just Refl -> do
     p' <- evalFormula @m @r @tau val p
     q' <- evalFormula @m @r @tau val q
-    return (wedge p' q')
-  Nothing -> error "Type mismatch in Wedge"
-evalFormula val (Vee_ p q) = case eqT @r @tau of
+    return (op p' q')
+  Nothing -> error "Type mismatch in BinConn"
+evalFormula val (UnConn op p) = case eqT @r @tau of
   Just Refl -> do
     p' <- evalFormula @m @r @tau val p
-    q' <- evalFormula @m @r @tau val q
-    return (vee p' q')
-  Nothing -> error "Type mismatch in Vee"
-evalFormula val (Oplus_ p q) = case eqT @r @tau of
-  Just Refl -> do
-    p' <- evalFormula @m @r @tau val p
-    q' <- evalFormula @m @r @tau val q
-    return (oplus p' q')
-  Nothing -> error "Type mismatch in Oplus"
-evalFormula val (Otimes_ p q) = case eqT @r @tau of
-  Just Refl -> do
-    p' <- evalFormula @m @r @tau val p
-    q' <- evalFormula @m @r @tau val q
-    return (otimes p' q')
-  Nothing -> error "Type mismatch in Otimes"
+    return (op p')
+  Nothing -> error "Type mismatch in UnConn"
+evalFormula _ (NulConn c) = case eqT @r @tau of
+  Just Refl -> return c
+  Nothing -> error "Type mismatch in NulConn"
 evalFormula val (Subst ss phi) =
   let val' = foldl (\v (x, SomeTerm t) -> Map.insert x (toDyn (evalTerm val t)) v) val ss
    in evalFormula @m @r @tau val' phi
@@ -82,7 +60,7 @@ evalFormula val (Compu x (mTerm :: Term (m1 a)) phi) = do
 
 -- | Evaluate a comparison
 evalComparison :: forall tau m. (TwoMonBLat tau, Typeable m, Monad m, Typeable tau) => Valuation -> Comparison tau -> m Bool
-evalComparison val (Comparison_ p q) = do
+evalComparison val (Comp cmp p q) = do
   p' <- evalFormula @m @tau @tau val p
   q' <- evalFormula @m @tau @tau val q
-  return (vdash p' q')
+  return (cmp p' q')

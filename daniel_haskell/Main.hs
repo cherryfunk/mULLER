@@ -28,13 +28,15 @@ import TypedSyntax
 dieSen1 :: Formula Omega
 dieSen1 =
   Compu "x" (Con (die @DATA @Dist)) $
-    wedge
+    BinConn
+      wedge
       (Rel (Con (eqDie @DATA @Dist) `Fun` Var @Int "x" `Fun` Con (6 :: Int)))
       (Rel (Con (evenDie @DATA @Dist) `Fun` Var @Int "x"))
 
 dieSen2 :: Formula Omega
 dieSen2 =
-  wedge
+  BinConn
+    wedge
     (Compu "x" (Con (die @DATA @Dist)) (Rel (Con (eqDie @DATA @Dist) `Fun` Var @Int "x" `Fun` Con (6 :: Int))))
     (Compu "x" (Con (die @DATA @Dist)) (Rel (Con (evenDie @DATA @Dist) `Fun` Var @Int "x")))
 
@@ -53,12 +55,15 @@ weatherSen1 :: Formula Omega
 weatherSen1 =
   Compu "h" (Con (bernoulli @DATA @Giry) `Fun` (Con (humid_detector @DATA @Giry) `Fun` Con (data1 @DATA @Giry))) $
     Compu "t" (Con (normalDist @DATA @Giry) `Fun` (Con (temperature_predictor @DATA @Giry) `Fun` Con (data1 @DATA @Giry))) $
-      vee
-        ( wedge
+      BinConn
+        vee
+        ( BinConn
+            wedge
             (Rel (Con (eqInt @DATA @Giry) `Fun` Var @Int "h" `Fun` Con (1 :: Int)))
             (Rel (Con (ltDouble @DATA @Giry) `Fun` Var @Double "t" `Fun` Con (0.0 :: Double)))
         )
-        ( wedge
+        ( BinConn
+            wedge
             (Rel (Con (eqInt @DATA @Giry) `Fun` Var @Int "h" `Fun` Con (0 :: Int)))
             (Rel (Con (gtDouble @DATA @Giry) `Fun` Var @Double "t" `Fun` Con (15.0 :: Double)))
         )
@@ -70,7 +75,8 @@ countableSen1 :: Formula Omega
 countableSen1 =
   Compu "x" (Con (drawInt @DATA @Giry)) $
     Compu "y" (Con (drawStr @DATA @Giry)) $
-      wedge
+      BinConn
+        wedge
         (Rel (Con (gt3 @DATA @Giry) `Fun` Var @Int "x"))
         (Rel (Con (startsTT @DATA @Giry) `Fun` Var @String "y"))
 
