@@ -14,7 +14,7 @@ import NonLogical.Categories.DATA (MonadOver)
 type Worlds = String
 
 -- | model Worlds {                       -- sort: Worlds
---     id             String  @id
+--     name           String  @id
 --     humidityPval   Double              -- attribute: Worlds -> Double
 --     tempMean       Double              -- attribute: Worlds -> Double
 --     tempStd        Double              -- attribute: Worlds -> Double
@@ -42,6 +42,8 @@ class (TwoMonBLat Omega, MonadOver cat t) => WeatherSig cat t where
   -- mFun
   bernoulli :: Double -> t Int
   normalDist :: (Double, Double) -> t Double
+
+  -- WHAT HAPPENS IF I HAVE: Worlds -> t Double? For t = Giry this is just Distribution Table!
 
   -- Rel
   eqInt :: Int -> Int -> Omega
