@@ -47,9 +47,6 @@ evalFormula val (UnConn op p) = case eqT @r @tau of
 evalFormula _ (NulConn c) = case eqT @r @tau of
   Just Refl -> return c
   Nothing -> error "Type mismatch in NulConn"
-evalFormula val (Subst ss phi) =
-  let val' = foldl (\v (x, SomeTerm t) -> Map.insert x (toDyn (evalTerm val t)) v) val ss
-   in evalFormula @m @r @tau val' phi
 evalFormula val (Compu x (mTerm :: Term (m1 a)) phi) = do
   let mVal = evalTerm val mTerm
   case eqT @m1 @m of

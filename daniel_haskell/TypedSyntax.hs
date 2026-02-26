@@ -9,7 +9,6 @@
 module TypedSyntax
   ( -- * AST types (for pattern matching in evaluator)
     VarSym,
-    SomeTerm (..),
     Term (..),
     Formula (..),
     Comparison (..),
@@ -31,10 +30,6 @@ import qualified Logical.Signatures.TwoMonBLat as L (TwoMonBLat (..))
 -- | Variable names (only for Compu binding)
 type VarSym = String
 
--- | Wrapper for heterogeneous terms (needed for Subst)
-data SomeTerm where
-  SomeTerm :: (Typeable a) => Term a -> SomeTerm
-
 --------------------------------------------------------------------------------
 -- Term AST: xi ::= x | f(xi)
 --------------------------------------------------------------------------------
@@ -51,7 +46,6 @@ data Formula tau where
   NulConn :: (Typeable tau) => tau -> Formula tau
   UnConn :: (Typeable tau) => (tau -> tau) -> Formula tau -> Formula tau
   BinConn :: (Typeable tau) => (tau -> tau -> tau) -> Formula tau -> Formula tau -> Formula tau
-  Subst :: (Typeable tau) => [(VarSym, SomeTerm)] -> Formula tau -> Formula tau
   Compu :: forall (m :: Type -> Type) (a :: Type) tau. (Typeable a, Typeable m, Typeable tau) => VarSym -> Term (m a) -> Formula tau -> Formula tau
 
 --------------------------------------------------------------------------------
