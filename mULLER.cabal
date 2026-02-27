@@ -74,7 +74,7 @@ executable daniel-haskell-shallow
     NonLogical.Signatures.CountableSig,
     NonLogical.Interpretations.Dice,
     NonLogical.Interpretations.Weather,
-    NonLogical.Interpretations.TrafficLight,
+    NonLogical.Interpretations.Crossing,
     NonLogical.Interpretations.Countable,
     Logical.Interpretations.Real,
     Logical.Interpretations.Boolean,

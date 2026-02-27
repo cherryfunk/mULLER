@@ -3,13 +3,13 @@
 module Main where
 
 import Data.List (isPrefixOf)
--- 𝓘_Υ: Logical interpretation (Product logic, includes .==, .<, .>)
+-- 𝓘_Υ: Logical interpretation (Product logic)
 import Logical.Interpretations.Product
 import NonLogical.Categories.DATA (DATA (..))
 -- 𝓘_Σ: Domain-specific interpretations
 import NonLogical.Interpretations.Countable
+import NonLogical.Interpretations.Crossing
 import NonLogical.Interpretations.Dice
-import NonLogical.Interpretations.TrafficLight
 import NonLogical.Interpretations.Weather
 import NonLogical.Monads.Dist (Dist, expectDist)
 import NonLogical.Monads.Giry (Giry, expectation)
@@ -30,20 +30,24 @@ dieSen2 = do
   return (p `wedge` q)
 
 --------------------------------------------------------------------------------
--- 2. TRAFFIC LIGHT (Giry monad)
+-- 2. CROSSING (Dist monad) — Uller paper
+--    "For every crossing, only continue driving if there is a green light."
+--    ∀x ∈ X(l := 🚦(x), d := 🚗(x, l)(¬true(d) ∨ l = 🟢))
+--    still missing the universal quantifier
 --------------------------------------------------------------------------------
-trafficSen1 :: Giry Omega
-trafficSen1 = do
-  l <- light
-  return (l .== "Green")
+crossingSen :: Dist Omega
+crossingSen = do
+  l <- lightDetector
+  d <- drivingDecision l
+  return (neg (d .== 1) `vee` l .== "Green")
 
 --------------------------------------------------------------------------------
--- 3. WEATHER (Giry monad)
+-- 3. WEATHER (Giry monad) - DeepSeaProbLog paper
 --------------------------------------------------------------------------------
 weatherSen1 :: Giry Omega
 weatherSen1 = do
-  h <- bernoulli (humid_detector data1)
-  t <- normalDist (temperature_predictor data1)
+  h <- bernoulli (humidDetect data1)
+  t <- normalDist (tempPredict data1)
   return $
     (h .== 1 `wedge` t .< 0.0)
       `vee` (h .== 0 `wedge` t .> 15.0)
@@ -86,17 +90,17 @@ main = do
     _ -> do
       putStrLn "--- Testing mULLER Framework (SHALLOW, Product Logic) ---"
 
-      putStrLn "\n[DICE] Evaluating P(die == 6 AND even(die))"
+      putStrLn "\n[DICE] P(die == 6 ∧ even(die))"
       print (expectDist dieSen1 id)
 
-      putStrLn "\n[DICE] Evaluating P(die == 6) AND P(even(die))"
+      putStrLn "\n[DICE] P(die == 6) ∧ P(even(die))"
       print (expectDist dieSen2 id)
 
-      putStrLn "\n[TRAFFIC] Evaluating P(light == green)"
-      print (expectation Reals trafficSen1 id)
+      putStrLn "\n[CROSSING] P(¬true(d) ∨ l = Green)"
+      print (expectDist crossingSen id)
 
-      putStrLn "\n[WEATHER] Evaluating P(vee (wedge (h=1) (t<0)) (wedge (h=0) (t>15)))"
+      putStrLn "\n[WEATHER] P((h=1 ∧ t<0) ∨ (h=0 ∧ t>15))"
       print (expectation Reals weatherSen1 id)
 
-      putStrLn "\n[COUNTABLE] Evaluating P(wedge (int > 3) (string starts with TT))"
+      putStrLn "\n[COUNTABLE] P(x > 3 ∧ isPrefixOf \"TT\" y)"
       print (expectation Reals countableSen1 id)

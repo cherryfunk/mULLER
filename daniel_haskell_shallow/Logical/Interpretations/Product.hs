@@ -47,6 +47,10 @@ v0 = 0.0
 v1 :: Omega
 v1 = 1.0
 
+-- | 𝓘(¬) : Negation (Gödel negation: ¬0 = 1, ¬x = 0 for x > 0)
+neg :: Omega -> Omega
+neg x = if x == bot then top else bot
+
 --------------------------------------------------------------------------------
 -- General predicates (implicit in every signature using this logic)
 -- These are NOT part of the logical interpretation itself.

@@ -1,8 +1,8 @@
 -- | Interpretation 𝓘_Σ of WeatherSig in (DATA, Giry)
 module NonLogical.Interpretations.Weather
   ( data1,
-    humid_detector,
-    temperature_predictor,
+    humidDetect,
+    tempPredict,
     bernoulli,
     normalDist,
   )
@@ -28,13 +28,13 @@ lookupRow w = tableLookup worldId w worldsTable
 data1 :: Worlds
 data1 = "Berlin"
 
--- | 𝓘(humid_detector) : Fun
-humid_detector :: Worlds -> Double
-humid_detector = humidityPval . lookupRow
+-- | 𝓘(humidDetect) : Fun
+humidDetect :: Worlds -> Double
+humidDetect = humidityPval . lookupRow
 
--- | 𝓘(temperature_predictor) : Fun
-temperature_predictor :: Worlds -> (Double, Double)
-temperature_predictor w = let r = lookupRow w in (tempMean r, tempStd r)
+-- | 𝓘(tempPredict) : Fun
+tempPredict :: Worlds -> (Double, Double)
+tempPredict w = let r = lookupRow w in (tempMean r, tempStd r)
 
 -- | 𝓘(bernoulli) : mFun
 bernoulli :: Double -> Giry Int

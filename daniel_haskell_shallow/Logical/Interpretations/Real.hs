@@ -46,6 +46,10 @@ v0 = 0.0
 v1 :: Omega
 v1 = 1.0
 
+-- | 𝓘(¬) : Negation (additive inverse)
+neg :: Omega -> Omega
+neg x = -x
+
 --------------------------------------------------------------------------------
 -- General predicates (implicit in every signature using this logic)
 -- These are NOT part of the logical interpretation itself.
