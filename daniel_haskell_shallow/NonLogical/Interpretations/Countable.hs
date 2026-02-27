@@ -1,7 +1,22 @@
--- | Interpretation 𝓘_Σ of CountableSig in (DATA, Giry)
+-- | Countable sets domain — Signature + Interpretation
 module NonLogical.Interpretations.Countable where
 
 import NonLogical.Monads.Giry (Giry, categorical)
+
+--------------------------------------------------------------------------------
+-- Σ: Non-Logical Vocabulary (sorts)
+--------------------------------------------------------------------------------
+
+-- (Uses Haskell built-in sorts: Int, String)
+
+-- | mFun: drawInt   :: Giry Int
+-- |       drawStr   :: Giry String
+-- |       drawLazy  :: Giry Int
+-- |       drawHeavy :: Giry Int
+
+--------------------------------------------------------------------------------
+-- 𝓘: Interpretation and Syntctic Type Declarations
+--------------------------------------------------------------------------------
 
 -- | 𝓘(drawInt) : mFun — geometric distribution
 drawInt :: Giry Int

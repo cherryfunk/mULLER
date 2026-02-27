@@ -1,16 +1,33 @@
--- | Interpretation 𝓘_Σ of WeatherSig in (DATA, Giry)
-module NonLogical.Interpretations.Weather
-  ( data1,
-    humidDetect,
-    tempPredict,
-    bernoulli,
-    normalDist,
-  )
-where
+-- | Weather domain — Signature + Interpretation
+module NonLogical.Interpretations.Weather where
 
 import NonLogical.Categories.DATA (tableLookup)
 import NonLogical.Monads.Giry (Giry, categorical, normal)
-import NonLogical.Signatures.WeatherSig (Worlds, WorldsRow (..))
+
+--------------------------------------------------------------------------------
+-- Σ: Non-Logical Vocabulary (sorts, data schema)
+--------------------------------------------------------------------------------
+
+-- | Sor
+type Worlds = String
+
+-- | Data layout (analogous to a database schema)
+data WorldsRow = WorldsRow
+  { worldId :: Worlds,
+    humidityPval :: Double,
+    tempMean :: Double,
+    tempStd :: Double
+  }
+
+-- | Con:  data1       :: Worlds
+-- | Fun:  humidDetect :: Worlds -> Double
+-- |       tempPredict :: Worlds -> (Double, Double)
+-- | mFun: bernoulli   :: Double -> Giry Int
+-- |       normalDist  :: (Double, Double) -> Giry Double
+
+--------------------------------------------------------------------------------
+-- 𝓘: Interpretation and their Syntctic Type Declarations
+--------------------------------------------------------------------------------
 
 -- | Data instance (rows of the table)
 worldsTable :: [WorldsRow]
@@ -24,7 +41,7 @@ worldsTable =
 lookupRow :: Worlds -> WorldsRow
 lookupRow w = tableLookup worldId w worldsTable
 
--- | 𝓘(data1) : Const
+-- | 𝓘(data1) : Con
 data1 :: Worlds
 data1 = "Berlin"
 

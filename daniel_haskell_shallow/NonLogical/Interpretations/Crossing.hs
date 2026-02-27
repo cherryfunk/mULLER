@@ -1,24 +1,28 @@
--- | Interpretation 𝓘_Σ of the Crossing scenario (from the Ola paper, Fig. 1)
+-- | Crossing domain — Signature + Interpretation (Ola paper, Fig. 1)
 --
 -- "For every crossing, only continue driving if there is a green light."
 --  ∀x ∈ X(l := 🚦(x), d := 🚗(x, l)(¬true(d) ∨ l = 🟢))
---
---  🚦 : X → ({Red, Orange, Green} → [0,1])
---    — detects the light color from the crossing image
---  🚗 : (X × {Red, Orange, Green}) → ({0,1} → [0,1])
---    — decides whether to continue driving given the light
 module NonLogical.Interpretations.Crossing where
 
 import NonLogical.Monads.Dist (Dist (..))
 
--- | The type of light color concepts
+--------------------------------------------------------------------------------
+-- Σ: Non-Logical Vocabulary (sorts)
+--------------------------------------------------------------------------------
+
+-- | Sor
 type LightColor = String -- "Red", "Orange", "Green"
 
--- | The type of driving decisions (0 = stop, 1 = go)
-type Decision = Int
+type Decision = Int -- 0 = stop, 1 = go
+
+-- | mFun: lightDetector   :: Dist LightColor
+-- |       drivingDecision :: LightColor -> Dist Decision
+
+--------------------------------------------------------------------------------
+-- 𝓘: Interpretation and Syntctic Type Declarations
+--------------------------------------------------------------------------------
 
 -- | 𝓘(🚦) : mFun — light detector (conditional distribution over colors)
---   For crossing x_i, the detector outputs:
 --   P(Red) = 0.6, P(Orange) = 0.1, P(Green) = 0.3
 lightDetector :: Dist LightColor
 lightDetector = Dist [("Red", 0.6), ("Orange", 0.1), ("Green", 0.3)]
