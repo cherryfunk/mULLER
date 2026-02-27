@@ -59,6 +59,37 @@ executable daniel-haskell
     statistics
   default-language: Haskell2010 
 
+executable daniel-haskell-shallow
+  main-is: Main.hs
+  hs-source-dirs: daniel_haskell_shallow
+  other-modules: 
+    NonLogical.Categories.DATA, 
+    NonLogical.Categories.TENS, 
+    NonLogical.Monads.Dist, 
+    NonLogical.Monads.Giry, 
+    Logical.Signatures.TwoMonBLat, 
+    NonLogical.Signatures.DiceSig,
+    NonLogical.Signatures.WeatherSig,
+    NonLogical.Signatures.TrafficLightSig,
+    NonLogical.Signatures.CountableSig,
+    NonLogical.Interpretations.Dice,
+    NonLogical.Interpretations.Weather,
+    NonLogical.Interpretations.TrafficLight,
+    NonLogical.Interpretations.Countable,
+    Logical.Interpretations.Real,
+    Logical.Interpretations.Boolean,
+    Logical.Interpretations.Product,
+    Logical.Interpretations.Goedel,
+    Logical.Interpretations.Lukasiewicz
+  build-depends:
+    base >=4.16,
+    containers,
+    mtl,
+    numeric-tools,
+    hasktorch,
+    statistics
+  default-language: Haskell2010 
+
 executable density-giry
   main-is: density_giry.hs
   hs-source-dirs: Haskell

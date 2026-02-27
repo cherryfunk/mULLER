@@ -10,3 +10,7 @@ cradle:
       component: "exe:daniel-haskell"
     - path: "daniel_haskell"
       component: "exe:daniel-haskell"
+    - path: "daniel_haskell_shallow/Main.hs"
+      component: "exe:daniel-haskell-shallow"
+    - path: "daniel_haskell_shallow"
+      component: "exe:daniel-haskell-shallow"
