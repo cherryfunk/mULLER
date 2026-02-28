@@ -11,6 +11,9 @@ import NonLogical.Categories.DATA (DATA, MonadOver (..))
 newtype Dist a = Dist {runDist :: [(a, Double)]}
   deriving (Show)
 
+-- | Dist is a monad ON the DATA category.
+instance MonadOver DATA Dist
+
 -- Standard Haskell Monad Hierarchy
 instance Functor Dist where
   fmap :: (a -> b) -> Dist a -> Dist b
@@ -32,10 +35,3 @@ instance Monad Dist where
     Dist $
       concat
         [[(y, p * q) | (y, q) <- runDist (f x)] | (x, p) <- xs]
-
--- | Dist is a monad ON the DATA category.
-instance MonadOver DATA Dist
-
--- | Compute expectation of a function over a distribution
-expectDist :: Dist a -> (a -> Double) -> Double
-expectDist (Dist xs) f = sum [p * f x | (x, p) <- xs]

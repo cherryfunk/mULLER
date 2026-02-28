@@ -1,5 +1,11 @@
--- | Logical interpretation: Gödel Logic (Ω = [0,1])
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
+
+-- | Logical interpretation: G\"odel Logic ($\Omega = [0,1]$)
 module Logical.Interpretations.Goedel where
+
+import NonLogical.Categories.DATA (DATA (..))
+import NonLogical.Supremum (inf, sup)
 
 infix 4 .==, ./=, .<, .>, .<=, .>=
 
@@ -7,64 +13,80 @@ infixr 3 `wedge`
 
 infixr 2 `vee`
 
--- | Ω := 𝓘(τ) = [0,1]
+-- | Omega := I(tau) = [0,1]
 type Omega = Double
 
--- | 𝓘(⊢) : Comparison
+-- | $\mathcal{I}(\vdash)$ : Comparison
 vdash :: Omega -> Omega -> Bool
 vdash = (<=)
 
--- | 𝓘(∧) : Meet
+-- | $\mathcal{I}(\wedge)$ : Meet
 wedge :: Omega -> Omega -> Omega
 wedge = min
 
--- | 𝓘(∨) : Join
+-- | $\mathcal{I}(\vee)$ : Join
 vee :: Omega -> Omega -> Omega
 vee = max
 
--- | 𝓘(⊥) : Bottom
+-- | $\mathcal{I}(\bot)$ : Bottom
 bot :: Omega
 bot = 0.0
 
--- | 𝓘(⊤) : Top
+-- | $\mathcal{I}(\top)$ : Top
 top :: Omega
 top = 1.0
 
--- | 𝓘(⊕) : Max
+-- | $\mathcal{I}(\oplus)$ : Max
 oplus :: Omega -> Omega -> Omega
 oplus = max
 
--- | 𝓘(⊗) : Min
+-- | $\mathcal{I}(\otimes)$ : Min
 otimes :: Omega -> Omega -> Omega
 otimes = min
 
--- | 𝓘(0⃗) : Additive unit
+-- | $\mathcal{I}(\vec{0})$ : Additive unit
 v0 :: Omega
 v0 = 0.0
 
--- | 𝓘(1⃗) : Multiplicative unit
+-- | $\mathcal{I}(\vec{1})$ : Multiplicative unit
 v1 :: Omega
 v1 = 1.0
 
--- | 𝓘(¬) : Negation (intuitionistic: ¬0 = 1, ¬x = 0 for x > 0)
+-- | $\mathcal{I}(\neg)$ : Negation (intuitionistic: neg0 = 1, negx = 0 for x > 0)
 neg :: Omega -> Omega
 neg x = if x == bot then top else bot
 
---------------------------------------------------------------------------------
--- General predicates (implicit in every signature using this logic)
--- These are NOT part of the logical interpretation itself.
--- They lift Haskell's native comparisons to Omega-valued predicates.
---------------------------------------------------------------------------------
+------------------------------------------------------
+-- Quantifiers ($Q_a :: (a \to \Omega) \to \Omega$)
+-- G\"odel: idempotent, so bigoplus = bigvee and bigotimes = bigwedge
+------------------------------------------------------
 
--- | Omega-valued equality
+-- | $\mathcal{I}(\bigvee)$ : Supremum
+bigVee :: forall a. DATA a -> (a -> Omega) -> Omega
+bigVee = sup
+
+-- | $\mathcal{I}(\bigwedge)$ : Infimum
+bigWedge :: forall a. DATA a -> (a -> Omega) -> Omega
+bigWedge = inf
+
+-- | $\mathcal{I}(\bigoplus)$ : Infinitary Strong Disjunction
+bigOplus :: forall a. DATA a -> (a -> Omega) -> Omega
+bigOplus = sup
+
+-- | $\mathcal{I}(\bigotimes)$ : Infinitary Strong Conjunction
+bigOtimes :: forall a. DATA a -> (a -> Omega) -> Omega
+bigOtimes = inf
+
+------------------------------------------------------
+-- General predicates
+------------------------------------------------------
+
 (.==) :: (Eq a) => a -> a -> Omega
 x .== y = if x == y then top else bot
 
--- | Omega-valued less-than
 (.<) :: (Ord a) => a -> a -> Omega
 x .< y = if x < y then top else bot
 
--- | Omega-valued greater-than
 (.>) :: (Ord a) => a -> a -> Omega
 x .> y = if x > y then top else bot
 

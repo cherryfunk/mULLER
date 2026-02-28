@@ -66,8 +66,12 @@ executable daniel-haskell-shallow
     NonLogical.Categories.DATA, 
     NonLogical.Categories.TENS, 
     NonLogical.Monads.Dist, 
+    NonLogical.Monads.Expectation,
     NonLogical.Monads.Giry, 
+    NonLogical.Supremum,
+    Formulas,
     Logical.Signatures.TwoMonBLat, 
+    Logical.Signatures.A2MonBLat,
     NonLogical.Interpretations.Dice,
     NonLogical.Interpretations.Weather,
     NonLogical.Interpretations.Crossing,
@@ -75,6 +79,8 @@ executable daniel-haskell-shallow
     Logical.Interpretations.Real,
     Logical.Interpretations.Boolean,
     Logical.Interpretations.Product,
+    Logical.Interpretations.SProd,
+    Logical.Interpretations.LTNp,
     Logical.Interpretations.Goedel,
     Logical.Interpretations.Lukasiewicz
   build-depends:

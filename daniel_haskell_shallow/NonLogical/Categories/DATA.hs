@@ -9,7 +9,7 @@ import Data.Kind (Type)
 import Data.Typeable (Typeable)
 
 -- | MonadOver: declares that monad m lives on category cat.
--- This is a bare association — no methods. Each monad defines its own
+-- This is a bare association -- no methods. Each monad defines its own
 -- evaluation/integration logic separately. This just prevents misuse:
 -- you can't instantiate a signature with a category-monad pair unless
 -- the monad is registered as living on that category.
@@ -19,9 +19,9 @@ class (Monad m) => MonadOver (cat :: Type -> Type) (m :: Type -> Type)
 -- Objects are specific sets: infinite sets (Reals, Integers) or finite enumerations.
 -- 'DATA a' means "a is an object in the DATA category."
 data DATA a where
-  -- | The real line ℝ (approximated by IEEE 754 Double)
+  -- | The real line R (approximated by IEEE 754 Double)
   Reals :: DATA Double
-  -- | The integers ℤ
+  -- | The integers Z
   Integers :: DATA Int
   -- | The two-element set {True, False}
   Booleans :: DATA Bool
@@ -31,12 +31,12 @@ data DATA a where
   Finite :: (Eq a, Show a, Typeable a) => [a] -> DATA a
   -- | Finite products
   -- | The terminal object (empty product)
-  UnitObj :: DATA ()
+  Unit :: DATA ()
   -- | Recursive binary product of two objects
-  ProductObj :: DATA a -> DATA b -> DATA (a, b)
+  Prod :: DATA a -> DATA b -> DATA (a, b)
 
 -- | Generic table lookup (the "WHERE key = k" query).
---   tableLookup keyOf k rows — find the first row whose key matches k.
+--   tableLookup keyOf k rows -- find the first row whose key matches k.
 tableLookup :: (Eq k, Show k) => (row -> k) -> k -> [row] -> row
 tableLookup keyOf k rows = case filter (\r -> keyOf r == k) rows of
   (r : _) -> r

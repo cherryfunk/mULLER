@@ -1,5 +1,11 @@
--- | Logical interpretation: Classical Boolean Logic (Ω = {True, False})
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
+
+-- | Logical interpretation: Classical Boolean Logic ($\Omega = \{\text{True}, \text{False}\}$)
 module Logical.Interpretations.Boolean where
+
+import NonLogical.Categories.DATA (DATA (..))
+import NonLogical.Supremum (enumAll)
 
 infix 4 .==, ./=, .<, .>, .<=, .>=
 
@@ -7,64 +13,82 @@ infixr 3 `wedge`
 
 infixr 2 `vee`
 
--- | Ω := 𝓘(τ) = {True, False}
+-- | Omega := I(tau) = {True, False}
 type Omega = Bool
 
--- | 𝓘(⊢) : Comparison (False ≤ True)
+-- | $\mathcal{I}(\vdash)$ : Comparison ($\text{False} \leq \text{True}$)
 vdash :: Omega -> Omega -> Bool
 vdash = (<=)
 
--- | 𝓘(∧) : Conjunction
+-- | $\mathcal{I}(\wedge)$ : Conjunction
 wedge :: Omega -> Omega -> Omega
 wedge = (&&)
 
--- | 𝓘(∨) : Disjunction
+-- | $\mathcal{I}(\vee)$ : Disjunction
 vee :: Omega -> Omega -> Omega
 vee = (||)
 
--- | 𝓘(⊥) : Bottom
+-- | $\mathcal{I}(\bot)$ : Bottom
 bot :: Omega
 bot = False
 
--- | 𝓘(⊤) : Top
+-- | $\mathcal{I}(\top)$ : Top
 top :: Omega
 top = True
 
--- | 𝓘(⊕) : Disjunction
+-- | $\mathcal{I}(\oplus)$ : Disjunction
 oplus :: Omega -> Omega -> Omega
 oplus = (||)
 
--- | 𝓘(⊗) : Conjunction
+-- | $\mathcal{I}(\otimes)$ : Conjunction
 otimes :: Omega -> Omega -> Omega
 otimes = (&&)
 
--- | 𝓘(0⃗) : Additive unit
+-- | $\mathcal{I}(\vec{0})$ : Additive unit
 v0 :: Omega
 v0 = False
 
--- | 𝓘(1⃗) : Multiplicative unit
+-- | $\mathcal{I}(\vec{1})$ : Multiplicative unit
 v1 :: Omega
 v1 = True
 
--- | 𝓘(¬) : Negation
+-- | $\mathcal{I}(\neg)$ : Negation
 neg :: Omega -> Omega
 neg = not
 
---------------------------------------------------------------------------------
--- General predicates (implicit in every signature using this logic)
--- These are NOT part of the logical interpretation itself.
--- They lift Haskell's native comparisons to Omega-valued predicates.
---------------------------------------------------------------------------------
+------------------------------------------------------
+-- Quantifiers ($Q_a :: (a \to \Omega) \to \Omega$)
+-- `any`/`all` are lazy and short-circuit on infinite lists.
+------------------------------------------------------
 
--- | Omega-valued equality
+-- | $\mathcal{I}(\bigvee)$ : Infinitary Join
+bigVee :: forall a. DATA a -> (a -> Omega) -> Omega
+bigVee Reals _ = error "Boolean bigVee over R is uncomputable."
+bigVee d phi = any phi (enumAll d)
+
+-- | $\mathcal{I}(\bigwedge)$ : Infinitary Meet
+bigWedge :: forall a. DATA a -> (a -> Omega) -> Omega
+bigWedge Reals _ = error "Boolean bigWedge over R is uncomputable."
+bigWedge d phi = all phi (enumAll d)
+
+-- | $\mathcal{I}(\bigoplus)$ : Infinitary Strong Disjunction
+bigOplus :: forall a. DATA a -> (a -> Omega) -> Omega
+bigOplus = bigVee
+
+-- | $\mathcal{I}(\bigotimes)$ : Infinitary Strong Conjunction
+bigOtimes :: forall a. DATA a -> (a -> Omega) -> Omega
+bigOtimes = bigWedge
+
+------------------------------------------------------
+-- General predicates
+------------------------------------------------------
+
 (.==) :: (Eq a) => a -> a -> Omega
 x .== y = if x == y then top else bot
 
--- | Omega-valued less-than
 (.<) :: (Ord a) => a -> a -> Omega
 x .< y = if x < y then top else bot
 
--- | Omega-valued greater-than
 (.>) :: (Ord a) => a -> a -> Omega
 x .> y = if x > y then top else bot
 

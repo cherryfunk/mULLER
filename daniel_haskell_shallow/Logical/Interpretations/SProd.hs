@@ -1,8 +1,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 
--- | Logical interpretation: \L ukasiewicz Logic ($\Omega = [0,1]$)
-module Logical.Interpretations.Lukasiewicz where
+-- | Logical interpretation: Stable Product Logic (S-Prod, $\$\Omega = [0,1]$ \subset \mathbb{R}$)
+module Logical.Interpretations.SProd where
 
 import NonLogical.Categories.DATA (DATA (..))
 import NonLogical.Monads.Expectation (HasExpectation (..))
@@ -38,13 +38,13 @@ bot = 0.0
 top :: Omega
 top = 1.0
 
--- | $\mathcal{I}(\oplus)$ : Bounded sum
+-- | $\mathcal{I}(\oplus)$ : Probabilistic sum (S_P)
 oplus :: Omega -> Omega -> Omega
-oplus x y = min 1.0 (x + y)
+oplus x y = x + y - (x * y)
 
--- | $\mathcal{I}(\otimes)$ : Bounded product
+-- | $\mathcal{I}(\otimes)$ : Product (T_P)
 otimes :: Omega -> Omega -> Omega
-otimes x y = max 0.0 (x + y - 1.0)
+otimes = (*)
 
 -- | $\mathcal{I}(\vec{0})$ : Additive unit
 v0 :: Omega
@@ -54,9 +54,13 @@ v0 = 0.0
 v1 :: Omega
 v1 = 1.0
 
--- | $\mathcal{I}(\neg)$ : Negation
+-- | $\mathcal{I}(\neg)$ : Classical Negation (neg_C: involutive negation 1 - x)
 neg :: Omega -> Omega
 neg x = 1.0 - x
+
+-- | I(->) : S-Product implication (I_{SP}: 1 - x + xy)
+impl :: Omega -> Omega -> Omega
+impl x y = 1.0 - x + (x * y)
 
 ------------------------------------------------------
 -- Quantifiers ($Q_a :: (a \to \Omega) \to \Omega$)
@@ -70,20 +74,17 @@ bigVee = sup
 bigWedge :: forall a. DATA a -> (a -> Omega) -> Omega
 bigWedge = inf
 
--- | $\mathcal{I}(\bigoplus)$ : Infinitary Bounded Sum: min(1, Sigma phi(x))
---   = min(1, $\mathbb{E}_\mu[\varphi]$) for continuous domains.
+-- | $\mathcal{I}(\bigoplus)$ : Infinitary Probabilistic Sum: $1 - \prod (1 - \varphi(x))$
 bigOplus :: forall a. DATA a -> (a -> Omega) -> Omega
-bigOplus Reals phi = min 1.0 (expect Reals (Uniform 0.0 1.0) phi)
+bigOplus Reals phi = 1.0 - exp (expect Reals (Uniform 0.0 1.0) (\x -> log (1.0 - phi x)))
 bigOplus (Prod da db) phi = bigOplus da (\a -> bigOplus db (\b -> phi (a, b)))
-bigOplus d phi = min 1.0 (sum (map phi (enumAll d)))
+bigOplus d phi = 1.0 - product (map (\x -> 1.0 - phi x) (enumAll d))
 
--- | $\mathcal{I}(\bigotimes)$ : Infinitary Bounded Product: $\max(0, \sum \varphi(x) - (n-1))$
+-- | $\mathcal{I}(\bigotimes)$ : Infinitary Product: $\prod \varphi(x)$
 bigOtimes :: forall a. DATA a -> (a -> Omega) -> Omega
-bigOtimes Reals phi = error "Lukasiewicz bigOtimes over R requires integration."
+bigOtimes Reals phi = exp (expect Reals (Uniform 0.0 1.0) (log . phi))
 bigOtimes (Prod da db) phi = bigOtimes da (\a -> bigOtimes db (\b -> phi (a, b)))
-bigOtimes d phi =
-  let xs = map phi (enumAll d)
-   in max 0.0 (sum xs - fromIntegral (length xs - 1))
+bigOtimes d phi = product (map phi (enumAll d))
 
 ------------------------------------------------------
 -- General predicates

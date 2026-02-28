@@ -1,11 +1,11 @@
--- | Countable sets domain — Signature + Interpretation
+-- | Countable sets domain -- Signature + Interpretation
 module NonLogical.Interpretations.Countable where
 
-import NonLogical.Monads.Giry (Giry, categorical)
+import NonLogical.Monads.Giry (Giry (..))
 
---------------------------------------------------------------------------------
--- Σ: Non-Logical Vocabulary (sorts)
---------------------------------------------------------------------------------
+------------------------------------------------------
+-- Sigma: Non-Logical Vocabulary (sorts)
+------------------------------------------------------
 
 -- (Uses Haskell built-in sorts: Int, String)
 
@@ -14,35 +14,35 @@ import NonLogical.Monads.Giry (Giry, categorical)
 -- |       drawLazy  :: Giry Int
 -- |       drawHeavy :: Giry Int
 
---------------------------------------------------------------------------------
--- 𝓘: Interpretation and Syntctic Type Declarations
---------------------------------------------------------------------------------
+------------------------------------------------------
+-- I: Interpretation and Syntctic Type Declarations
+------------------------------------------------------
 
--- | 𝓘(drawInt) : mFun — geometric distribution
+-- | I(drawInt) : mFun -- geometric distribution
 drawInt :: Giry Int
 drawInt =
   let p = 0.5
       probs = [(k, (1 - p) ^ k * p) | k <- [0 ..]]
-   in categorical probs
+   in Categorical probs
 
--- | 𝓘(drawStr) : mFun — geometric over coin-flip strings
+-- | I(drawStr) : mFun -- geometric over coin-flip strings
 drawStr :: Giry String
 drawStr =
   let p = 0.5
       toStr k = replicate k 'T' ++ "H"
       probs = [(toStr k, (1 - p) ^ k * p) | k <- [0 ..]]
-   in categorical probs
+   in Categorical probs
 
--- | 𝓘(drawLazy) : mFun — zeta(3) distribution (light tail)
+-- | I(drawLazy) : mFun -- zeta(3) distribution (light tail)
 drawLazy :: Giry Int
 drawLazy =
   let zeta3 = 1.202056903159594
       probs = [(k, (1 / fromIntegral (k + 1) ** 3) / zeta3) | k <- [0 ..]]
-   in categorical probs
+   in Categorical probs
 
--- | 𝓘(drawHeavy) : mFun — zeta(1.1) distribution (heavy tail)
+-- | I(drawHeavy) : mFun -- zeta(1.1) distribution (heavy tail)
 drawHeavy :: Giry Int
 drawHeavy =
   let zeta11 = 10.5844484649508
       probs = [(k, (1 / fromIntegral (k + 1) ** 1.1) / zeta11) | k <- [0 ..]]
-   in categorical probs
+   in Categorical probs
