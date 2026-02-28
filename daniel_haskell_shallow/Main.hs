@@ -70,7 +70,6 @@ weatherExp1 :: Double
 weatherExp1 = probGiry weatherSen1
 
 -- | Weather scenario 2: "it is humid AND warm (t > 25)"
---   Since (t > 30) implies (t > 25), we expect P(sen1) <= P(sen2).
 weatherSen2 :: Giry Omega
 weatherSen2 = do
   h <- bernoulli (humidDetect data1)
@@ -81,7 +80,6 @@ weatherExp2 :: Double
 weatherExp2 = probGiry weatherSen2
 
 -- | Natural entailment: "humid and very hot" entails "humid and warm"
---   p(weatherSen1) <= p(weatherSen2)
 weatherEntails :: Bool
 weatherEntails = probGiry weatherSen1 <= probGiry weatherSen2
 
@@ -132,7 +130,7 @@ main = do
     _ -> do
       putStrLn "-- Testing mULLER Framework (SHALLOW, Product Logic) --"
 
-      forms <- loadFormulas "../ULLER_paper/3. NeSyCat PyTorch/Conference Paper (NeSy26)/nesy2026-paper.tex"
+      forms <- loadFormulas "../ULLER_paper/4. NeSyCat Theory/Conference Paper/nesycat-resources.tex"
       let getF name = Map.findWithDefault name name forms
 
       putStrLn $ "\n[DICE] " ++ getF "fDiceOne"
@@ -144,10 +142,10 @@ main = do
       putStrLn $ "\n[CROSSING] " ++ getF "fCrossing"
       print crossingExp
 
-      putStrLn $ "\n[WEATHER 1 - Berlin] " ++ getF "fWeather"
+      putStrLn $ "\n[WEATHER 1 - Berlin] " ++ getF "fWeatherOne"
       print weatherExp1
 
-      putStrLn $ "\n[WEATHER 2 - Hamburg] " ++ getF "fWeather"
+      putStrLn $ "\n[WEATHER 2 - Hamburg] " ++ getF "fWeatherTwo"
       print weatherExp2
 
       putStrLn "\n[WEATHER] Berlin entails Hamburg?"
