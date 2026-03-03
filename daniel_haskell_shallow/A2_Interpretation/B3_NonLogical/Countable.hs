@@ -1,7 +1,7 @@
 -- | Countable sets domain -- Signature + Interpretation
-module NonLogical.Interpretations.Countable where
+module A2_Interpretation.B3_NonLogical.Countable where
 
-import NonLogical.Monads.Giry (Giry (..))
+import A3_Semantics.B3_NonLogical.Monads.Giry (Giry (..))
 
 ------------------------------------------------------
 -- Sigma: Non-Logical Vocabulary (sorts)

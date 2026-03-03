@@ -9,14 +9,14 @@
 --
 --   For finite / countably infinite objects, these use lazy bounded convergence.
 --   For R (uncountable), these require numerical optimization and are not yet supported.
-module NonLogical.Supremum
+module A2_Interpretation.B3_NonLogical.Supremum
   ( sup,
     inf,
     enumAll,
   )
 where
 
-import NonLogical.Categories.DATA (DATA (..))
+import A3_Semantics.B3_NonLogical.Categories.DATA (DATA (..))
 
 ------------------------------------------------------
 -- Enumeration

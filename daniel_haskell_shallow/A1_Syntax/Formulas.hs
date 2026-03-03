@@ -1,4 +1,4 @@
-module Formulas (loadFormulas) where
+module A1_Syntax.Formulas (loadFormulas) where
 
 import Data.List (isPrefixOf, stripPrefix)
 import qualified Data.Map as Map

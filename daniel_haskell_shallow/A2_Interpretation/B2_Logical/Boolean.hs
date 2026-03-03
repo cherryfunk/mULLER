@@ -2,10 +2,10 @@
 {-# LANGUAGE RankNTypes #-}
 
 -- | Logical interpretation: Classical Boolean Logic ($\Omega = \{\text{True}, \text{False}\}$)
-module Logical.Interpretations.Boolean where
+module A2_Interpretation.B2_Logical.Boolean where
 
-import NonLogical.Categories.DATA (DATA (..))
-import NonLogical.Supremum (enumAll)
+import A3_Semantics.B3_NonLogical.Categories.DATA (DATA (..))
+import A2_Interpretation.B3_NonLogical.Supremum (enumAll)
 
 infix 4 .==, ./=, .<, .>, .<=, .>=
 

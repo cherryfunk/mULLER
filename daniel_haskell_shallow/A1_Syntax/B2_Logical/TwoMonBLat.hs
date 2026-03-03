@@ -1,4 +1,4 @@
-module Logical.Signatures.TwoMonBLat where
+module A1_Syntax.B2_Logical.TwoMonBLat where
 
 -- | Theory of a double monoid bounded lattice (2Mon-BLat), still without axioms.
 class TwoMonBLat tau where

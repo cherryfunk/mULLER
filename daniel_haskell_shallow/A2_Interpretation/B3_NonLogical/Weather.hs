@@ -1,8 +1,8 @@
 -- | Weather domain -- Signature + Interpretation
-module NonLogical.Interpretations.Weather where
+module A2_Interpretation.B3_NonLogical.Weather where
 
-import NonLogical.Categories.DATA (tableLookup)
-import NonLogical.Monads.Giry (Giry (..))
+import A3_Semantics.B3_NonLogical.Categories.DATA (tableLookup)
+import A3_Semantics.B3_NonLogical.Monads.Giry (Giry (..))
 
 ------------------------------------------------------
 -- Sigma: Non-Logical Vocabulary (sorts, data schema)
@@ -34,7 +34,8 @@ worldsTable :: [WorldsRow]
 worldsTable =
   [ WorldsRow "Berlin" 0.6 22.0 5.0,
     WorldsRow "Munich" 0.8 5.0 3.0,
-    WorldsRow "Hamburg" 0.7 (-2.0) 1.5
+    WorldsRow "Hamburg" 0.7 (-2.0) 1.5,
+    WorldsRow "Bremen" 0.5 0.0 2.0
   ]
 
 -- | Row lookup (the "WHERE id = w" query)
@@ -48,6 +49,10 @@ data1 = "Berlin"
 -- | I(data2) : Con
 data2 :: Worlds
 data2 = "Hamburg"
+
+-- | I(data3) : Con
+data3 :: Worlds
+data3 = "Bremen"
 
 -- | I(humidDetect) : Fun
 humidDetect :: Worlds -> Double

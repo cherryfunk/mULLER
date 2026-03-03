@@ -1,7 +1,7 @@
 -- | Dice domain -- Signature + Interpretation
-module NonLogical.Interpretations.Dice where
+module A2_Interpretation.B3_NonLogical.Dice where
 
-import NonLogical.Monads.Dist (Dist (..))
+import A3_Semantics.B3_NonLogical.Monads.Dist (Dist (..))
 
 ------------------------------------------------------
 -- Sigma: Non-Logical Vocabulary (sorts)

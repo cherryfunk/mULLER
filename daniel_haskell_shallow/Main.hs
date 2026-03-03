@@ -2,22 +2,22 @@
 
 module Main where
 
-import Data.List (isPrefixOf)
 -- \$\mathcal{I}_\Upsilon$: Logical interpretation (Product logic)
 
 -- \$\mathcal{I}_\Sigma$: Domain-specific interpretations
 
+import A1_Syntax.Formulas (loadFormulas)
+import A2_Interpretation.B2_Logical.Boolean
+import A2_Interpretation.B3_NonLogical.Countable
+import A2_Interpretation.B3_NonLogical.Crossing
+import A2_Interpretation.B3_NonLogical.Dice
+import A2_Interpretation.B3_NonLogical.Weather
+import A3_Semantics.B3_NonLogical.Categories.DATA (DATA (..))
+import A3_Semantics.B3_NonLogical.Monads.Dist (Dist)
+import A3_Semantics.B3_NonLogical.Monads.Expectation (HasExpectation (..), probDist, probGiry)
+import A3_Semantics.B3_NonLogical.Monads.Giry (Giry)
+import Data.List (isPrefixOf)
 import qualified Data.Map as Map
-import Formulas (loadFormulas)
-import Logical.Interpretations.Boolean
-import NonLogical.Categories.DATA (DATA (..))
-import NonLogical.Interpretations.Countable
-import NonLogical.Interpretations.Crossing
-import NonLogical.Interpretations.Dice
-import NonLogical.Interpretations.Weather
-import NonLogical.Monads.Dist (Dist)
-import NonLogical.Monads.Expectation (HasExpectation (..), probDist, probGiry)
-import NonLogical.Monads.Giry (Giry)
 import System.Environment (getArgs)
 
 ------------------------------------------------------
@@ -78,6 +78,16 @@ weatherSen2 = do
 
 weatherExp2 :: Double
 weatherExp2 = probGiry weatherSen2
+
+-- | Weather scenario 3: "it is humid AND average (t > 0)" -> P = 0.25
+weatherSen3 :: Giry Omega
+weatherSen3 = do
+  h <- bernoulli (humidDetect data3)
+  t <- normalDist (tempPredict data3)
+  return (h .== 1 `wedge` t .> 0.0)
+
+weatherExp3 :: Double
+weatherExp3 = probGiry weatherSen3
 
 -- | Natural entailment: "humid and very hot" entails "humid and warm"
 weatherEntails :: Bool
@@ -147,6 +157,9 @@ main = do
 
       putStrLn $ "\n[WEATHER 2 - Hamburg] " ++ getF "fWeatherTwo"
       print weatherExp2
+
+      putStrLn $ "\n[WEATHER 3 - Bremen] " ++ getF "fWeatherThree"
+      print weatherExp3
 
       putStrLn "\n[WEATHER] Berlin entails Hamburg?"
       print weatherEntails

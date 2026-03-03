@@ -2,9 +2,9 @@
 --
 -- "For every crossing, only continue driving if there is a green light."
 --  $\forall x \in X(l := \text{traffic\_light}(x),\; d := \text{car}(x, l))\;(\neg\text{true}(d) \vee l = \text{green})$
-module NonLogical.Interpretations.Crossing where
+module A2_Interpretation.B3_NonLogical.Crossing where
 
-import NonLogical.Monads.Dist (Dist (..))
+import A3_Semantics.B3_NonLogical.Monads.Dist (Dist (..))
 
 ------------------------------------------------------
 -- Sigma: Non-Logical Vocabulary (sorts)

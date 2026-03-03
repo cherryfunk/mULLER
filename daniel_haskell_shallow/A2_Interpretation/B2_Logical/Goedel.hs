@@ -2,10 +2,10 @@
 {-# LANGUAGE RankNTypes #-}
 
 -- | Logical interpretation: G\"odel Logic ($\Omega = [0,1]$)
-module Logical.Interpretations.Goedel where
+module A2_Interpretation.B2_Logical.Goedel where
 
-import NonLogical.Categories.DATA (DATA (..))
-import NonLogical.Supremum (inf, sup)
+import A3_Semantics.B3_NonLogical.Categories.DATA (DATA (..))
+import A2_Interpretation.B3_NonLogical.Supremum (inf, sup)
 
 infix 4 .==, ./=, .<, .>, .<=, .>=
 

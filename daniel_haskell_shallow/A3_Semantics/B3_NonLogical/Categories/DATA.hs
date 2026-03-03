@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
-module NonLogical.Categories.DATA where
+module A3_Semantics.B3_NonLogical.Categories.DATA where
 
 import Data.Kind (Type)
 import Data.Typeable (Typeable)

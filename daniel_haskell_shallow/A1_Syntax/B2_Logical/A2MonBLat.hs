@@ -1,8 +1,8 @@
 {-# LANGUAGE RankNTypes #-}
 
-module Logical.Signatures.A2MonBLat where
+module A1_Syntax.B2_Logical.A2MonBLat where
 
-import NonLogical.Categories.DATA (DATA)
+import A3_Semantics.B3_NonLogical.Categories.DATA (DATA)
 
 -- | Theory of an aggregated 2-monoid bounded lattice (A2Mon-BLat).
 --   Extends 2Mon-BLat with four infinitary quantifiers.

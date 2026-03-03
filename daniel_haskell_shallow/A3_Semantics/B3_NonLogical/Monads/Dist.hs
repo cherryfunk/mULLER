@@ -1,10 +1,10 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module NonLogical.Monads.Dist where
+module A3_Semantics.B3_NonLogical.Monads.Dist where
 
 import Control.Monad (ap, liftM)
-import NonLogical.Categories.DATA (DATA, MonadOver (..))
+import A3_Semantics.B3_NonLogical.Categories.DATA (DATA, MonadOver (..))
 
 -- | The Distribution Monad.
 -- We use newtype to define our custom probability logic for >>=

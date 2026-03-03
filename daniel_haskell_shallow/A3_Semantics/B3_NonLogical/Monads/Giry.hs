@@ -4,10 +4,10 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module NonLogical.Monads.Giry where
+module A3_Semantics.B3_NonLogical.Monads.Giry where
 
 import Control.Monad (ap)
-import NonLogical.Categories.DATA (DATA (..), MonadOver (..))
+import A3_Semantics.B3_NonLogical.Categories.DATA (DATA (..), MonadOver (..))
 import Statistics.Distribution (ContDistr, Mean, Variance)
 
 -- | Giry is a monad ON the DATA category.

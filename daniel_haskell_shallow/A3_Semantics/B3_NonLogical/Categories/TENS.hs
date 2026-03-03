@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs #-}
 
-module NonLogical.Categories.TENS where
+module A3_Semantics.B3_NonLogical.Categories.TENS where
 
 import Torch (Tensor)
 

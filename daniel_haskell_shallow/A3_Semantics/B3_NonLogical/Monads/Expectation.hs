@@ -4,11 +4,11 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module NonLogical.Monads.Expectation (HasExpectation (..), probGiry, probDist) where
+module A3_Semantics.B3_NonLogical.Monads.Expectation (HasExpectation (..), probGiry, probDist) where
 
-import NonLogical.Categories.DATA (DATA (..), MonadOver)
-import NonLogical.Monads.Dist (Dist (..))
-import NonLogical.Monads.Giry (Giry (..))
+import A3_Semantics.B3_NonLogical.Categories.DATA (DATA (..), MonadOver)
+import A3_Semantics.B3_NonLogical.Monads.Dist (Dist (..))
+import A3_Semantics.B3_NonLogical.Monads.Giry (Giry (..))
 import Numeric.Tools.Integration (QuadParam (..), defQuad, quadBestEst, quadRes, quadRomberg)
 import Statistics.Distribution (ContDistr (density, quantile), DiscreteDistr (probability), Mean (mean), Variance (stdDev))
 import qualified Statistics.Distribution.Beta as B
