@@ -1,18 +1,14 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module A3_Semantics.B3_NonLogical.Monads.Dist where
+module A2_Interpretation.B1_Categorical.Monads.Dist where
 
 import Control.Monad (ap, liftM)
-import A3_Semantics.B3_NonLogical.Categories.DATA (DATA, MonadOver (..))
 
 -- | The Distribution Monad.
 -- We use newtype to define our custom probability logic for >>=
 newtype Dist a = Dist {runDist :: [(a, Double)]}
   deriving (Show)
-
--- | Dist is a monad ON the DATA category.
-instance MonadOver DATA Dist
 
 -- Standard Haskell Monad Hierarchy
 instance Functor Dist where

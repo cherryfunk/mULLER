@@ -1,21 +1,10 @@
 -- | Countable sets domain -- Signature + Interpretation
-module A2_Interpretation.B3_NonLogical.Countable where
+module A2_Interpretation.B4_NonLogical.Countable where
 
-import A3_Semantics.B3_NonLogical.Monads.Giry (Giry (..))
-
-------------------------------------------------------
--- Sigma: Non-Logical Vocabulary (sorts)
-------------------------------------------------------
-
--- (Uses Haskell built-in sorts: Int, String)
-
--- | mFun: drawInt   :: Giry Int
--- |       drawStr   :: Giry String
--- |       drawLazy  :: Giry Int
--- |       drawHeavy :: Giry Int
+import A2_Interpretation.B1_Categorical.Monads.Giry (Giry (..))
 
 ------------------------------------------------------
--- I: Interpretation and Syntctic Type Declarations
+-- I: Interpretation (Schema Instance + Function Definitions)
 ------------------------------------------------------
 
 -- | I(drawInt) : mFun -- geometric distribution

@@ -2,12 +2,12 @@
 {-# LANGUAGE RankNTypes #-}
 
 -- | Logical interpretation: Stable Product Logic (S-Prod, $\$\Omega = [0,1]$ \subset \mathbb{R}$)
-module A2_Interpretation.B2_Logical.SProd where
+module A2_Interpretation.B3_Logical.SProd where
 
-import A3_Semantics.B3_NonLogical.Categories.DATA (DATA (..))
-import A3_Semantics.B3_NonLogical.Monads.Expectation (HasExpectation (..))
-import A3_Semantics.B3_NonLogical.Monads.Giry (Giry (..))
-import A2_Interpretation.B3_NonLogical.Supremum (enumAll, inf, sup)
+import A2_Interpretation.B2_Typological.Categories.DATA (DATA (..))
+import A3_Semantics.B4_NonLogical.Monads.Expectation (HasExpectation (..))
+import A2_Interpretation.B1_Categorical.Monads.Giry (Giry (..))
+import A2_Interpretation.B4_NonLogical.Supremum (enumAll, inf, sup)
 
 infix 4 .==, ./=, .<, .>, .<=, .>=
 

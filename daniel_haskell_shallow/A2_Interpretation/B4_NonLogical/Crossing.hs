@@ -2,24 +2,13 @@
 --
 -- "For every crossing, only continue driving if there is a green light."
 --  $\forall x \in X(l := \text{traffic\_light}(x),\; d := \text{car}(x, l))\;(\neg\text{true}(d) \vee l = \text{green})$
-module A2_Interpretation.B3_NonLogical.Crossing where
+module A2_Interpretation.B4_NonLogical.Crossing where
 
-import A3_Semantics.B3_NonLogical.Monads.Dist (Dist (..))
-
-------------------------------------------------------
--- Sigma: Non-Logical Vocabulary (sorts)
-------------------------------------------------------
-
--- | Sor
-type LightColor = String -- "Red", "Orange", "Green"
-
-type Decision = Int -- 0 = stop, 1 = go
-
--- | mFun: lightDetector   :: Dist LightColor
--- |       drivingDecision :: LightColor -> Dist Decision
+import A1_Syntax.B4_NonLogical.Crossing_Vocab (Decision, LightColor)
+import A2_Interpretation.B1_Categorical.Monads.Dist (Dist (..))
 
 ------------------------------------------------------
--- I: Interpretation and Syntctic Type Declarations
+-- I: Interpretation (Schema Instance + Function Definitions)
 ------------------------------------------------------
 
 -- | I(traffic_light) : mFun -- light detector (conditional distribution over colors)

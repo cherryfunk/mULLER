@@ -4,14 +4,11 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module A3_Semantics.B3_NonLogical.Monads.Giry where
+module A2_Interpretation.B1_Categorical.Monads.Giry where
 
+import A2_Interpretation.B2_Typological.Categories.DATA (DATA (..))
 import Control.Monad (ap)
-import A3_Semantics.B3_NonLogical.Categories.DATA (DATA (..), MonadOver (..))
 import Statistics.Distribution (ContDistr, Mean, Variance)
-
--- | Giry is a monad ON the DATA category.
-instance MonadOver DATA Giry
 
 -- | The Giry Monad represented as an Abstract Syntax Tree (Free Monad).
 -- This separates the monadic structure from the concrete evaluation, allowing

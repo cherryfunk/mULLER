@@ -7,15 +7,15 @@ module Main where
 -- \$\mathcal{I}_\Sigma$: Domain-specific interpretations
 
 import A1_Syntax.Formulas (loadFormulas)
-import A2_Interpretation.B2_Logical.Boolean
-import A2_Interpretation.B3_NonLogical.Countable
-import A2_Interpretation.B3_NonLogical.Crossing
-import A2_Interpretation.B3_NonLogical.Dice
-import A2_Interpretation.B3_NonLogical.Weather
-import A3_Semantics.B3_NonLogical.Categories.DATA (DATA (..))
-import A3_Semantics.B3_NonLogical.Monads.Dist (Dist)
-import A3_Semantics.B3_NonLogical.Monads.Expectation (HasExpectation (..), probDist, probGiry)
-import A3_Semantics.B3_NonLogical.Monads.Giry (Giry)
+import A2_Interpretation.B3_Logical.Boolean
+import A2_Interpretation.B4_NonLogical.Countable
+import A2_Interpretation.B4_NonLogical.Crossing
+import A2_Interpretation.B4_NonLogical.Dice
+import A2_Interpretation.B4_NonLogical.Weather
+import A2_Interpretation.B2_Typological.Categories.DATA (DATA (..))
+import A2_Interpretation.B1_Categorical.Monads.Dist (Dist)
+import A3_Semantics.B4_NonLogical.Monads.Expectation (HasExpectation (..), probDist, probGiry)
+import A2_Interpretation.B1_Categorical.Monads.Giry (Giry)
 import Data.List (isPrefixOf)
 import qualified Data.Map as Map
 import System.Environment (getArgs)

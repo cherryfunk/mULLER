@@ -4,11 +4,11 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module A3_Semantics.B3_NonLogical.Monads.Expectation (HasExpectation (..), probGiry, probDist) where
+module A3_Semantics.B4_NonLogical.Monads.Expectation (HasExpectation (..), probGiry, probDist) where
 
-import A3_Semantics.B3_NonLogical.Categories.DATA (DATA (..), MonadOver)
-import A3_Semantics.B3_NonLogical.Monads.Dist (Dist (..))
-import A3_Semantics.B3_NonLogical.Monads.Giry (Giry (..))
+import A2_Interpretation.B1_Categorical.Monads.Dist (Dist (..))
+import A2_Interpretation.B1_Categorical.Monads.Giry (Giry (..))
+import A2_Interpretation.B2_Typological.Categories.DATA (DATA (..))
 import Numeric.Tools.Integration (QuadParam (..), defQuad, quadBestEst, quadRes, quadRomberg)
 import Statistics.Distribution (ContDistr (density, quantile), DiscreteDistr (probability), Mean (mean), Variance (stdDev))
 import qualified Statistics.Distribution.Beta as B
@@ -21,9 +21,10 @@ import qualified Statistics.Distribution.Poisson as Poi
 import qualified Statistics.Distribution.StudentT as T
 import qualified Statistics.Distribution.Uniform as U
 
--- | Type class for monads on DATA that support expectation (integration).
--- Any probability monad living on DATA can define how to compute E_mu[f].
-class (MonadOver DATA m) => HasExpectation m where
+-- | Type class for monads that support expectation (integration) over DATA types.
+-- The FDATA GADT witnesses closure under monads; this class provides the
+-- computational dispatch for each DATA object.
+class (Monad m) => HasExpectation m where
   expect :: DATA a -> m a -> (a -> Double) -> Double
 
 ------------------------------------------------------

@@ -1,11 +1,11 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 
--- | Logical interpretation: Classical Boolean Logic ($\Omega = \{\text{True}, \text{False}\}$)
-module A2_Interpretation.B2_Logical.Boolean where
+-- | Logical interpretation: G\"odel Logic ($\Omega = [0,1]$)
+module A2_Interpretation.B3_Logical.Goedel where
 
-import A3_Semantics.B3_NonLogical.Categories.DATA (DATA (..))
-import A2_Interpretation.B3_NonLogical.Supremum (enumAll)
+import A2_Interpretation.B2_Typological.Categories.DATA (DATA (..))
+import A2_Interpretation.B4_NonLogical.Supremum (inf, sup)
 
 infix 4 .==, ./=, .<, .>, .<=, .>=
 
@@ -13,71 +13,69 @@ infixr 3 `wedge`
 
 infixr 2 `vee`
 
--- | Omega := I(tau) = {True, False}
-type Omega = Bool
+-- | Omega := I(tau) = [0,1]
+type Omega = Double
 
--- | $\mathcal{I}(\vdash)$ : Comparison ($\text{False} \leq \text{True}$)
+-- | $\mathcal{I}(\vdash)$ : Comparison
 vdash :: Omega -> Omega -> Bool
 vdash = (<=)
 
--- | $\mathcal{I}(\wedge)$ : Conjunction
+-- | $\mathcal{I}(\wedge)$ : Meet
 wedge :: Omega -> Omega -> Omega
-wedge = (&&)
+wedge = min
 
--- | $\mathcal{I}(\vee)$ : Disjunction
+-- | $\mathcal{I}(\vee)$ : Join
 vee :: Omega -> Omega -> Omega
-vee = (||)
+vee = max
 
 -- | $\mathcal{I}(\bot)$ : Bottom
 bot :: Omega
-bot = False
+bot = 0.0
 
 -- | $\mathcal{I}(\top)$ : Top
 top :: Omega
-top = True
+top = 1.0
 
--- | $\mathcal{I}(\oplus)$ : Disjunction
+-- | $\mathcal{I}(\oplus)$ : Max
 oplus :: Omega -> Omega -> Omega
-oplus = (||)
+oplus = max
 
--- | $\mathcal{I}(\otimes)$ : Conjunction
+-- | $\mathcal{I}(\otimes)$ : Min
 otimes :: Omega -> Omega -> Omega
-otimes = (&&)
+otimes = min
 
 -- | $\mathcal{I}(\vec{0})$ : Additive unit
 v0 :: Omega
-v0 = False
+v0 = 0.0
 
 -- | $\mathcal{I}(\vec{1})$ : Multiplicative unit
 v1 :: Omega
-v1 = True
+v1 = 1.0
 
--- | $\mathcal{I}(\neg)$ : Negation
+-- | $\mathcal{I}(\neg)$ : Negation (intuitionistic: neg0 = 1, negx = 0 for x > 0)
 neg :: Omega -> Omega
-neg = not
+neg x = if x == bot then top else bot
 
 ------------------------------------------------------
 -- Quantifiers ($Q_a :: (a \to \Omega) \to \Omega$)
--- `any`/`all` are lazy and short-circuit on infinite lists.
+-- G\"odel: idempotent, so bigoplus = bigvee and bigotimes = bigwedge
 ------------------------------------------------------
 
--- | $\mathcal{I}(\bigvee)$ : Infinitary Join
+-- | $\mathcal{I}(\bigvee)$ : Supremum
 bigVee :: forall a. DATA a -> (a -> Omega) -> Omega
-bigVee Reals _ = error "Boolean bigVee over R is uncomputable."
-bigVee d phi = any phi (enumAll d)
+bigVee = sup
 
--- | $\mathcal{I}(\bigwedge)$ : Infinitary Meet
+-- | $\mathcal{I}(\bigwedge)$ : Infimum
 bigWedge :: forall a. DATA a -> (a -> Omega) -> Omega
-bigWedge Reals _ = error "Boolean bigWedge over R is uncomputable."
-bigWedge d phi = all phi (enumAll d)
+bigWedge = inf
 
 -- | $\mathcal{I}(\bigoplus)$ : Infinitary Strong Disjunction
 bigOplus :: forall a. DATA a -> (a -> Omega) -> Omega
-bigOplus = bigVee
+bigOplus = sup
 
 -- | $\mathcal{I}(\bigotimes)$ : Infinitary Strong Conjunction
 bigOtimes :: forall a. DATA a -> (a -> Omega) -> Omega
-bigOtimes = bigWedge
+bigOtimes = inf
 
 ------------------------------------------------------
 -- General predicates

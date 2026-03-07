@@ -1,14 +1,15 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 
--- | Logical interpretation: Logic Tensor Networks with p-mean approximation (LTNp, $\$\Omega = [0,1]$ \subset \mathbb{R}$)
-module A2_Interpretation.B2_Logical.LTNp where
+-- | Logical interpretation: Product Logic ($\$\Omega = [0,1]$ \subset \mathbb{R}$)
+module A2_Interpretation.B3_Logical.Product where
 
-import A3_Semantics.B3_NonLogical.Categories.DATA (DATA (..))
-import A3_Semantics.B3_NonLogical.Monads.Expectation (HasExpectation (..))
-import A3_Semantics.B3_NonLogical.Monads.Giry (Giry (..))
-import A2_Interpretation.B3_NonLogical.Supremum (enumAll, inf, sup)
+import A2_Interpretation.B2_Typological.Categories.DATA (DATA (..))
+import A3_Semantics.B4_NonLogical.Monads.Expectation (HasExpectation (..))
+import A2_Interpretation.B1_Categorical.Monads.Giry (Giry (..))
+import A2_Interpretation.B4_NonLogical.Supremum (enumAll, inf, sup)
 
+-- Fixity: comparisons (.==, .<, .>) bind tighter than connectives (wedge, vee)
 infix 4 .==, ./=, .<, .>, .<=, .>=
 
 infixr 3 `wedge`
@@ -17,10 +18,6 @@ infixr 2 `vee`
 
 -- | Omega := I(tau) = [0,1]
 type Omega = Double
-
--- | Hyperparameter p for LTN approximations (default p=2)
-p_LTN :: Double
-p_LTN = 2.0
 
 -- | $\mathcal{I}(\vdash)$ : Comparison
 vdash :: Omega -> Omega -> Bool
@@ -42,11 +39,11 @@ bot = 0.0
 top :: Omega
 top = 1.0
 
--- | $\mathcal{I}(\oplus)$ : Probabilistic sum (S_P)
+-- | $\mathcal{I}(\oplus)$ : Probabilistic sum
 oplus :: Omega -> Omega -> Omega
 oplus x y = x + y - (x * y)
 
--- | $\mathcal{I}(\otimes)$ : Product (T_P)
+-- | $\mathcal{I}(\otimes)$ : Product
 otimes :: Omega -> Omega -> Omega
 otimes = (*)
 
@@ -58,54 +55,31 @@ v0 = 0.0
 v1 :: Omega
 v1 = 1.0
 
--- | $\mathcal{I}(\neg)$ : Classical Negation (neg_C: 1 - x)
+-- | $\mathcal{I}(\neg)$ : Negation (G\"odel negation: neg0 = 1, negx = 0 for x > 0)
 neg :: Omega -> Omega
-neg x = 1.0 - x
-
--- | I(->) : S-Product implication (I_{SP}: 1 - x + xy)
-impl :: Omega -> Omega -> Omega
-impl x y = 1.0 - x + (x * y)
-
-------------------------------------------------------
--- LTN-specific aggregators
-------------------------------------------------------
-
--- | The generalized p-mean: (1/n * Sigma x_i^p)^(1/p)
-pMean :: Double -> [Double] -> Double
-pMean p xs =
-  let n = fromIntegral (length xs)
-      sum_p = sum (map (** p) xs)
-   in (sum_p / n) ** (1.0 / p)
-
--- | The error p-mean: 1 - pMean(1 - x)
-errPMean :: Double -> [Double] -> Double
-errPMean p xs = 1.0 - pMean p (map (\x -> 1.0 - x) xs)
+neg x = if x == bot then top else bot
 
 ------------------------------------------------------
 -- Quantifiers ($Q_a :: (a \to \Omega) \to \Omega$)
--- LTNp uses p-mean for bigvee and error p-mean for bigwedge (smooth approximations
--- of sup/inf), while bigoplus and bigotimes use standard Product logic operators.
 ------------------------------------------------------
 
--- | $\mathcal{I}(\bigvee)$ : p-mean (smooth approximation of supremum)
+-- | $\mathcal{I}(\bigvee)$ : Supremum
 bigVee :: forall a. DATA a -> (a -> Omega) -> Omega
-bigVee Reals _ = error "LTNp bigVee over R requires numerical optimization."
-bigVee (Prod da db) phi = bigVee da (\a -> bigVee db (\b -> phi (a, b)))
-bigVee d phi = pMean p_LTN (map phi (enumAll d))
+bigVee = sup
 
--- | $\mathcal{I}(\bigwedge)$ : Error p-mean (smooth approximation of infimum)
+-- | $\mathcal{I}(\bigwedge)$ : Infimum
 bigWedge :: forall a. DATA a -> (a -> Omega) -> Omega
-bigWedge Reals phi = error "LTNp bigWedge over R requires numerical optimization."
-bigWedge (Prod da db) phi = bigWedge da (\a -> bigWedge db (\b -> phi (a, b)))
-bigWedge d phi = errPMean p_LTN (map phi (enumAll d))
+bigWedge = inf
 
 -- | $\mathcal{I}(\bigoplus)$ : Infinitary Probabilistic Sum: $1 - \prod (1 - \varphi(x))$
+--   = 1 - exp(E_mu[log(1 - phi)]) for continuous domains.
 bigOplus :: forall a. DATA a -> (a -> Omega) -> Omega
 bigOplus Reals phi = 1.0 - exp (expect Reals (Uniform 0.0 1.0) (\x -> log (1.0 - phi x)))
 bigOplus (Prod da db) phi = bigOplus da (\a -> bigOplus db (\b -> phi (a, b)))
 bigOplus d phi = 1.0 - product (map (\x -> 1.0 - phi x) (enumAll d))
 
 -- | $\mathcal{I}(\bigotimes)$ : Infinitary Product: $\prod \varphi(x)$
+--   = $\exp(\mathbb{E}_\mu[\log \circ \varphi])$ for continuous domains.
 bigOtimes :: forall a. DATA a -> (a -> Omega) -> Omega
 bigOtimes Reals phi = exp (expect Reals (Uniform 0.0 1.0) (log . phi))
 bigOtimes (Prod da db) phi = bigOtimes da (\a -> bigOtimes db (\b -> phi (a, b)))

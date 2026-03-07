@@ -1,32 +1,12 @@
 -- | Weather domain -- Signature + Interpretation
-module A2_Interpretation.B3_NonLogical.Weather where
+module A2_Interpretation.B4_NonLogical.Weather where
 
-import A3_Semantics.B3_NonLogical.Categories.DATA (tableLookup)
-import A3_Semantics.B3_NonLogical.Monads.Giry (Giry (..))
-
-------------------------------------------------------
--- Sigma: Non-Logical Vocabulary (sorts, data schema)
-------------------------------------------------------
-
--- | Sor
-type Worlds = String
-
--- | Data layout (analogous to a database schema)
-data WorldsRow = WorldsRow
-  { worldId :: Worlds,
-    humidityPval :: Double,
-    tempMean :: Double,
-    tempStd :: Double
-  }
-
--- | Con:  data1       :: Worlds
--- | Fun:  humidDetect :: Worlds -> Double
--- |       tempPredict :: Worlds -> (Double, Double)
--- | mFun: bernoulli   :: Double -> Giry Int
--- |       normalDist  :: (Double, Double) -> Giry Double
+import A1_Syntax.B4_NonLogical.Weather_Vocab (Worlds, WorldsRow (..))
+import A2_Interpretation.B2_Typological.Categories.DATA (tableLookup)
+import A2_Interpretation.B1_Categorical.Monads.Giry (Giry (..))
 
 ------------------------------------------------------
--- I: Interpretation and their Syntctic Type Declarations
+-- I: Interpretation (Schema Instance + Function Definitions)
 ------------------------------------------------------
 
 -- | Data instance (rows of the table)

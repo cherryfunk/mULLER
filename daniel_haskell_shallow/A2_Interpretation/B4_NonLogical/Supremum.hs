@@ -9,22 +9,27 @@
 --
 --   For finite / countably infinite objects, these use lazy bounded convergence.
 --   For R (uncountable), these require numerical optimization and are not yet supported.
-module A2_Interpretation.B3_NonLogical.Supremum
+module A2_Interpretation.B4_NonLogical.Supremum
   ( sup,
     inf,
     enumAll,
   )
 where
 
-import A3_Semantics.B3_NonLogical.Categories.DATA (DATA (..))
+import A2_Interpretation.B2_Typological.Categories.DATA (DATA (..))
+import Numeric.Natural (Natural)
 
 ------------------------------------------------------
 -- Enumeration
 ------------------------------------------------------
 
 -- | Canonical enumeration of Z: [0, 1, -1, 2, -2, ...]
-enumIntegers :: [Int]
+enumIntegers :: [Integer]
 enumIntegers = 0 : concatMap (\n -> [n, -n]) [1 ..]
+
+-- | Canonical enumeration of N: [0, 1, 2, 3, ...]
+enumNaturals :: [Natural]
+enumNaturals = [0 ..]
 
 -- | Canonical enumeration of all strings: ["", "a", "b", ..., "aa", ...]
 enumStrings :: [String]
@@ -35,10 +40,12 @@ enumAll :: DATA a -> [a]
 enumAll (Finite xs) = xs
 enumAll Booleans = [True, False]
 enumAll Unit = [()]
+enumAll Naturals = enumNaturals
 enumAll Integers = enumIntegers
 enumAll Strings = enumStrings
-enumAll (Prod da db) = [(a, b) | a <- enumAll da, b <- enumAll db]
 enumAll Reals = error "Cannot enumerate R."
+enumAll (Prod da db) = [(a, b) | a <- enumAll da, b <- enumAll db]
+enumAll (Lists da) = [] : [a : as | a <- enumAll da, as <- enumAll (Lists da)]
 
 ------------------------------------------------------
 -- Budget for lazy convergence
